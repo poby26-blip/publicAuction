@@ -48,3 +48,4 @@ export function GongBottomNav({ activeTab, onTabChange, watchlistCount = 0 }: Go
     </nav>
   )
 }
+

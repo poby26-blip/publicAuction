@@ -178,3 +178,4 @@ export function formatWon(price: number): string {
   }
   return `${Math.floor(price / 10000).toLocaleString()}만원`
 }
+

@@ -48,3 +48,4 @@ export function GongHeader({ onSearchClick, onAlarmClick, alarmCount = 2 }: Gong
     </header>
   )
 }
+
