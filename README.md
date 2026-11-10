@@ -1,14 +1,21 @@
-# Public Auction (공공경매/공매 안드로이드 앱)
+# Public Auction (공공경매/공매 하이브리드 앱)
 
-안드로이드 기반의 공공경매(Public Auction) 모바일 애플리케이션 프로젝트입니다.  
-화면 설계는 Google Stitch를 기반으로 진행하며, Kotlin 및 Jetpack Compose를 활용하여 구현합니다.
+공공경매(Public Auction) 모바일 서비스를 위한 웹 하이브리드 애플리케이션 프로젝트입니다.  
+화면 기획 및 디자인은 **Google Stitch**를 기반으로 하며, 프론트엔드는 **React + TypeScript + Vite**를 사용하여 구현합니다.
 
-## 프로젝트 정보
-- **플랫폼**: Android
-- **개발 언어**: Kotlin
-- **UI 프레임워크**: Jetpack Compose
+## 프로젝트 구조
+```text
+publicAuction/
+├── frontend/          # React 기반 웹 프론트엔드 (모바일 하이브리드 UI)
+├── .gitignore         # 프로젝트 공통 Git 제외 설정
+└── README.md          # 프로젝트 문서
+```
+
+## 기술 스택 (Frontend)
+- **프레임워크**: React (with Vite)
+- **언어**: TypeScript
 - **화면 설계**: Google Stitch
 - **버전 관리**: Git & GitHub
 
-## 폴더 구조 및 개발 가이드
-(프로젝트 스켈레톤 구성 후 상세 내용 업데이트 예정)
+## 개발 안내
+`frontend/` 디렉터리 내에서 웹 프론트엔드 개발 및 빌드가 진행됩니다.
