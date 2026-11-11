@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   GONG_CATEGORIES,
   GONG_REGIONS,
@@ -13,6 +13,7 @@ interface AuctionListScreenProps {
   onSelectItem: (item: GongItem) => void
   initialCategory?: string
   initialRegion?: string
+  initialKeyword?: string
 }
 
 export function AuctionListScreen({
@@ -22,12 +23,20 @@ export function AuctionListScreen({
   onSelectItem,
   initialCategory,
   initialRegion = '전체',
+  initialKeyword = '',
 }: AuctionListScreenProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>(initialCategory || 'all')
-  const [selectedRegion, setSelectedRegion] = useState<string>(initialRegion)
+  const [selectedRegion, setSelectedRegion] = useState<string>(initialRegion || '전체')
   const [selectedType, setSelectedType] = useState<string>('all')
   const [sortBy, setSortBy] = useState<'dDay' | 'discount' | 'price' | 'views'>('dDay')
-  const [keyword, setKeyword] = useState<string>('')
+  const [keyword, setKeyword] = useState<string>(initialKeyword || '')
+
+  // 상위 prop 변경 시 (홈 화면 등에서 새로운 카테고리/지역/검색어로 유입 시) 동기화
+  useEffect(() => {
+    if (initialCategory) setSelectedCategory(initialCategory)
+    if (initialRegion) setSelectedRegion(initialRegion)
+    if (initialKeyword !== undefined) setKeyword(initialKeyword)
+  }, [initialCategory, initialRegion, initialKeyword])
 
   const auctionTypes = ['all', '신탁공매', '압류재산', '국유재산']
 

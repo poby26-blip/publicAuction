@@ -52,6 +52,11 @@ function parseOnbidDate(rawDate?: string): { dDay: number; formattedDate: string
     return { dDay: 7, formattedDate: '일정 확인중' }
   }
 
+  // 온비드 상시/미정 공고(2999년) 방어 처리
+  if (rawDate.startsWith('2999')) {
+    return { dDay: 30, formattedDate: '상시 매각' }
+  }
+
   const year = parseInt(rawDate.substring(0, 4), 10)
   const month = parseInt(rawDate.substring(4, 6), 10) - 1
   const day = parseInt(rawDate.substring(6, 8), 10)
@@ -97,6 +102,9 @@ export function adaptOnbidToGongItem(raw: RawOnbidItem, index: number): GongItem
   } else if (mcls.includes('차량') || mcls.includes('자동차')) {
     category = 'car'
     categoryIcon = 'directions_car'
+  } else if (mcls.includes('주거') || mcls.includes('아파트') || mcls.includes('주택')) {
+    category = 'apt'
+    categoryIcon = 'apartment'
   }
 
   // 주소 조합
@@ -165,7 +173,7 @@ export async function fetchOnbidRealEstateList(options: OnbidQueryOptions = {}):
     numOfRows: String(numOfRows),
     pvctTrgtYn,
     dspsMthodCd: '0001', // 매각
-    prptDivCd: '0002,0003,0004,0005,0006,0007,0008,0010,0011,0013', // 전 재산유형
+    prptDivCd: '0007,0002', // 신탁/담보 및 압류재산 우선 (31,000+건 실거래 물건)
   })
 
   // 지역 필터 (시도명)
