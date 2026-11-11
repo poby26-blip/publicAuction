@@ -144,3 +144,35 @@ npm run dev
 npm run build
 ```
 - TypeScript 컴파일 및 Vite 번들링을 거쳐 `frontend/dist/` 디렉터리에 최적화된 정적 파일이 생성됩니다.
+
+---
+
+## 6. 온비드 OpenAPI 활용 명세 (API Specifications)
+
+공공데이터포털에서 승인받은 차세대 온비드(기관코드: `B010003`) 14종 서비스 중, **'공매이지' 모바일 앱에서 실제로 연동하여 활용하는 핵심 API 목록 및 기능 명세**입니다.
+
+### 1) 실제 사용하는 핵심 API 목록
+
+| No. | 서비스명 | Base URL & Operation | 연동 화면 (Mapping) | 핵심 데이터 및 기능 |
+|:---:|---|---|---|---|
+| **1** | **차세대 온비드 부동산 물건목록** *(주력)* | `https://apis.data.go.kr/B010003/OnbidRlstListSrvc2`<br>↳ **`getRlstCltrList2`** | • `HomeScreen`<br>• `AuctionListScreen` | • 실시간 공매 부동산 30,000+ 건 조회<br>• 물건명(`onbidCltrNm`), 감정가(`apslEvlAmt`), 최저가(`lowstBidPrcIndctCont`)<br>• 온비드 실제 현장 썸네일(`thnlImgUrlAdr`), 입찰마감일시(`cltrBidEndDt`) |
+| **2** | **차세대 온비드 차량 물건목록** | `https://apis.data.go.kr/B010003/OnbidCarListSrvc2`<br>↳ **`getCarCltrList2`** | • `HomeScreen` (D-1 차량)<br>• `AuctionListScreen` ([자동차/운송]) | • 승용차(제네시스 등), 화물/특수차량 공매 목록<br>• 주행거리, 차량보관소 위치, 최저입찰가 및 감가율 |
+| **3** | **차세대 온비드 동산 물건목록** | `https://apis.data.go.kr/B010003/OnbidMvastListSrvc2`<br>↳ **`getMvastCltrList2`** | • `AuctionListScreen`<br>([동산/귀금속], [공장/창고]) | • 기계기구, 유가증권, 귀금속, 공장 설비 공매 물건 목록 연동 |
+| **4** | **차세대 온비드 부동산 물건상세** | `https://apis.data.go.kr/B010003/OnbidRlstDtlSrvc2`<br>↳ **`getRlstCltrDtl2`** | • `AuctionDetailScreen` | • 물건 상세 권리분석 (등기부 권리관계, 점유자/임대차 현황)<br>• 토지/건물 면적 세부 명세, 배분요구종기일, 감정평가 상세 정보 |
+| **5** | **차세대 온비드 공고상세 입찰정보** | `https://apis.data.go.kr/B010003/OnbidPbancBidDtlSrvc2`<br>↳ **`getCltrBidInf2`** | • `AuctionDetailScreen` | • 차수별 유찰 히스토리 및 차수별 최저입찰가 변동 내역<br>• 회차별 입찰 시작/마감 일정 및 입찰보증금율 |
+
+---
+
+### 2) 차세대 온비드 API 연동 실측 주의사항 (Technical Findings)
+
+공공데이터포털 공식 기술문서와 실제 운영 서버 간에 존재하는 규격 차이점을 실측하여 반영했습니다:
+
+1. **오퍼레이션명 접미사 `2` 필수**
+   - 포털 가이드에는 `getRlstCltrList`로 적혀 있는 경우가 있으나, 실제 정상 동작하는 오퍼레이션은 숫자 **`2`**가 붙은 **`getRlstCltrList2`**, **`getCarCltrList2`**, **`getMvastCltrList2`**입니다.
+2. **필수 파라미터 `pvctTrgtYn` 누락 주의**
+   - 온비드 차세대 API는 `pvctTrgtYn` (수의계약대상여부: `N` 또는 `Y`)이 **필수 파라미터**입니다. 누락 시 `NO_MANDATORY_REQUEST_PARAMETERS_ERROR`가 발생하므로 일반 공매 물건 조회를 위해 기본값 `pvctTrgtYn=N`을 필수로 전달합니다.
+3. **고속 JSON 응답 형식**
+   - 쿼리스트링에 `resultType=json`을 전달하여 XML 파싱 오버헤드 없이 고속 JSON 파이프라인으로 처리합니다.
+4. **인증키(ServiceKey) 정규화**
+   - Decoding 키 기준으로 전달하며, 특수문자 이중 인코딩 이슈를 방지하여 `resultCode: "00" (NORMAL_CODE)`를 유지합니다.
+
