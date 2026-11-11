@@ -45,6 +45,27 @@
 
 ---
 
+## 🎨 1-1. 화면 기획 및 UI 생성 파이프라인 (Google Stitch & MCP Workflow)
+
+본 프로젝트는 기획부터 프론트엔드 코드 구현까지 **Google Stitch**와 **MCP(Model Context Protocol)**를 결합한 차세대 AI 설계 파이프라인을 기반으로 구축되었습니다:
+
+1. **화면 기획 및 프로토타이핑 (Google Stitch)**:
+   - 앱의 모든 모바일 UI/UX, 정보 구조(IA), 컴포넌트 레이아웃 및 인터랙션은 **Google Stitch(구글 스티치)**를 사용하여 기획·디자인되었습니다.
+   - Google Stitch를 통해 모바일 전용 뷰포트(`max-w-md` = 448px 중앙 정렬 컨테이너)와 최적의 모바일 카드 UI, 스켈레톤 상태, 필터 칩 네비게이션이 설계되었습니다.
+
+2. **MCP (Model Context Protocol) 연동을 통한 화면 생성**:
+   - Google Stitch에서 완성된 화면 기획 및 디자인 스펙을 **MCP 서버 연결**을 통해 Antigravity AI 에이전트 개발 환경으로 직접 연동하였습니다.
+   - 에이전트는 MCP 컨텍스트를 실시간으로 참조하여 Stitch 디자인 명세를 React 19 + TypeScript + Tailwind CSS v4 컴포넌트 코드로 자동 변환·생성하였습니다.
+   - 자동 생성된 UI 골격 위에 한국자산관리공사(KAMCO) 차세대 온비드 OpenAPI(`onbidService.ts`) 실데이터 통신 및 상태 머신(`App.tsx`)을 결합하여 프로덕션 수준의 앱으로 완성되었습니다.
+
+3. **향후 신규 화면 추가 및 디자인 수정 시 표준 워크플로우**:
+   - **1단계**: Google Stitch에서 신규 화면(예: 마이페이지, 관심물건 고도화 등)의 UI/UX 기획 및 레이아웃 설계
+   - **2단계**: 에이전트 환경에서 MCP를 통해 Google Stitch 프로젝트 컨텍스트 및 화면 명세 로드
+   - **3단계**: 디자인 토큰(Material Symbols, Tailwind 컬러 팔레트)을 준수하는 React 컴포넌트 코드 생성
+   - **4단계**: 실데이터 OpenAPI 연동 및 `npm run build`를 통한 빌드 무결성 검증
+
+---
+
 ## 🚨 2. 에이전트 핵심 행동 수칙 (Agent Core Rules - 절대 규칙)
 
 다른 PC의 Antigravity 에이전트는 작업을 시작할 때 **반드시 다음 5대 규칙을 엄격히 준수**해야 합니다:

@@ -33,6 +33,10 @@ out/
 .env.production.local
 .env.local
 
+# MCP configuration with sensitive credentials
+.agents/mcp_config.json
+mcp_config.json
+
 # Cache
 .eslintcache
 .stylelintcache
