@@ -251,3 +251,4 @@ export function AuctionDetailScreen({
     </div>
   )
 }
+

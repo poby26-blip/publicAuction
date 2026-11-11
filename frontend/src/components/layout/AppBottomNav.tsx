@@ -48,3 +48,4 @@ export function AppBottomNav({ activeTab, onTabChange, watchlistCount = 0 }: App
     </nav>
   )
 }
+

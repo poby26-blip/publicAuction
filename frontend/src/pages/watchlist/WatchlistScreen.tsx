@@ -111,3 +111,4 @@ export function WatchlistScreen({
     </div>
   )
 }
+

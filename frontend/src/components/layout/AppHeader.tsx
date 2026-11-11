@@ -48,3 +48,4 @@ export function AppHeader({ onSearchClick, onAlarmClick, alarmCount = 2 }: AppHe
     </header>
   )
 }
+

@@ -254,3 +254,4 @@ export function AuctionListScreen({
     </div>
   )
 }
+
