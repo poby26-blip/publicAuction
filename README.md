@@ -1,7 +1,7 @@
-# Public Auction (공공경매/공매 하이브리드 앱)
+# 공매이지 (Public Auction 모바일 앱)
 
-공공경매(Public Auction) 모바일 서비스를 위한 웹 하이브리드 애플리케이션 프로젝트입니다.  
-화면 기획 및 디자인은 **Google Stitch**를 기반으로 하며, 프론트엔드는 **React + TypeScript + Vite**를 사용하여 구현합니다.
+공공데이터 포털 및 한국자산관리공사(KAMCO) 온비드 기반의 공매 정보 탐색 모바일 하이브리드 애플리케이션 **'공매이지'** 프로젝트입니다.  
+화면 기획 및 디자인은 **Google Stitch**를 기반으로 하며, 프론트엔드는 **React + TypeScript + Vite + Tailwind CSS**를 사용하여 구현합니다.
 
 ## 프로젝트 구조
 ```text

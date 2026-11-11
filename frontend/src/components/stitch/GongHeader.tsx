@@ -14,7 +14,7 @@ export function GongHeader({ onSearchClick, onAlarmClick, alarmCount = 2 }: Gong
         <div>
           <div className="flex items-center space-x-1.5">
             <h1 className="text-base font-headline font-extrabold text-[#002046] tracking-tight">
-              공차자
+              공매이지
             </h1>
             <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[#e5eeff] text-[#0051d5]">
               온비드

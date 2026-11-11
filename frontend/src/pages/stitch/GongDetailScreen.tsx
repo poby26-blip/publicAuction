@@ -23,7 +23,7 @@ export function GongDetailScreen({
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `[공차자] ${item.title}`,
+          title: `[공매이지] ${item.title}`,
           text: `온비드 공매 최저가 ${formatWon(item.minimumPrice)} (${item.discountRate}% 할인)`,
           url: window.location.href,
         })
@@ -200,7 +200,7 @@ export function GongDetailScreen({
               security
             </span>
             <div className="text-xs">
-              <h4 className="font-bold text-[#002046] mb-0.5">공차자 권리분석 체크</h4>
+              <h4 className="font-bold text-[#002046] mb-0.5">공매이지 권리분석 체크</h4>
               <p className="text-[#44474e] leading-relaxed">
                 해당 공매 자산은 캠코 온비드 검증을 거친 물건입니다. 입찰 참여 전 등기부등본 및 감정평가서를 반드시 최종 확인하세요.
               </p>

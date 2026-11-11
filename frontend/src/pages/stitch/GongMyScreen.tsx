@@ -8,12 +8,12 @@ export function GongMyScreen() {
         </div>
         <div>
           <div className="flex items-center gap-1.5">
-            <h3 className="text-base font-headline font-bold text-[#002046]">공차자 회원</h3>
+            <h3 className="text-base font-headline font-bold text-[#002046]">공매이지 회원</h3>
             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#eff4ff] text-[#0051d5]">
               일반 투자자
             </span>
           </div>
-          <p className="text-xs text-[#74777f] mt-0.5">ibkproject126@gmail.com</p>
+          <p className="text-xs text-[#44474e] mt-0.5">poby26@gmail.com</p>
         </div>
       </div>
 
@@ -62,7 +62,7 @@ export function GongMyScreen() {
 
       {/* System Info */}
       <div className="p-4 bg-[#eff4ff] rounded-2xl text-xs text-[#44474e] space-y-1">
-        <p className="font-bold text-[#002046]">공차자 공매 정보 앱 (v2.4)</p>
+        <p className="font-bold text-[#002046]">공매이지 공매 정보 앱 (v2.4)</p>
         <p className="text-[11px] text-[#74777f]">
           데이터 출처: 한국자산관리공사(KAMCO) 온비드 및 대법원 법원경매정보
         </p>

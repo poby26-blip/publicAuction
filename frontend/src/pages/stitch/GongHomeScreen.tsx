@@ -313,7 +313,7 @@ export function GongHomeScreen({
               <span className="w-2 h-2 rounded-full bg-[#0051d5]"></span>
               오늘 10:30 기준 정합성 검증 완료
             </span>
-            <span className="font-semibold text-[#002046]">공차자 엔진 v2.4</span>
+            <span className="font-semibold text-[#002046]">공매이지 엔진 v2.4</span>
           </div>
         </div>
       </section>
