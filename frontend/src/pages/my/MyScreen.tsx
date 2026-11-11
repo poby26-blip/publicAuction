@@ -1,4 +1,4 @@
-export function GongMyScreen() {
+export function MyScreen() {
   return (
     <div className="flex flex-col gap-5 pb-24 px-4 pt-2">
       {/* Profile Card */}
@@ -70,4 +70,3 @@ export function GongMyScreen() {
     </div>
   )
 }
-

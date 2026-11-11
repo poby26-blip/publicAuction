@@ -4,9 +4,9 @@ import {
   GONG_REGIONS,
   type GongItem,
   formatWon,
-} from '../../data/gongchajaData'
+} from '../../data/mockAuctionData'
 
-interface GongListScreenProps {
+interface AuctionListScreenProps {
   items: GongItem[]
   watchlist: string[]
   onToggleWatchlist: (id: string) => void
@@ -15,14 +15,14 @@ interface GongListScreenProps {
   initialRegion?: string
 }
 
-export function GongListScreen({
+export function AuctionListScreen({
   items,
   watchlist,
   onToggleWatchlist,
   onSelectItem,
   initialCategory,
   initialRegion = '전체',
-}: GongListScreenProps) {
+}: AuctionListScreenProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>(initialCategory || 'all')
   const [selectedRegion, setSelectedRegion] = useState<string>(initialRegion)
   const [selectedType, setSelectedType] = useState<string>('all')

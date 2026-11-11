@@ -1,19 +1,19 @@
 import { useState } from 'react'
-import { type GongItem, formatWon } from '../../data/gongchajaData'
+import { type GongItem, formatWon } from '../../data/mockAuctionData'
 
-interface GongDetailScreenProps {
+interface AuctionDetailScreenProps {
   item: GongItem
   isSaved: boolean
   onToggleWatchlist: (id: string) => void
   onBack: () => void
 }
 
-export function GongDetailScreen({
+export function AuctionDetailScreen({
   item,
   isSaved,
   onToggleWatchlist,
   onBack,
-}: GongDetailScreenProps) {
+}: AuctionDetailScreenProps) {
   const [selectedImg, setSelectedImg] = useState(0)
   const [hasAlert, setHasAlert] = useState(false)
 
@@ -133,7 +133,7 @@ export function GongDetailScreen({
           </p>
         </div>
 
-        {/* Pricing Box (Stitch Design) */}
+        {/* Pricing Box */}
         <div className="bg-white border border-[#e5eeff] rounded-2xl p-4 shadow-2xs space-y-3">
           <div className="flex items-baseline justify-between pb-3 border-b border-[#eff4ff]">
             <div>
@@ -251,4 +251,3 @@ export function GongDetailScreen({
     </div>
   )
 }
-

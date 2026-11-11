@@ -1,15 +1,15 @@
 import { useState } from 'react'
-import { GongBottomNav, type GongTab } from './components/stitch/GongBottomNav'
-import { GongHeader } from './components/stitch/GongHeader'
-import { MOCK_GONG_ITEMS, type GongItem } from './data/gongchajaData'
-import { GongDetailScreen } from './pages/stitch/GongDetailScreen'
-import { GongHomeScreen } from './pages/stitch/GongHomeScreen'
-import { GongListScreen } from './pages/stitch/GongListScreen'
-import { GongMyScreen } from './pages/stitch/GongMyScreen'
-import { GongWatchlistScreen } from './pages/stitch/GongWatchlistScreen'
+import { AppBottomNav, type AppTab } from './components/layout/AppBottomNav'
+import { AppHeader } from './components/layout/AppHeader'
+import { MOCK_GONG_ITEMS, type GongItem } from './data/mockAuctionData'
+import { AuctionDetailScreen } from './pages/auction/AuctionDetailScreen'
+import { AuctionListScreen } from './pages/auction/AuctionListScreen'
+import { HomeScreen } from './pages/home/HomeScreen'
+import { MyScreen } from './pages/my/MyScreen'
+import { WatchlistScreen } from './pages/watchlist/WatchlistScreen'
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<GongTab>('home')
+  const [activeTab, setActiveTab] = useState<AppTab>('home')
   const [watchlist, setWatchlist] = useState<string[]>(['gong-01', 'gong-04'])
   const [selectedItem, setSelectedItem] = useState<GongItem | null>(null)
   const [listCategory, setListCategory] = useState<string | undefined>()
@@ -30,12 +30,12 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#f1f4f9] flex justify-center selection:bg-blue-200">
-      {/* Mobile Device Frame Container (max-w-md = 448px, iPhone Pro Max frame) */}
+      {/* Mobile Device Frame Container (max-w-md = 448px) */}
       <div className="w-full max-w-md bg-[#f8f9ff] min-h-screen flex flex-col shadow-2xl relative border-x border-[#e2e8f0]/80 overflow-x-hidden">
         {/* Detail Screen Overlay if item selected */}
         {selectedItem ? (
           <main className="flex-1 p-4">
-            <GongDetailScreen
+            <AuctionDetailScreen
               item={selectedItem}
               isSaved={watchlist.includes(selectedItem.id)}
               onToggleWatchlist={toggleWatchlist}
@@ -45,7 +45,7 @@ export default function App() {
         ) : (
           <>
             {/* Header */}
-            <GongHeader
+            <AppHeader
               onSearchClick={() => navigateToListWithFilters()}
               onAlarmClick={() =>
                 alert('최근 24시간 동안 마감 임박 물건 3건이 신규 등록되었습니다.')
@@ -56,7 +56,7 @@ export default function App() {
             {/* Main Tab Screen Body */}
             <main className="flex-1">
               {activeTab === 'home' && (
-                <GongHomeScreen
+                <HomeScreen
                   items={MOCK_GONG_ITEMS}
                   watchlist={watchlist}
                   onToggleWatchlist={toggleWatchlist}
@@ -66,7 +66,7 @@ export default function App() {
               )}
 
               {activeTab === 'list' && (
-                <GongListScreen
+                <AuctionListScreen
                   items={MOCK_GONG_ITEMS}
                   watchlist={watchlist}
                   onToggleWatchlist={toggleWatchlist}
@@ -77,7 +77,7 @@ export default function App() {
               )}
 
               {activeTab === 'watchlist' && (
-                <GongWatchlistScreen
+                <WatchlistScreen
                   items={MOCK_GONG_ITEMS}
                   watchlist={watchlist}
                   onToggleWatchlist={toggleWatchlist}
@@ -86,11 +86,11 @@ export default function App() {
                 />
               )}
 
-              {activeTab === 'my' && <GongMyScreen />}
+              {activeTab === 'my' && <MyScreen />}
             </main>
 
-            {/* Sticky Bottom Navigation Bar (Stitch 64px Spec) */}
-            <GongBottomNav
+            {/* Sticky Bottom Navigation Bar */}
+            <AppBottomNav
               activeTab={activeTab}
               onTabChange={(tab) => {
                 setSelectedItem(null)

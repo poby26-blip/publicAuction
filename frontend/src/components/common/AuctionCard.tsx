@@ -1,5 +1,5 @@
 import { Calendar, Eye, Heart, MapPin } from 'lucide-react'
-import { formatPrice } from '../../data/mockAuctions'
+import { formatPrice } from '../../data/mockAuctionData'
 import type { AuctionItem } from '../../types/auction'
 
 interface AuctionCardProps {

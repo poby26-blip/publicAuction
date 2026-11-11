@@ -1,10 +1,10 @@
-interface GongHeaderProps {
+interface AppHeaderProps {
   onSearchClick?: () => void
   onAlarmClick?: () => void
   alarmCount?: number
 }
 
-export function GongHeader({ onSearchClick, onAlarmClick, alarmCount = 2 }: GongHeaderProps) {
+export function AppHeader({ onSearchClick, onAlarmClick, alarmCount = 2 }: AppHeaderProps) {
   return (
     <header className="sticky top-0 z-40 bg-[#f8f9ff]/90 backdrop-blur-md px-4 py-3 flex items-center justify-between border-b border-[#e5eeff]">
       <div className="flex items-center space-x-2">
@@ -48,4 +48,3 @@ export function GongHeader({ onSearchClick, onAlarmClick, alarmCount = 2 }: Gong
     </header>
   )
 }
-

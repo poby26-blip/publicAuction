@@ -34,7 +34,7 @@ export const GONG_CATEGORIES = [
 ]
 
 export const MOCK_GONG_ITEMS: GongItem[] = [
-  // Urgent D-1 items (Stitch Screen 1)
+  // 마감 임박 특가 물건
   {
     id: 'gong-01',
     title: '서울 송파구 잠실동 레이크팰리스 84㎡',
@@ -103,7 +103,7 @@ export const MOCK_GONG_ITEMS: GongItem[] = [
     ],
   },
 
-  // Half-price & Failed Recommended items (Stitch Section 5)
+  // 유찰 추천 반값 물건
   {
     id: 'gong-04',
     title: '서울 강남구 역삼동 근린상가 2층 65㎡',
@@ -178,4 +178,6 @@ export function formatWon(price: number): string {
   }
   return `${Math.floor(price / 10000).toLocaleString()}만원`
 }
+
+export const formatPrice = formatWon
 

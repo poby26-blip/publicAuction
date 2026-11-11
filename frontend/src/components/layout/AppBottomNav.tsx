@@ -1,17 +1,17 @@
-export type GongTab = 'home' | 'list' | 'watchlist' | 'my'
+export type AppTab = 'home' | 'list' | 'watchlist' | 'my'
 
-interface GongBottomNavProps {
-  activeTab: GongTab
-  onTabChange: (tab: GongTab) => void
+interface AppBottomNavProps {
+  activeTab: AppTab
+  onTabChange: (tab: AppTab) => void
   watchlistCount?: number
 }
 
-export function GongBottomNav({ activeTab, onTabChange, watchlistCount = 0 }: GongBottomNavProps) {
+export function AppBottomNav({ activeTab, onTabChange, watchlistCount = 0 }: AppBottomNavProps) {
   const tabs = [
-    { id: 'home' as GongTab, label: '홈', icon: 'home' },
-    { id: 'list' as GongTab, label: '공매목록', icon: 'view_list' },
-    { id: 'watchlist' as GongTab, label: '관심공매', icon: 'favorite', badge: watchlistCount },
-    { id: 'my' as GongTab, label: '마이페이지', icon: 'person' },
+    { id: 'home' as AppTab, label: '홈', icon: 'home' },
+    { id: 'list' as AppTab, label: '공매목록', icon: 'view_list' },
+    { id: 'watchlist' as AppTab, label: '관심공매', icon: 'favorite', badge: watchlistCount },
+    { id: 'my' as AppTab, label: '마이페이지', icon: 'person' },
   ]
 
   return (
@@ -48,4 +48,3 @@ export function GongBottomNav({ activeTab, onTabChange, watchlistCount = 0 }: Go
     </nav>
   )
 }
-

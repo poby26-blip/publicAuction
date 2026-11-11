@@ -4,9 +4,9 @@ import {
   GONG_REGIONS,
   type GongItem,
   formatWon,
-} from '../../data/gongchajaData'
+} from '../../data/mockAuctionData'
 
-interface GongHomeScreenProps {
+interface HomeScreenProps {
   items: GongItem[]
   watchlist: string[]
   onToggleWatchlist: (id: string) => void
@@ -14,13 +14,13 @@ interface GongHomeScreenProps {
   onNavigateToList: (category?: string, region?: string) => void
 }
 
-export function GongHomeScreen({
+export function HomeScreen({
   items,
   watchlist,
   onToggleWatchlist,
   onSelectItem,
   onNavigateToList,
-}: GongHomeScreenProps) {
+}: HomeScreenProps) {
   const [selectedRegion, setSelectedRegion] = useState('전체')
   const [searchKeyword, setSearchKeyword] = useState('')
 
@@ -320,4 +320,3 @@ export function GongHomeScreen({
     </div>
   )
 }
-

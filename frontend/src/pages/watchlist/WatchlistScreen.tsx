@@ -1,6 +1,6 @@
-import { type GongItem, formatWon } from '../../data/gongchajaData'
+import { type GongItem, formatWon } from '../../data/mockAuctionData'
 
-interface GongWatchlistScreenProps {
+interface WatchlistScreenProps {
   items: GongItem[]
   watchlist: string[]
   onToggleWatchlist: (id: string) => void
@@ -8,13 +8,13 @@ interface GongWatchlistScreenProps {
   onExplore: () => void
 }
 
-export function GongWatchlistScreen({
+export function WatchlistScreen({
   items,
   watchlist,
   onToggleWatchlist,
   onSelectItem,
   onExplore,
-}: GongWatchlistScreenProps) {
+}: WatchlistScreenProps) {
   const savedItems = items.filter((item) => watchlist.includes(item.id))
 
   return (
@@ -111,4 +111,3 @@ export function GongWatchlistScreen({
     </div>
   )
 }
-
