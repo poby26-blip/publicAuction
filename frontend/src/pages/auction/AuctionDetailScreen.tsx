@@ -1,10 +1,31 @@
+/**
+ * @file AuctionDetailScreen.tsx
+ * @description '공매이지' 앱의 공매 물건 상세 정보 화면 컴포넌트입니다.
+ * 
+ * [주요 기능]
+ * 1. 실데이터 이미지 슬라이더 및 카테고리별 Fallback 이미지 방어
+ * 2. 최저입찰가, 감정평가액, 할인율 및 10% 입찰보증금 자동 계산
+ * 3. 온비드 입찰 일정, 회차(유찰 횟수), 물건 면적/제원, 관리번호 표출
+ * 4. 모바일 공유하기(Web Share API) 및 캠코 온비드 입찰 참여 안내
+ */
+
 import { useState } from 'react'
 import { type GongItem, formatWon } from '../../data/mockAuctionData'
 
+/**
+ * AuctionDetailScreen 컴포넌트의 Props 인터페이스
+ */
 interface AuctionDetailScreenProps {
+  /** 표출할 온비드 공매 물건 실데이터 */
   item: GongItem
+
+  /** 관심 등록(찜) 여부 */
   isSaved: boolean
+
+  /** 관심 등록 토글 콜백 */
   onToggleWatchlist: (id: string) => void
+
+  /** 상세 화면 닫기 및 목록 복귀 콜백 */
   onBack: () => void
 }
 
@@ -14,11 +35,23 @@ export function AuctionDetailScreen({
   onToggleWatchlist,
   onBack,
 }: AuctionDetailScreenProps) {
-  const [selectedImg, setSelectedImg] = useState(0)
-  const [hasAlert, setHasAlert] = useState(false)
+  /** 현재 선택된 슬라이더 이미지 인덱스 */
+  const [selectedImg, setSelectedImg] = useState<number>(0)
 
+  /** 기일 알림 토글 상태 */
+  const [hasAlert, setHasAlert] = useState<boolean>(false)
+
+  /** 법정 입찰보증금 (최저입찰가의 10%) 자동 계산 */
   const deposit = Math.floor(item.minimumPrice * 0.1)
 
+  /** 카테고리별 안전 Fallback 이미지 */
+  const fallbackImg = item.category === 'car'
+    ? 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=800&auto=format&fit=crop&q=80'
+    : 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&auto=format&fit=crop&q=80'
+
+  /**
+   * 모바일 Web Share API를 통한 공매 물건 공유 핸들러
+   */
   const handleShare = async () => {
     if (navigator.share) {
       try {
@@ -27,7 +60,7 @@ export function AuctionDetailScreen({
           text: `온비드 공매 최저가 ${formatWon(item.minimumPrice)} (${item.discountRate}% 할인)`,
           url: window.location.href,
         })
-      } catch {}
+      } catch { }
     } else {
       alert('물건 정보가 클립보드에 복사되었습니다.')
     }
@@ -35,12 +68,12 @@ export function AuctionDetailScreen({
 
   return (
     <div className="pb-28 -mx-4 -mt-3">
-      {/* Top Floating App Bar */}
+      {/* 1. 상단 고정 헤더 앱바 */}
       <div className="sticky top-0 z-40 bg-[#f8f9ff]/90 backdrop-blur-md px-4 py-3 flex items-center justify-between border-b border-[#e5eeff]">
         <button
           type="button"
           onClick={onBack}
-          className="w-9 h-9 rounded-full flex items-center justify-center text-[#002046] hover:bg-[#e5eeff] transition-colors"
+          className="w-9 h-9 rounded-full flex items-center justify-center text-[#002046] hover:bg-[#e5eeff] transition-colors cursor-pointer"
           aria-label="뒤로가기"
         >
           <span className="material-symbols-outlined text-[24px]">arrow_back</span>
@@ -52,7 +85,7 @@ export function AuctionDetailScreen({
           <button
             type="button"
             onClick={handleShare}
-            className="w-9 h-9 rounded-full flex items-center justify-center text-[#44474e] hover:bg-[#e5eeff]"
+            className="w-9 h-9 rounded-full flex items-center justify-center text-[#44474e] hover:bg-[#e5eeff] cursor-pointer"
             aria-label="공유"
           >
             <span className="material-symbols-outlined text-[22px]">share</span>
@@ -60,13 +93,12 @@ export function AuctionDetailScreen({
           <button
             type="button"
             onClick={() => onToggleWatchlist(item.id)}
-            className="w-9 h-9 rounded-full flex items-center justify-center text-[#44474e] hover:bg-[#e5eeff]"
+            className="w-9 h-9 rounded-full flex items-center justify-center text-[#44474e] hover:bg-[#e5eeff] cursor-pointer"
             aria-label="관심등록"
           >
             <span
-              className={`material-symbols-outlined text-[22px] ${
-                isSaved ? 'text-[#ba1a1a] fill-1' : ''
-              }`}
+              className={`material-symbols-outlined text-[22px] ${isSaved ? 'text-[#ba1a1a] fill-1' : ''
+                }`}
             >
               favorite
             </span>
@@ -74,16 +106,20 @@ export function AuctionDetailScreen({
         </div>
       </div>
 
-      {/* Main Image Slider */}
+      {/* 2. 대표 이미지 슬라이더 영역 */}
       <div className="relative aspect-4/3 bg-slate-900 overflow-hidden">
         <img
-          src={item.images[selectedImg] || item.imageUrl}
+          src={item.images[selectedImg] || item.imageUrl || fallbackImg}
           alt={item.title}
           className="w-full h-full object-cover"
+          onError={(e) => {
+            e.currentTarget.src = fallbackImg
+          }}
         />
+        {/* D-Day 및 공매 유형 뱃지 */}
         <div className="absolute top-3 left-3 flex items-center gap-1.5">
-          <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-[#ba1a1a] text-white">
-            D-{item.dDay}
+          <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-[#ba1a1a] text-white shadow-xs">
+            {item.dDay <= 0 ? '오늘 마감' : item.dDay > 365 ? '상시 매각' : `D-${item.dDay}`}
           </span>
           <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-black/60 text-white backdrop-blur-xs">
             {item.auctionType}
@@ -96,26 +132,32 @@ export function AuctionDetailScreen({
         )}
       </div>
 
-      {/* Thumbnails */}
+      {/* 썸네일 리스트 */}
       {item.images.length > 1 && (
         <div className="flex gap-2 p-3 bg-white border-b border-[#e5eeff] overflow-x-auto no-scrollbar">
           {item.images.map((img, idx) => (
             <button
               key={idx}
               onClick={() => setSelectedImg(idx)}
-              className={`w-14 h-14 rounded-xl overflow-hidden border-2 shrink-0 transition-all ${
-                selectedImg === idx ? 'border-[#0051d5] scale-95' : 'border-transparent opacity-60'
-              }`}
+              className={`w-14 h-14 rounded-xl overflow-hidden border-2 shrink-0 transition-all cursor-pointer ${selectedImg === idx ? 'border-[#0051d5] scale-95' : 'border-transparent opacity-60'
+                }`}
             >
-              <img src={img} alt="" className="w-full h-full object-cover" />
+              <img
+                src={img}
+                alt=""
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.currentTarget.src = fallbackImg
+                }}
+              />
             </button>
           ))}
         </div>
       )}
 
-      {/* Content Details */}
+      {/* 3. 본문 상세 정보 영역 */}
       <div className="p-4 flex flex-col gap-5">
-        {/* Title and Address */}
+        {/* 제목 및 주소 */}
         <div>
           <div className="flex items-center gap-1.5 text-xs font-bold text-[#0051d5] mb-1">
             <span>한국자산관리공사 온비드</span>
@@ -133,15 +175,17 @@ export function AuctionDetailScreen({
           </p>
         </div>
 
-        {/* Pricing Box */}
+        {/* 가격 정보 카드 */}
         <div className="bg-white border border-[#e5eeff] rounded-2xl p-4 shadow-2xs space-y-3">
           <div className="flex items-baseline justify-between pb-3 border-b border-[#eff4ff]">
             <div>
               <span className="text-xs text-[#74777f] font-medium">최저입찰가</span>
               <div className="flex items-baseline gap-2 mt-0.5">
-                <span className="text-2xl font-black text-[#059669]">
-                  {item.discountRate}%
-                </span>
+                {item.discountRate > 0 && (
+                  <span className="text-2xl font-black text-[#059669]">
+                    {item.discountRate}%
+                  </span>
+                )}
                 <span className="text-2xl font-black text-[#002046]">
                   {formatWon(item.minimumPrice)}
                 </span>
@@ -171,7 +215,7 @@ export function AuctionDetailScreen({
           </div>
         </div>
 
-        {/* Auction Schedule */}
+        {/* 입찰 일정 및 상세 제원 카드 */}
         <div className="bg-white border border-[#e5eeff] rounded-2xl p-4 shadow-2xs space-y-2.5">
           <h3 className="text-sm font-headline font-bold text-[#002046] flex items-center gap-1.5">
             <span className="material-symbols-outlined text-[18px] text-[#0051d5]">event</span>
@@ -179,8 +223,12 @@ export function AuctionDetailScreen({
           </h3>
           <div className="space-y-2 text-xs text-[#44474e]">
             <div className="flex justify-between py-1 border-b border-[#f8f9ff]">
+              <span className="text-[#74777f]">온비드 식별번호</span>
+              <strong className="text-[#0b1c30] font-mono">{item.id}</strong>
+            </div>
+            <div className="flex justify-between py-1 border-b border-[#f8f9ff]">
               <span className="text-[#74777f]">입찰기간</span>
-              <strong className="text-[#0b1c30]">{item.auctionDate}</strong>
+              <strong className="text-[#0b1c30]">{item.auctionDate || '일정 확인중'}</strong>
             </div>
             <div className="flex justify-between py-1 border-b border-[#f8f9ff]">
               <span className="text-[#74777f]">물건면적/제원</span>
@@ -193,7 +241,7 @@ export function AuctionDetailScreen({
           </div>
         </div>
 
-        {/* Rights Check Banner */}
+        {/* 권리분석 체크 배너 */}
         <div className="bg-[#eff4ff] border border-[#dce9ff] rounded-2xl p-4">
           <div className="flex items-start gap-2.5">
             <span className="material-symbols-outlined text-[22px] text-[#0051d5] shrink-0 mt-0.5">
@@ -209,7 +257,7 @@ export function AuctionDetailScreen({
         </div>
       </div>
 
-      {/* Fixed Bottom Action Bar */}
+      {/* 4. 하단 고정 액션 바 */}
       <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white/95 backdrop-blur-xl border-t border-[#e2e8f0] p-3 flex items-center gap-3 z-40 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-lg">
         <button
           type="button"
@@ -217,16 +265,14 @@ export function AuctionDetailScreen({
             setHasAlert(!hasAlert)
             alert(hasAlert ? '알림이 해제되었습니다.' : '입찰 마감일 알림이 설정되었습니다!')
           }}
-          className={`flex flex-col items-center justify-center px-3.5 py-2 rounded-xl border text-xs font-semibold transition-all ${
-            hasAlert
+          className={`flex flex-col items-center justify-center px-3.5 py-2 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${hasAlert
               ? 'border-[#0051d5] bg-[#eff4ff] text-[#0051d5]'
               : 'border-[#c4c6cf]/60 text-[#44474e] hover:bg-slate-50'
-          }`}
+            }`}
         >
           <span
-            className={`material-symbols-outlined text-[20px] ${
-              hasAlert ? 'text-[#0051d5] fill-1' : ''
-            }`}
+            className={`material-symbols-outlined text-[20px] ${hasAlert ? 'text-[#0051d5] fill-1' : ''
+              }`}
           >
             notifications
           </span>
@@ -242,7 +288,7 @@ export function AuctionDetailScreen({
               )}\n캠코 온비드 전자입찰 사이트로 이동합니다.`
             )
           }
-          className="flex-1 bg-[#0051d5] hover:bg-[#003ea8] active:scale-[0.99] text-white font-bold py-3.5 px-4 rounded-xl shadow-md text-sm transition-all flex items-center justify-center gap-1.5"
+          className="flex-1 bg-[#0051d5] hover:bg-[#003ea8] active:scale-[0.99] text-white font-bold py-3.5 px-4 rounded-xl shadow-md text-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
         >
           <span>온비드 입찰 참여하기</span>
           <span className="material-symbols-outlined text-[18px]">open_in_new</span>

@@ -17,6 +17,7 @@ import {
   GONG_REGIONS,
   type GongItem,
   formatWon,
+  isRegionMatch,
 } from '../../data/mockAuctionData'
 import { CardSkeleton, ListSkeleton } from '../../components/common/Skeleton'
 
@@ -80,14 +81,14 @@ export function HomeScreen({
   }
 
   /**
-   * [엄격한 지역 필터링 원칙]
+   * [엄격한 지역 필터링 원칙 및 표준 행정구역 매칭]
    * - '전체'일 때는 전달받은 전체 매물 목록을 유지합니다.
-   * - 특정 지역('서울', '경기' 등)이 선택된 경우, 주소에 해당 지역명이 포함된 물건만 엄격히 필터링합니다.
+   * - 특정 지역('서울', '경기', '전남광주' 등)이 선택된 경우, 정식 행정구역명과 통합특별시를 모두 포괄하는 isRegionMatch로 엄격히 필터링합니다.
    * - 데이터가 0건이어도 타 지역 데이터를 섞어서 노출하지 않고 정직한 빈 상태(Empty State)를 표출합니다.
    */
   const activeItems = selectedRegion === '전체'
     ? items
-    : items.filter((item) => item.address.includes(selectedRegion))
+    : items.filter((item) => isRegionMatch(item.address, selectedRegion))
 
   /**
    * [섹션 4: 마감 임박 특가 물건 필터링 및 정렬]

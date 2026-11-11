@@ -122,14 +122,14 @@ export default function App() {
   /**
    * 홈 화면에서 카테고리 클릭, 검색창 엔터, '더보기' 클릭 시
    * 필터 파라미터를 설정하고 공매 목록 화면(`AuctionListScreen`)으로 화면을 전환합니다.
-   * @param cat - 선택된 카테고리 코드 (선택적)
-   * @param reg - 선택된 시/도 지역명 (선택적)
-   * @param kw - 입력된 검색 키워드 (선택적)
+   * @param cat - 선택된 카테고리 코드 (생략 시 기본 'all')
+   * @param reg - 선택된 시/도 지역명 (생략 시 기본 '전체')
+   * @param kw - 입력된 검색 키워드 (생략 시 기본 '')
    */
   const navigateToListWithFilters = (cat?: string, reg?: string, kw?: string) => {
-    setListCategory(cat)
-    setListRegion(reg)
-    setListKeyword(kw)
+    setListCategory(cat || 'all')
+    setListRegion(reg || '전체')
+    setListKeyword(kw || '')
     setSelectedItem(null) // 상세 화면이 열려있었다면 닫기
     setActiveTab('list') // 목록 탭 활성화
   }
@@ -142,80 +142,84 @@ export default function App() {
     <div className="min-h-screen bg-[#f1f4f9] flex justify-center selection:bg-blue-200">
       {/* 모바일 뷰포트 컨테이너 (최대 폭 max-w-md = 448px 모바일 프레임) */}
       <div className="w-full max-w-md bg-[#f8f9ff] min-h-screen flex flex-col shadow-2xl relative border-x border-[#e2e8f0]/80 overflow-x-hidden">
-        {/* 특정 물건이 선택된 경우: 상세 화면(`AuctionDetailScreen`)을 최상위 레이어로 오버레이 */}
-        {selectedItem ? (
-          <main className="flex-1 p-4">
-            <AuctionDetailScreen
-              item={selectedItem}
-              isSaved={watchlist.includes(selectedItem.id)}
+        {/* 앱 상단 고정 헤더 */}
+        <AppHeader
+          onSearchClick={() => navigateToListWithFilters()}
+          onAlarmClick={() =>
+            alert('최근 24시간 동안 마감 임박 물건 3건이 신규 등록되었습니다.')
+          }
+          alarmCount={watchlist.length}
+        />
+
+        {/* 메인 탭 화면 본체 (탭 전환 시 마운트/언마운트) */}
+        <main className="flex-1">
+          {/* 1. 홈 탭 화면 */}
+          {activeTab === 'home' && (
+            <HomeScreen
+              items={items}
+              isLoading={isLoading}
+              watchlist={watchlist}
               onToggleWatchlist={toggleWatchlist}
-              onBack={() => setSelectedItem(null)}
+              onSelectItem={(item) => setSelectedItem(item)}
+              onNavigateToList={navigateToListWithFilters}
+              onRegionChange={handleRegionChange}
             />
-          </main>
-        ) : (
-          <>
-            {/* 앱 상단 고정 헤더 */}
-            <AppHeader
-              onSearchClick={() => navigateToListWithFilters()}
-              onAlarmClick={() =>
-                alert('최근 24시간 동안 마감 임박 물건 3건이 신규 등록되었습니다.')
-              }
-              alarmCount={watchlist.length}
+          )}
+
+          {/* 2. 공매 전체 목록 탭 화면 */}
+          {activeTab === 'list' && (
+            <AuctionListScreen
+              items={items}
+              watchlist={watchlist}
+              onToggleWatchlist={toggleWatchlist}
+              onSelectItem={(item) => setSelectedItem(item)}
+              initialCategory={listCategory}
+              initialRegion={listRegion}
+              initialKeyword={listKeyword}
             />
+          )}
 
-            {/* 메인 탭 화면 본체 */}
-            <main className="flex-1">
-              {/* 1. 홈 탭 화면 */}
-              {activeTab === 'home' && (
-                <HomeScreen
-                  items={items}
-                  isLoading={isLoading}
-                  watchlist={watchlist}
-                  onToggleWatchlist={toggleWatchlist}
-                  onSelectItem={(item) => setSelectedItem(item)}
-                  onNavigateToList={navigateToListWithFilters}
-                  onRegionChange={handleRegionChange}
-                />
-              )}
-
-              {/* 2. 공매 전체 목록 탭 화면 */}
-              {activeTab === 'list' && (
-                <AuctionListScreen
-                  items={items}
-                  watchlist={watchlist}
-                  onToggleWatchlist={toggleWatchlist}
-                  onSelectItem={(item) => setSelectedItem(item)}
-                  initialCategory={listCategory}
-                  initialRegion={listRegion}
-                  initialKeyword={listKeyword}
-                />
-              )}
-
-              {/* 3. 관심 물건(찜) 탭 화면 */}
-              {activeTab === 'watchlist' && (
-                <WatchlistScreen
-                  items={items}
-                  watchlist={watchlist}
-                  onToggleWatchlist={toggleWatchlist}
-                  onSelectItem={(item) => setSelectedItem(item)}
-                  onExplore={() => setActiveTab('list')}
-                />
-              )}
-
-              {/* 4. 마이페이지 탭 화면 */}
-              {activeTab === 'my' && <MyScreen />}
-            </main>
-
-            {/* 하단 고정 탭 네비게이션 바 */}
-            <AppBottomNav
-              activeTab={activeTab}
-              onTabChange={(tab) => {
-                setSelectedItem(null)
-                setActiveTab(tab)
-              }}
-              watchlistCount={watchlist.length}
+          {/* 3. 관심 물건(찜) 탭 화면 */}
+          {activeTab === 'watchlist' && (
+            <WatchlistScreen
+              items={items}
+              watchlist={watchlist}
+              onToggleWatchlist={toggleWatchlist}
+              onSelectItem={(item) => setSelectedItem(item)}
+              onExplore={() => setActiveTab('list')}
             />
-          </>
+          )}
+
+          {/* 4. 마이페이지 탭 화면 */}
+          {activeTab === 'my' && <MyScreen />}
+        </main>
+
+        {/* 하단 고정 탭 네비게이션 바 */}
+        <AppBottomNav
+          activeTab={activeTab}
+          onTabChange={(tab) => {
+            setSelectedItem(null)
+            setActiveTab(tab)
+          }}
+          watchlistCount={watchlist.length}
+        />
+
+        {/* 
+          [물건 상세 화면 오버레이 레이어]
+          특정 물건이 선택된 경우 전체 화면을 덮는 오버레이로 표출하여,
+          뒤로가기 시 하위 목록 화면의 스크롤 위치와 누적 페이징 데이터를 손실 없이 온전히 보존합니다.
+        */}
+        {selectedItem && (
+          <div className="absolute inset-0 z-50 bg-[#f8f9ff] overflow-y-auto">
+            <div className="p-4">
+              <AuctionDetailScreen
+                item={selectedItem}
+                isSaved={watchlist.includes(selectedItem.id)}
+                onToggleWatchlist={toggleWatchlist}
+                onBack={() => setSelectedItem(null)}
+              />
+            </div>
+          </div>
         )}
       </div>
     </div>

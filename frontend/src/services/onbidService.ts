@@ -9,7 +9,7 @@
  * 4. 재산유형코드: 신탁/담보(0007) 및 압류재산(0002) 31,000여 건을 우선 조회하여 실제 아파트, 주택, 상가 매물을 확보합니다.
  */
 
-import { MOCK_GONG_ITEMS, type GongItem } from '../data/mockAuctionData'
+import { MOCK_GONG_ITEMS, type GongItem, getRegionApiQueries } from '../data/mockAuctionData'
 
 /**
  * 차세대 온비드(B010003) API 원시 JSON 응답 아이템 인터페이스
@@ -198,6 +198,19 @@ export function adaptOnbidToGongItem(raw: RawOnbidItem, index: number): GongItem
     ? raw.thnlImgUrlAdr
     : fallbackImages[index % fallbackImages.length]
 
+  // 공매 재산구분명 표준화 (신탁공매, 압류재산, 국유재산, 일반공매)
+  let auctionType = '온비드공매'
+  const rawDivNm = raw.prptDivNm || ''
+  if (rawDivNm.includes('신탁') || rawDivNm.includes('담보')) {
+    auctionType = '신탁공매'
+  } else if (rawDivNm.includes('압류') || rawDivNm.includes('체납')) {
+    auctionType = '압류재산'
+  } else if (rawDivNm.includes('국유')) {
+    auctionType = '국유재산'
+  } else if (rawDivNm) {
+    auctionType = rawDivNm
+  }
+
   return {
     id: String(raw.onbidCltrno || raw.cltrMngNo || `onbid-${index}`),
     title: raw.onbidCltrNm?.trim() || '온비드 공매 물건',
@@ -210,7 +223,7 @@ export function adaptOnbidToGongItem(raw: RawOnbidItem, index: number): GongItem
     dDay,
     deadlineTime: raw.cltrBidEndDt?.substring(8, 12) ? `${raw.cltrBidEndDt.substring(8, 10)}:${raw.cltrBidEndDt.substring(10, 12)} 마감` : undefined,
     failCount: raw.usbdNft || 0,
-    auctionType: raw.prptDivNm || '온비드공매',
+    auctionType,
     auctionDate: formattedDate,
     area,
     viewCount: 100 + (index * 37) % 1500,
@@ -250,50 +263,84 @@ export async function fetchOnbidRealEstateList(options: OnbidQueryOptions = {}):
     prptDivCd: '0007,0002', // 신탁/담보 및 압류재산 우선 (31,000+건 실거래 물건)
   })
 
-  // 시/도 지역 필터링 (예: '서울', '서울특별시', '경기' 등)
-  if (region && region !== '전체') {
-    params.append('lctnSdnm', region)
+  // 시/도 지역 필터링 (예: '서울', '충북', '전남광주' 등)
+  const regionQueries = getRegionApiQueries(region)
+
+  // 단일 지역 또는 전국 조회 시
+  if (regionQueries.length <= 1) {
+    if (regionQueries.length === 1) {
+      params.append('lctnSdnm', regionQueries[0])
+    }
+
+    const requestUrl = `${BASE_URL}/B010003/OnbidRlstListSrvc2/getRlstCltrList2?${params.toString()}`
+
+    try {
+      const res = await fetch(requestUrl, {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json',
+        },
+      })
+
+      // HTTP 상태 코드 에러 시 Fallback 반환
+      if (!res.ok) {
+        console.warn(`[Onbid API] HTTP 오류 (${res.status}): fallback 샘플 데이터를 사용합니다.`)
+        return MOCK_GONG_ITEMS
+      }
+
+      const data = await res.json()
+
+      // 온비드 응답 헤더 결과코드 검증 ('00'이 정상 코드)
+      const header = data.header || data.response?.header
+      if (header?.resultCode !== '00') {
+        console.warn(`[Onbid API] 응답 오류 (${header?.resultCode}: ${header?.resultMsg})`)
+        return MOCK_GONG_ITEMS
+      }
+
+      // JSON 응답 본체 아이템 추출
+      const body = data.body || data.response?.body
+      const rawItems = body?.items?.item
+
+      // 조회 결과가 0건인 경우 빈 배열 반환
+      if (!rawItems || (Array.isArray(rawItems) && rawItems.length === 0)) {
+        return []
+      }
+
+      // 단일 객체 또는 배열 응답 정규화 후 어댑터 변환
+      const itemList: RawOnbidItem[] = Array.isArray(rawItems) ? rawItems : [rawItems]
+      return itemList.map((item, idx) => adaptOnbidToGongItem(item, idx))
+    } catch (error) {
+      console.error('[Onbid API] 통신 예외 발생:', error)
+      return MOCK_GONG_ITEMS
+    }
   }
 
-  const requestUrl = `${BASE_URL}/B010003/OnbidRlstListSrvc2/getRlstCltrList2?${params.toString()}`
-
+  // 복수 쿼리 대상(예: '전남광주' -> '전남광주통합특별시', '광주광역시', '전라남도') 병렬 호출 및 병합
   try {
-    const res = await fetch(requestUrl, {
-      method: 'GET',
-      headers: {
-        Accept: 'application/json',
-      },
+    const promises = regionQueries.slice(0, 3).map(async (queryName) => {
+      const p = new URLSearchParams(params)
+      p.set('lctnSdnm', queryName)
+      const res = await fetch(`${BASE_URL}/B010003/OnbidRlstListSrvc2/getRlstCltrList2?${p.toString()}`)
+      if (!res.ok) return []
+      const data = await res.json()
+      const raw = data.body?.items?.item || data.response?.body?.items?.item
+      if (!raw) return []
+      const list: RawOnbidItem[] = Array.isArray(raw) ? raw : [raw]
+      return list.map((item, idx) => adaptOnbidToGongItem(item, idx))
     })
 
-    // HTTP 상태 코드 에러 시 Fallback 반환
-    if (!res.ok) {
-      console.warn(`[Onbid API] HTTP 오류 (${res.status}): fallback 샘플 데이터를 사용합니다.`)
-      return MOCK_GONG_ITEMS
-    }
+    const results = await Promise.all(promises)
+    const combined = results.flat()
 
-    const data = await res.json()
-
-    // 온비드 응답 헤더 결과코드 검증 ('00'이 정상 코드)
-    const header = data.header || data.response?.header
-    if (header?.resultCode !== '00') {
-      console.warn(`[Onbid API] 응답 오류 (${header?.resultCode}: ${header?.resultMsg})`)
-      return MOCK_GONG_ITEMS
-    }
-
-    // JSON 응답 본체 아이템 추출
-    const body = data.body || data.response?.body
-    const rawItems = body?.items?.item
-
-    // 조회 결과가 0건인 경우 빈 배열 반환
-    if (!rawItems || (Array.isArray(rawItems) && rawItems.length === 0)) {
-      return []
-    }
-
-    // 단일 객체 또는 배열 응답 정규화 후 어댑터 변환
-    const itemList: RawOnbidItem[] = Array.isArray(rawItems) ? rawItems : [rawItems]
-    return itemList.map((item, idx) => adaptOnbidToGongItem(item, idx))
+    // 물건 고유 ID 기준 중복 제거
+    const seen = new Set<string>()
+    return combined.filter((item) => {
+      if (seen.has(item.id)) return false
+      seen.add(item.id)
+      return true
+    })
   } catch (error) {
-    console.error('[Onbid API] 통신 예외 발생:', error)
+    console.error('[Onbid API] 복수 지역 통신 예외 발생:', error)
     return MOCK_GONG_ITEMS
   }
 }
@@ -303,12 +350,14 @@ export async function fetchOnbidRealEstateList(options: OnbidQueryOptions = {}):
  * 
  * - API 식별자: B010003 / OnbidCarListSrvc2 / getCarCltrList2
  * - 승용차, 화물/특수차량 공매 목록을 조회합니다.
+ * - 신탁/담보(0007) 및 압류재산(0002) 차량 목록을 우선 조회합니다.
  * 
  * @param pageNo - 페이지 번호 (기본값: 1)
- * @param numOfRows - 가져올 건수 (기본값: 10)
+ * @param numOfRows - 가져올 건수 (기본값: 20)
+ * @param region - 시/도 지역명 필터 (선택적)
  * @returns 어댑터를 통해 정규화된 차량 GongItem 배열
  */
-export async function fetchOnbidCarList(pageNo = 1, numOfRows = 10): Promise<GongItem[]> {
+export async function fetchOnbidCarList(pageNo = 1, numOfRows = 20, region?: string): Promise<GongItem[]> {
   const params = new URLSearchParams({
     serviceKey: API_KEY,
     resultType: 'json',
@@ -316,18 +365,65 @@ export async function fetchOnbidCarList(pageNo = 1, numOfRows = 10): Promise<Gon
     numOfRows: String(numOfRows),
     pvctTrgtYn: 'N',
     dspsMthodCd: '0001',
+    prptDivCd: '0007,0002', // 신탁/담보 및 압류재산 공매 차량 조회
   })
 
-  const requestUrl = `${BASE_URL}/B010003/OnbidCarListSrvc2/getCarCltrList2?${params.toString()}`
+  // 시/도 지역 필터 (예: '서울', '전남광주', '부산' 등)
+  const regionQueries = getRegionApiQueries(region)
 
+  if (regionQueries.length <= 1) {
+    if (regionQueries.length === 1) {
+      params.append('lctnSdnm', regionQueries[0])
+    }
+
+    const requestUrl = `${BASE_URL}/B010003/OnbidCarListSrvc2/getCarCltrList2?${params.toString()}`
+
+    try {
+      const res = await fetch(requestUrl)
+      if (!res.ok) return []
+      const data = await res.json()
+      const rawItems = data.body?.items?.item || data.response?.body?.items?.item
+      if (!rawItems) return []
+      const list: RawOnbidItem[] = Array.isArray(rawItems) ? rawItems : [rawItems]
+      return list.map((item, idx) => {
+        const gongItem = adaptOnbidToGongItem(item, idx)
+        gongItem.category = 'car'
+        gongItem.categoryIcon = 'directions_car'
+        return gongItem
+      })
+    } catch {
+      return []
+    }
+  }
+
+  // 복수 쿼리 대상(예: '전남광주') 병렬 호출 및 병합
   try {
-    const res = await fetch(requestUrl)
-    if (!res.ok) return []
-    const data = await res.json()
-    const rawItems = data.body?.items?.item || data.response?.body?.items?.item
-    if (!rawItems) return []
-    const list: RawOnbidItem[] = Array.isArray(rawItems) ? rawItems : [rawItems]
-    return list.map((item, idx) => adaptOnbidToGongItem(item, idx))
+    const promises = regionQueries.slice(0, 3).map(async (queryName) => {
+      const p = new URLSearchParams(params)
+      p.set('lctnSdnm', queryName)
+      const res = await fetch(`${BASE_URL}/B010003/OnbidCarListSrvc2/getCarCltrList2?${p.toString()}`)
+      if (!res.ok) return []
+      const data = await res.json()
+      const raw = data.body?.items?.item || data.response?.body?.items?.item
+      if (!raw) return []
+      const list: RawOnbidItem[] = Array.isArray(raw) ? raw : [raw]
+      return list.map((item, idx) => {
+        const gongItem = adaptOnbidToGongItem(item, idx)
+        gongItem.category = 'car'
+        gongItem.categoryIcon = 'directions_car'
+        return gongItem
+      })
+    })
+
+    const results = await Promise.all(promises)
+    const combined = results.flat()
+
+    const seen = new Set<string>()
+    return combined.filter((item) => {
+      if (seen.has(item.id)) return false
+      seen.add(item.id)
+      return true
+    })
   } catch {
     return []
   }
