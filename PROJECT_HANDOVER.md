@@ -146,20 +146,37 @@
 
 ---
 
-## 🛠️ 6. 개발 환경 구동 및 검증 가이드
+## 🛠️ 6. 환경 변수 및 개발 환경 구동 가이드
 
-### 1) 환경 변수 설정 (`frontend/.env`)
-```properties
-# 공공데이터포털(data.go.kr) 한국자산관리공사 차세대 온비드 일반 인증키 (Decoding 키)
-VITE_PUBLIC_DATA_API_KEY=cE+3z5vj6RfxuQ/YlUa7y1GvH2s4Qh8lW0xZ9+7jJ3k=
-VITE_API_BASE_URL=/api/public-data
-```
+### 1) 환경 변수 설정 (개발용 / 운영용 분리 관리)
+Vite 모드(Mode)에 따라 실행 환경별 환경설정 파일이 자동으로 분기 로드됩니다:
+
+- **개발 환경 (`frontend/.env.dev`)**:
+  - `npm run dev` (`vite --mode dev`) 실행 시 자동 로드됩니다.
+  - 온비드 개발용 Decoding 일반 인증키 및 Vite 프록시 경로(`/api/public-data`)가 기본 적용되어 있습니다.
+  ```properties
+  VITE_PUBLIC_DATA_API_KEY=cE+3z5vj6RfxuQ/YlUa7y1GvH2s4Qh8lW0xZ9+7jJ3k=
+  VITE_API_BASE_URL=/api/public-data
+  ```
+
+- **운영 환경 (`frontend/.env.prod`)**:
+  - `npm run build` (`tsc -b && vite build --mode prod`) 실행 시 자동 로드됩니다.
+  - 실제 운영 배포 시 사용할 공공데이터포털 운영 인증키와 운영 Base URL을 기입합니다.
+  ```properties
+  # 운영용 온비드 일반 인증키 (추후 입력)
+  VITE_PUBLIC_DATA_API_KEY=
+  # 운영 배포 API Base URL (예: Nginx 리버스 프록시 /api/public-data 등)
+  VITE_API_BASE_URL=
+  ```
+
+- **환경 변수 템플릿 (`frontend/.env.example`)**:
+  - 신규 환경 세팅 및 인수인계를 위한 전체 환경변수 템플릿입니다.
 
 ### 2) 개발 서버 실행
 ```bash
-cd c:\dev\workspace\publicAuction\frontend
+cd frontend
 npm run dev
-# 기본 접속 주소: http://localhost:5173
+# 기본 접속 주소: http://localhost:5173 (서버 구동 시 기본 브라우저가 자동으로 열립니다)
 ```
 
 ### 3) 프로덕션 빌드 무결성 검증 (필수)

@@ -9,6 +9,7 @@ export default defineConfig({
     tailwindcss(),
   ],
   server: {
+    open: true,
     proxy: {
       '/api/public-data': {
         target: 'https://apis.data.go.kr',
