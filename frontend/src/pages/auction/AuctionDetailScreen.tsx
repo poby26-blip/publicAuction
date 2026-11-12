@@ -10,6 +10,7 @@
  */
 
 import { useState } from 'react'
+import { type ShowToastFn } from '../../components/common/Toast'
 import { type GongItem, formatWon, getCategoryFallbackImage } from '../../data/mockAuctionData'
 
 /**
@@ -25,6 +26,9 @@ interface AuctionDetailScreenProps {
   /** 관심 등록 토글 콜백 */
   onToggleWatchlist: (item: GongItem) => void
 
+  /** 전역 토스트 팝업 표시 콜백 */
+  onShowToast?: ShowToastFn
+
   /** 상세 화면 닫기 및 목록 복귀 콜백 */
   onBack: () => void
 }
@@ -33,6 +37,7 @@ export function AuctionDetailScreen({
   item,
   isSaved,
   onToggleWatchlist,
+  onShowToast,
   onBack,
 }: AuctionDetailScreenProps) {
   /** 현재 선택된 슬라이더 이미지 인덱스 */
@@ -48,9 +53,10 @@ export function AuctionDetailScreen({
   const fallbackImg = getCategoryFallbackImage(item.category)
 
   /**
-   * 모바일 Web Share API를 통한 공매 물건 공유 핸들러
+   * 모바일 Web Share API 또는 클립보드 복사를 통한 공매 물건 공유 핸들러
    */
   const handleShare = async () => {
+    const shareText = `[공매이지] ${item.title} · 최저가 ${formatWon(item.minimumPrice)}`
     if (navigator.share) {
       try {
         await navigator.share({
@@ -60,7 +66,10 @@ export function AuctionDetailScreen({
         })
       } catch { }
     } else {
-      alert('물건 정보가 클립보드에 복사되었습니다.')
+      try {
+        await navigator.clipboard?.writeText(`${shareText}\n${window.location.href}`)
+      } catch { }
+      onShowToast?.('물건 정보가 클립보드에 복사되었습니다.', { type: 'success' })
     }
   }
 
@@ -266,8 +275,14 @@ export function AuctionDetailScreen({
         <button
           type="button"
           onClick={() => {
-            setHasAlert(!hasAlert)
-            alert(hasAlert ? '알림이 해제되었습니다.' : '입찰 마감일 알림이 설정되었습니다!')
+            const nextAlert = !hasAlert
+            setHasAlert(nextAlert)
+            onShowToast?.(
+              nextAlert
+                ? '입찰 마감일 알림이 설정되었습니다.'
+                : '입찰 마감일 알림이 해제되었습니다.',
+              { type: nextAlert ? 'success' : 'info' }
+            )
           }}
           className={`flex flex-col items-center justify-center px-3.5 py-2 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${hasAlert
               ? 'border-[#0051d5] bg-[#eff4ff] text-[#0051d5]'
@@ -286,10 +301,16 @@ export function AuctionDetailScreen({
         <button
           type="button"
           onClick={() =>
-            alert(
-              `[온비드 바로가기]\n${item.title}\n최저입찰가: ${formatWon(
-                item.minimumPrice
-              )}\n캠코 온비드 전자입찰 사이트로 이동합니다.`
+            onShowToast?.(
+              `[온비드 안내] 최저입찰가 ${formatWon(item.minimumPrice)} · 온비드에서 입찰 가능합니다.`,
+              {
+                type: 'info',
+                actionLabel: '사이트 이동',
+                duration: 3800,
+                onAction: () => {
+                  window.open('https://www.onbid.co.kr', '_blank', 'noopener,noreferrer')
+                },
+              }
             )
           }
           className="flex-1 bg-[#0051d5] hover:bg-[#003ea8] active:scale-[0.99] text-white font-bold py-3.5 px-4 rounded-xl shadow-md text-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"

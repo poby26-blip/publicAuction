@@ -11,7 +11,8 @@
  * 4. 앱 기본 설정 & 고객지원 (캐시 정리, 공매 FAQ 모달, 이용약관/처리방침 모달, 버전 정보)
  */
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
+import { type ShowToastFn } from '../../components/common/Toast'
 import {
   type AlertSettings,
   DEFAULT_ALERT_SETTINGS,
@@ -32,6 +33,9 @@ interface MyScreenProps {
 
   /** 공공데이터 OpenAPI 실시간 데이터 재조회 핸들러 (로드된 건수 반환) */
   onRefreshApiData?: () => Promise<number>
+
+  /** 앱 전역 플로팅 토스트 팝업 표시 콜백 */
+  onShowToast?: ShowToastFn
 }
 
 /**
@@ -94,6 +98,7 @@ export function MyScreen({
   isApiSyncing = false,
   syncedItemCount = 0,
   onRefreshApiData,
+  onShowToast,
 }: MyScreenProps) {
   // -------------------------------------------------------------------------
   // [로컬 상태 관리]
@@ -110,10 +115,6 @@ export function MyScreen({
 
   /** FAQ 또는 약관 안내 모달 상태 ('faq' | 'policy' | null) */
   const [infoModal, setInfoModal] = useState<'faq' | 'policy' | null>(null)
-
-  /** 플로팅 토스트 알림 메시지 상태 (null이면 숨김) */
-  const [toastMessage, setToastMessage] = useState<string | null>(null)
-  const toastTimerRef = useRef<number | null>(null)
 
   /**
    * 앱 구동/탭 진입 시 storageService로부터 저장된 알림 설정을 비동기 복원합니다.
@@ -133,9 +134,6 @@ export function MyScreen({
 
     return () => {
       isMounted = false
-      if (toastTimerRef.current !== null) {
-        window.clearTimeout(toastTimerRef.current)
-      }
     }
   }, [])
 
@@ -148,38 +146,25 @@ export function MyScreen({
   }, [alertSettings, isInitialized])
 
   /**
-   * 상단 플로팅 토스트 메시지 표출 헬퍼
-   */
-  const showToast = (msg: string) => {
-    setToastMessage(msg)
-    if (toastTimerRef.current !== null) {
-      window.clearTimeout(toastTimerRef.current)
-    }
-    toastTimerRef.current = window.setTimeout(() => {
-      setToastMessage(null)
-    }, 2200)
-  }
-
-  /**
    * 개별 알림 스위치 토글 핸들러
    */
   const handleToggleAlert = (key: keyof AlertSettings, title: string) => {
-    setAlertSettings((prev) => {
-      const nextVal = !prev[key]
-      const updated = { ...prev, [key]: nextVal }
+    const nextVal = !alertSettings[key]
+    setAlertSettings((prev) => ({ ...prev, [key]: nextVal }))
 
-      if (key === 'nightSilence') {
-        showToast(
-          nextVal
-            ? '야간 알림 제한(21:00~08:00)이 설정되었습니다.'
-            : '야간 알림 제한이 해제되었습니다.'
-        )
-      } else {
-        showToast(nextVal ? `'${title}'이 활성화되었습니다.` : `'${title}'이 해제되었습니다.`)
-      }
-
-      return updated
-    })
+    if (key === 'nightSilence') {
+      onShowToast?.(
+        nextVal
+          ? '야간 알림 제한(21:00~08:00)이 설정되었습니다.'
+          : '야간 알림 제한이 해제되었습니다.',
+        { type: nextVal ? 'success' : 'info' }
+      )
+    } else {
+      onShowToast?.(
+        nextVal ? `'${title}'이 활성화되었습니다.` : `'${title}'이 해제되었습니다.`,
+        { type: nextVal ? 'success' : 'info' }
+      )
+    }
   }
 
   /**
@@ -188,16 +173,16 @@ export function MyScreen({
   const handleRefreshApi = async () => {
     if (isRefreshing || isApiSyncing) return
     if (!onRefreshApiData) {
-      showToast('공공데이터 포털 OpenAPI v2.4와 정상 연동 중입니다.')
+      onShowToast?.('공공데이터 포털 OpenAPI v2.4와 정상 연동 중입니다.')
       return
     }
 
     setIsRefreshing(true)
     try {
       const count = await onRefreshApiData()
-      showToast(`온비드 실시간 공매 데이터 ${count}건을 최신화했습니다.`)
+      onShowToast?.(`온비드 실시간 공매 데이터 ${count}건을 최신화했습니다.`)
     } catch {
-      showToast('데이터 갱신 중 일시적인 오류가 발생했습니다.')
+      onShowToast?.('데이터 갱신 중 일시적인 오류가 발생했습니다.', { type: 'warning' })
     } finally {
       setIsRefreshing(false)
     }
@@ -209,7 +194,7 @@ export function MyScreen({
   const handleClearCache = async () => {
     const defaults = await resetAlertSettings()
     setAlertSettings(defaults)
-    showToast('임시 설정 캐시가 안전하게 초기화되었습니다. (관심물건 유지)')
+    onShowToast?.('임시 설정 캐시가 안전하게 초기화되었습니다. (관심물건 유지)', { type: 'info' })
   }
 
   /** 핵심 입찰 푸시 알림 중 1개라도 켜져 있는지 판정 */
@@ -218,20 +203,6 @@ export function MyScreen({
 
   return (
     <div className="flex flex-col gap-5 pb-24 px-4 pt-3 relative">
-      {/* 0. 상단 플로팅 토스트 알림 (Stitch Design Spec) */}
-      <div
-        role="status"
-        aria-live="polite"
-        className={`fixed top-20 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 pointer-events-none px-4 py-2.5 bg-[#002046] text-white rounded-xl shadow-xl flex items-center gap-2 max-w-[90%] ${
-          toastMessage ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2.5'
-        }`}
-      >
-        <span className="material-symbols-outlined text-[18px] text-[#39b282] shrink-0">
-          check_circle
-        </span>
-        <span className="text-xs font-semibold whitespace-nowrap truncate">{toastMessage}</span>
-      </div>
-
       {/* 1. 공매 및 입찰 알림 설정 섹션 (Stitch Section 3) */}
       <section className="flex flex-col gap-2.5">
         <div className="flex items-center justify-between px-1">

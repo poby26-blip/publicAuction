@@ -23,7 +23,7 @@
   ├── frontend/
   │   ├── src/
   │   │   ├── components/
-  │   │   │   ├── common/       # Skeleton.tsx, AuctionCard.tsx 등 공통 컴포넌트
+  │   │   │   ├── common/       # Skeleton.tsx, AuctionCard.tsx, Toast.tsx 등 공통 컴포넌트
   │   │   │   └── layout/       # AppHeader.tsx, AppBottomNav.tsx 등 레이아웃
   │   │   ├── data/             # mockAuctionData.ts (표준 17개 시도 메타데이터 및 타입 정의)
   │   │   ├── pages/

@@ -5,7 +5,8 @@
  * 지역별 동적 페칭 및 전역 상태(관심목록, 선택 물건 등)를 중앙에서 총괄 관리합니다.
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { type ShowToastFn, Toast, type ToastOptions } from './components/common/Toast'
 import { AppBottomNav, type AppTab } from './components/layout/AppBottomNav'
 import { AppHeader } from './components/layout/AppHeader'
 import { type AssetGroup, MOCK_GONG_ITEMS, type GongItem } from './data/mockAuctionData'
@@ -70,6 +71,43 @@ export default function App() {
 
   /** 공매 목록 화면(`AuctionListScreen`)으로 전달할 초기 검색 키워드 */
   const [listKeyword, setListKeyword] = useState<string | undefined>()
+
+  /** 앱 전역 플로팅 토스트 팝업 상태 */
+  const [toast, setToast] = useState<{
+    message: string | null
+    options?: ToastOptions
+  }>({ message: null })
+  const toastTimerRef = useRef<number | null>(null)
+
+  /** 앱 언마운트 시 토스트 타이머 정리 */
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current !== null) {
+        window.clearTimeout(toastTimerRef.current)
+      }
+    }
+  }, [])
+
+  /**
+   * 앱 전역 어디서든 호출 가능한 플로팅 토스트 표시 함수
+   */
+  const showToast: ShowToastFn = (message, options) => {
+    setToast({ message, options })
+    if (toastTimerRef.current !== null) {
+      window.clearTimeout(toastTimerRef.current)
+    }
+    toastTimerRef.current = window.setTimeout(() => {
+      setToast({ message: null })
+    }, options?.duration ?? 2500)
+  }
+
+  /** 토스트 수동 닫기 */
+  const dismissToast = () => {
+    if (toastTimerRef.current !== null) {
+      window.clearTimeout(toastTimerRef.current)
+    }
+    setToast({ message: null })
+  }
 
   // -------------------------------------------------------------------------
   // [비동기 데이터 페칭 파이프라인 (Data Fetching Pipeline)]
@@ -146,12 +184,18 @@ export default function App() {
    * @param targetItem - 토글할 공매 물건(GongItem) 객체
    */
   const toggleWatchlist = (targetItem: GongItem) => {
-    setWatchlistItems((prev) => {
-      const exists = prev.some((item) => item.id === targetItem.id)
-      return exists
+    const exists = watchlistItems.some((item) => item.id === targetItem.id)
+    setWatchlistItems((prev) =>
+      exists
         ? prev.filter((item) => item.id !== targetItem.id)
         : [targetItem, ...prev]
-    })
+    )
+    showToast(
+      exists
+        ? '관심 공매 보관함에서 해제되었습니다.'
+        : '관심 공매 보관함에 담았습니다.',
+      { type: exists ? 'info' : 'success', duration: 2000 }
+    )
   }
 
   /**
@@ -160,6 +204,7 @@ export default function App() {
   const clearWatchlist = async () => {
     setWatchlistItems([])
     await clearWatchlistItems()
+    showToast('관심 공매 보관함이 모두 비워졌습니다.', { type: 'info' })
   }
 
   /**
@@ -223,26 +268,31 @@ export default function App() {
 
   /**
    * 상단 헤더 종 모양 알림 버튼 클릭 핸들러
-   * - 마감 임박 관심물건이 있는 경우 관심 보관함으로 바로 안내합니다.
+   * - alert()/confirm() 대신 토스트 팝업으로 긴급 마감 안내 및 원클릭 이동을 제공합니다.
    */
   const handleAlarmClick = () => {
     if (urgentWatchlistCount > 0) {
-      if (
-        window.confirm(
-          `입찰 마감이 3일 이내로 임박한 관심 물건이 ${urgentWatchlistCount}건 있습니다.\n관심 공매 보관함으로 이동할까요?`
-        )
-      ) {
-        setSelectedItem(null)
-        setActiveTab('watchlist')
-      }
+      showToast(
+        `입찰 마감이 3일 이내로 임박한 관심 물건이 ${urgentWatchlistCount}건 있습니다.`,
+        {
+          type: 'warning',
+          actionLabel: '보러가기',
+          duration: 3800,
+          onAction: () => {
+            setSelectedItem(null)
+            setActiveTab('watchlist')
+          },
+        }
+      )
       return
     }
 
     const urgentMarketCount = items.filter((item) => item.dDay <= 3).length
-    alert(
+    showToast(
       urgentMarketCount > 0
-        ? `현재 관심 등록된 마감 임박 물건은 없습니다.\n(실시간 전체 공매 중 3일 이내 마감 예정 ${urgentMarketCount}건 등록 중)`
-        : '현재 등록된 긴급 마감 알림이 없습니다.'
+        ? `관심 마감 임박 없음 · 전체 공매 임박 물건 ${urgentMarketCount}건 등록 중`
+        : '현재 등록된 긴급 마감 알림이 없습니다.',
+      { type: 'info' }
     )
   }
 
@@ -307,6 +357,7 @@ export default function App() {
               isApiSyncing={isLoading}
               syncedItemCount={items.length}
               onRefreshApiData={() => handleRegionChange('전체', 'all')}
+              onShowToast={showToast}
             />
           )}
         </main>
@@ -333,11 +384,21 @@ export default function App() {
                 item={selectedItem}
                 isSaved={watchlist.includes(selectedItem.id)}
                 onToggleWatchlist={toggleWatchlist}
+                onShowToast={showToast}
                 onBack={() => setSelectedItem(null)}
               />
             </div>
           </div>
         )}
+
+        {/* 앱 전역 플로팅 토스트 팝업 (모든 탭·상세 오버레이 최상위 계층 z-[60]) */}
+        <Toast
+          message={toast.message}
+          type={toast.options?.type}
+          actionLabel={toast.options?.actionLabel}
+          onAction={toast.options?.onAction}
+          onDismiss={dismissToast}
+        />
       </div>
     </div>
   )
