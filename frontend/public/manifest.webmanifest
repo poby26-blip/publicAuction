@@ -1,0 +1,18 @@
+{
+  "name": "공매이지 - 공공데이터 기반 공매 정보 앱",
+  "short_name": "공매이지",
+  "description": "한국자산관리공사(KAMCO) 차세대 온비드 OpenAPI 기반 실시간 공매 정보 앱",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8f9ff",
+  "theme_color": "#f8f9ff",
+  "icons": [
+    {
+      "src": "/gongmaeEasyIcon.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
+

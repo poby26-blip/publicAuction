@@ -210,6 +210,15 @@
    - 이미지 상·하단 그라데이션, 우측 하단 `전체보기` 버튼 및 대표 이미지 클릭 진입을 구현했습니다.
    - `z-[70]` 풀스크린 모달에서 원본 비율(`object-contain`), `1x ↔ 확대 보기` 스크롤 팬, 터치 스와이프, 키보드(`ESC`·좌우 방향키), 하단 썸네일 탐색 및 슬라이더 인덱스 동기화를 지원합니다.
 
+### ✅ [12단계] 검색 기능 OpenAPI 실시간 조회 연동 완료
+1. **온비드 OpenAPI 검색 파라미터 및 관리번호 직접 조회 ([onbidService.ts](file:///c:/dev/workspace/publicAuction/frontend/src/services/onbidService.ts))**:
+   - `executeOnbidListQuery` 및 부동산·동산·자동차·통합 조회 함수에 `keyword` 지원을 추가하고, 검증된 서버 파라미터 `onbidCltrNm`(대표 토큰 자동 추출 `extractOnbidSearchToken`)로 전체 온비드 DB 검색을 연동했습니다.
+   - 물건관리번호(`YYYY-XXXX-XXX`) 입력 시 `fetchOnbidItemsByManagementNo`로 3대 상세 API를 병렬 조회해 해당 물건을 즉시 반환합니다.
+2. **입력 중 로컬 필터 / 확정 시 OpenAPI 조회 분리 ([AuctionListScreen.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/pages/auction/AuctionListScreen.tsx), [HomeScreen.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/pages/home/HomeScreen.tsx))**:
+   - 타이핑·한글 조합 중에는 데이터 소모 없이 기존 `listItems` 내에서만 로컬 필터링하고, `Enter` 키(`!e.nativeEvent.isComposing` 가드) 또는 `검색` 버튼 클릭 시에만 `committedQuery`를 갱신해 OpenAPI 조회 및 `'더보기'` 페이징을 수행합니다.
+3. **공식 앱 아이콘 적용 ([index.html](file:///c:/dev/workspace/publicAuction/frontend/index.html), [manifest.webmanifest](file:///c:/dev/workspace/publicAuction/frontend/public/manifest.webmanifest), [AppHeader.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/components/layout/AppHeader.tsx), [AppBottomNav.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/components/layout/AppBottomNav.tsx))**:
+   - `/public/gongmaeEasyIcon.png`를 HTML 파비콘, Apple 터치 아이콘, PWA 매니페스트 아이콘 및 상단·사이드 브랜드 로고 이미지로 일괄 적용했습니다.
+
 ---
 
 ## 🚀 5. 앞으로 남은 작업 로드맵 (Upcoming Roadmap)

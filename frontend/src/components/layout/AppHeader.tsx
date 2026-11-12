@@ -38,8 +38,12 @@ export function AppHeader({
     <header className="sticky top-0 z-40 bg-[#f8f9ff]/90 backdrop-blur-md px-4 md:px-6 py-3 flex items-center justify-between border-b border-[#e5eeff]">
       {/* 모바일/폴더블(< 768px): 브랜드 로고 헤더 */}
       <div className="flex md:hidden items-center space-x-2">
-        <div className="w-8 h-8 rounded-xl bg-[#002046] flex items-center justify-center text-white font-headline font-extrabold text-sm shadow-xs">
-          공
+        <div className="w-8 h-8 rounded-xl bg-white border border-[#dce9ff] p-0.5 flex items-center justify-center shadow-xs overflow-hidden shrink-0">
+          <img
+            src="/gongmaeEasyIcon.png"
+            alt="공매이지 앱 아이콘"
+            className="w-full h-full object-contain"
+          />
         </div>
         <div>
           <div className="flex items-center space-x-1.5">

@@ -26,8 +26,10 @@ import { ListSkeleton } from '../../components/common/Skeleton'
 import {
   fetchOnbidAllAssetsList,
   fetchOnbidCarList,
+  fetchOnbidItemsByManagementNo,
   fetchOnbidMovableList,
   fetchOnbidRealEstateList,
+  isManagementNumberQuery,
 } from '../../services/onbidService'
 
 /**
@@ -103,8 +105,14 @@ export function AuctionListScreen({
   /** 정렬 기준 ('dDay': 마감임박순, 'discount': 할인율순, 'price': 최저가순, 'views': 인기순) */
   const [sortBy, setSortBy] = useState<'dDay' | 'discount' | 'price' | 'views'>('dDay')
 
-  /** 실시간 검색 키워드 */
+  /** 실시간 입력 중인 검색 키워드 (타이핑·한글 조합 중에는 현재 목록 내에서만 로컬 필터링) */
   const [keyword, setKeyword] = useState<string>(initialKeyword || '')
+
+  /** Enter 또는 '검색' 버튼으로 확정된 OpenAPI 검색 키워드 */
+  const [committedQuery, setCommittedQuery] = useState<string>((initialKeyword || '').trim())
+
+  /** 동일 검색어로 다시 Enter/검색 버튼을 눌렀을 때 재조회를 트리거하는 카운터 */
+  const [searchNonce, setSearchNonce] = useState<number>(0)
 
   /** 온비드 API로부터 동적으로 수신된 물건 목록 상태 */
   const [listItems, setListItems] = useState<GongItem[]>(items)
@@ -143,7 +151,10 @@ export function AuctionListScreen({
       setSubCategory(parsed.sub)
     }
     if (initialRegion !== undefined) setSelectedRegion(initialRegion)
-    if (initialKeyword !== undefined) setKeyword(initialKeyword)
+    if (initialKeyword !== undefined) {
+      setKeyword(initialKeyword)
+      setCommittedQuery(initialKeyword.trim())
+    }
   }
 
   // -------------------------------------------------------------------------
@@ -151,30 +162,61 @@ export function AuctionListScreen({
   // -------------------------------------------------------------------------
 
   /**
-   * 선택된 상품군(assetGroup)에 맞는 차세대 온비드 OpenAPI를 호출하는 공통 헬퍼입니다.
+   * 선택된 상품군(assetGroup)과 확정 검색어(query)에 맞는 차세대 온비드 OpenAPI를 호출하는 공통 헬퍼입니다.
    */
   const fetchByAssetGroup = async (
     group: AssetGroup,
     page: number,
-    regionName: string
+    regionName: string,
+    query?: string
   ): Promise<GongItem[]> => {
+    const cleanQuery = query?.trim() || undefined
+    if (cleanQuery && isManagementNumberQuery(cleanQuery)) {
+      return page === 1 ? fetchOnbidItemsByManagementNo(cleanQuery, group) : []
+    }
+
     const targetRegion = regionName === '전체' ? undefined : regionName
 
     if (group === 'car') {
-      return fetchOnbidCarList(page, 20, targetRegion)
+      return fetchOnbidCarList(page, 20, targetRegion, cleanQuery)
     }
     if (group === 'movable') {
-      return fetchOnbidMovableList(page, 20, targetRegion)
+      return fetchOnbidMovableList(page, 20, targetRegion, cleanQuery)
     }
     if (group === 'real_estate') {
-      return fetchOnbidRealEstateList({ region: targetRegion, pageNo: page, numOfRows: 20 })
+      return fetchOnbidRealEstateList({
+        region: targetRegion,
+        pageNo: page,
+        numOfRows: 20,
+        keyword: cleanQuery,
+      })
     }
     // 'all': 부동산 + 동산 + 자동차 3대 상품군 병렬 통합 조회
-    return fetchOnbidAllAssetsList(page, 20, targetRegion)
+    return fetchOnbidAllAssetsList(page, 20, targetRegion, cleanQuery)
   }
 
   /**
-   * 1차 상품군 대분류(assetGroup) 또는 시/도 지역 필터가 변경될 때마다 OpenAPI를 실시간 호출합니다.
+   * 검색어 확정 실행 (Enter 키 또는 검색 버튼 클릭 시에만 OpenAPI 조회)
+   */
+  const handleSubmitSearch = () => {
+    setCommittedQuery(keyword.trim())
+    setSearchNonce((n) => n + 1)
+  }
+
+  /**
+   * 검색어 초기화 (입력값과 확정된 OpenAPI 검색어 모두 비우고 기본 목록 복원)
+   */
+  const handleClearSearch = () => {
+    setKeyword('')
+    if (committedQuery !== '') {
+      setCommittedQuery('')
+      setSearchNonce((n) => n + 1)
+    }
+  }
+
+  /**
+   * 1차 상품군 대분류(assetGroup), 시/도 지역 또는 확정 검색어(committedQuery)가 변경될 때만 OpenAPI를 실시간 호출합니다.
+   * (단순 키 입력·한글 조합 중에는 호출하지 않고 현재 목록 내 필터링만 수행)
    */
   useEffect(() => {
     let isMounted = true
@@ -185,13 +227,15 @@ export function AuctionListScreen({
       setHasMore(true)
 
       try {
-        const data = await fetchByAssetGroup(assetGroup, 1, selectedRegion)
+        const data = await fetchByAssetGroup(assetGroup, 1, selectedRegion, committedQuery)
         const minPageThreshold = assetGroup === 'all' ? 10 : 20
 
         if (isMounted) {
           if (data && data.length > 0) {
             setListItems(data)
-            setHasMore(data.length >= minPageThreshold)
+            setHasMore(
+              isManagementNumberQuery(committedQuery) ? false : data.length >= minPageThreshold
+            )
           } else {
             setListItems([])
             setHasMore(false)
@@ -215,7 +259,7 @@ export function AuctionListScreen({
     return () => {
       isMounted = false
     }
-  }, [assetGroup, selectedRegion])
+  }, [assetGroup, selectedRegion, committedQuery, searchNonce])
 
   /**
    * 하단 '공매 물건 더보기' 클릭 시 다음 페이지(pageNo + 1) 데이터를 누적 결합합니다.
@@ -227,7 +271,12 @@ export function AuctionListScreen({
     setIsLoadingMore(true)
 
     try {
-      const nextData = await fetchByAssetGroup(assetGroup, nextPage, selectedRegion)
+      const nextData = await fetchByAssetGroup(
+        assetGroup,
+        nextPage,
+        selectedRegion,
+        committedQuery
+      )
       const minPageThreshold = assetGroup === 'all' ? 10 : 20
 
       if (nextData && nextData.length > 0) {
@@ -336,10 +385,10 @@ export function AuctionListScreen({
     // 3. 시/도 지역 필터 (정식 명칭, 축약어, 전남광주통합특별시 포괄 매칭)
     if (!isRegionMatch(item.address, selectedRegion)) return false
 
-    // 4. 복합 키워드 검색 필터 (물건명, 주소, 공매구분, 면적 다중 토큰 AND 검색)
+    // 4. 복합 키워드 검색 필터 (물건명, 주소, 공매구분, 면적, 관리번호, 기관 다중 토큰 AND 검색)
     if (keyword.trim()) {
       const tokens = keyword.toLowerCase().trim().split(/\s+/).filter(Boolean)
-      const searchableText = `${item.title} ${item.address} ${item.auctionType} ${item.area}`.toLowerCase()
+      const searchableText = `${item.title} ${item.address} ${item.auctionType} ${item.area} ${item.cltrMngNo || ''} ${item.id} ${item.orgName || ''} ${item.usageName || ''}`.toLowerCase()
       const isMatch = tokens.every((token) => searchableText.includes(token))
       if (!isMatch) return false
     }
@@ -382,27 +431,51 @@ export function AuctionListScreen({
   return (
     <div className="flex flex-col gap-3.5 pb-24 md:pb-8 px-4 md:px-6 pt-2">
       {/* 1 & 2-1. 상단 키워드 검색창 + 1차 상품군 세그먼트 탭 (태블릿 이상 2단 병렬 배치) */}
-      <div className="flex flex-col gap-3 md:grid md:grid-cols-12 md:items-center">
-        <div className="relative md:col-span-6">
-          <span className="material-symbols-outlined text-[20px] text-[#74777f] absolute left-3.5 top-1/2 -translate-y-1/2">
-            search
-          </span>
-          <input
-            type="text"
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-            placeholder="공매 물건 검색 (예: 잠실, 제네시스, 기계)"
-            className="w-full h-11 bg-white rounded-2xl pl-10 pr-9 text-xs text-[#0b1c30] placeholder-[#74777f] border border-[#c4c6cf]/60 focus:outline-none focus:ring-2 focus:ring-[#0051d5] shadow-xs"
-          />
-          {keyword && (
-            <button
-              type="button"
-              onClick={() => setKeyword('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#74777f] hover:text-[#0b1c30]"
-              aria-label="검색어 지우기"
-            >
-              <span className="material-symbols-outlined text-[18px]">close</span>
-            </button>
+      <div className="flex flex-col gap-3 md:grid md:grid-cols-12 md:items-start">
+        <div className="md:col-span-6 flex flex-col gap-1">
+          <div className="relative flex items-center">
+            <span className="material-symbols-outlined text-[20px] text-[#74777f] absolute left-3.5 pointer-events-none">
+              search
+            </span>
+            <input
+              type="text"
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+                  handleSubmitSearch()
+                }
+              }}
+              placeholder="공매 물건, 지역, 관리번호 입력 후 Enter"
+              className={`w-full h-11 bg-white rounded-2xl pl-10 text-xs text-[#0b1c30] placeholder-[#74777f] border border-[#c4c6cf]/60 focus:outline-none focus:ring-2 focus:ring-[#0051d5] shadow-xs ${
+                keyword ? 'pr-24' : 'pr-16'
+              }`}
+            />
+            <div className="absolute right-1.5 flex items-center gap-1">
+              {keyword && (
+                <button
+                  type="button"
+                  onClick={handleClearSearch}
+                  className="w-7 h-7 rounded-full flex items-center justify-center text-[#74777f] hover:text-[#0b1c30] hover:bg-slate-100 cursor-pointer"
+                  aria-label="검색어 지우기"
+                >
+                  <span className="material-symbols-outlined text-[17px]">close</span>
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={handleSubmitSearch}
+                className="h-8 px-3 rounded-xl bg-[#0051d5] hover:bg-[#003ea8] active:scale-95 text-white text-[11px] font-bold transition-all cursor-pointer shrink-0"
+              >
+                검색
+              </button>
+            </div>
+          </div>
+
+          {keyword.trim() !== committedQuery && (
+            <p className="text-[10px] text-[#0051d5] font-medium px-1.5">
+              현재 목록 필터링 중 · Enter 또는 &apos;검색&apos; 버튼으로 온비드 전체 조회
+            </p>
           )}
         </div>
 
@@ -556,14 +629,27 @@ export function AuctionListScreen({
               {selectedType}
             </span>
           )}
-          {keyword.trim() && (
+          {committedQuery && (
+            <span className="text-[#0051d5] font-semibold bg-[#eff4ff] px-1.5 py-0.5 rounded text-[10px] flex items-center gap-0.5">
+              &apos;{committedQuery}&apos; OpenAPI 검색
+              <button
+                type="button"
+                onClick={handleClearSearch}
+                className="hover:text-[#002046] ml-0.5 cursor-pointer"
+                aria-label="OpenAPI 검색 해제"
+              >
+                ×
+              </button>
+            </span>
+          )}
+          {keyword.trim() && keyword.trim() !== committedQuery && (
             <span className="text-[#44474e] font-medium bg-[#f1f3f9] px-1.5 py-0.5 rounded text-[10px] flex items-center gap-0.5">
-              '{keyword}'
+              목록 내 &apos;{keyword.trim()}&apos;
               <button
                 type="button"
                 onClick={() => setKeyword('')}
-                className="hover:text-black ml-0.5"
-                aria-label="검색 필터 해제"
+                className="hover:text-black ml-0.5 cursor-pointer"
+                aria-label="입력 검색어 지우기"
               >
                 ×
               </button>
@@ -738,21 +824,41 @@ export function AuctionListScreen({
             search_off
           </span>
           <p className="text-sm font-bold text-[#0b1c30]">검색 조건에 맞는 공매 물건이 없습니다.</p>
-          <p className="text-xs text-[#74777f] mt-1">상품군, 지역 또는 검색어를 변경해 보세요.</p>
-          <button
-            type="button"
-            onClick={() => {
-              setAssetGroup('all')
-              setSubCategory('all')
-              setSelectedRegion('전체')
-              setSelectedType('all')
-              setKeyword('')
-            }}
-            className="mt-4 px-4 py-2 rounded-xl bg-[#eff4ff] text-[#0051d5] text-xs font-bold hover:bg-[#dce9ff] transition-colors cursor-pointer flex items-center gap-1.5"
-          >
-            <span className="material-symbols-outlined text-[16px]">refresh</span>
-            <span>검색 필터 초기화</span>
-          </button>
+          <p className="text-xs text-[#74777f] mt-1">
+            {keyword.trim() && keyword.trim() !== committedQuery
+              ? '현재 불러온 목록에는 일치하는 물건이 없습니다. 온비드 전체 DB에서 검색해 보세요.'
+              : '상품군, 지역 또는 검색어를 변경해 보세요.'}
+          </p>
+          <div className="mt-4 flex items-center gap-2 flex-wrap justify-center">
+            {keyword.trim() && keyword.trim() !== committedQuery && (
+              <button
+                type="button"
+                onClick={handleSubmitSearch}
+                className="px-4 py-2 rounded-xl bg-[#0051d5] text-white text-xs font-bold hover:bg-[#003ea8] transition-colors cursor-pointer flex items-center gap-1.5 shadow-xs"
+              >
+                <span className="material-symbols-outlined text-[16px]">search</span>
+                <span>&apos;{keyword.trim()}&apos; 온비드 전체 검색</span>
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => {
+                setAssetGroup('all')
+                setSubCategory('all')
+                setSelectedRegion('전체')
+                setSelectedType('all')
+                setKeyword('')
+                if (committedQuery !== '') {
+                  setCommittedQuery('')
+                  setSearchNonce((n) => n + 1)
+                }
+              }}
+              className="px-4 py-2 rounded-xl bg-[#eff4ff] text-[#0051d5] text-xs font-bold hover:bg-[#dce9ff] transition-colors cursor-pointer flex items-center gap-1.5"
+            >
+              <span className="material-symbols-outlined text-[16px]">refresh</span>
+              <span>검색 필터 초기화</span>
+            </button>
+          </div>
         </div>
       )}
     </div>

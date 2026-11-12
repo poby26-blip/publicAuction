@@ -68,8 +68,12 @@ export function AppBottomNav({ activeTab, onTabChange, watchlistCount = 0 }: App
         <div className="flex flex-col gap-6">
           {/* 브랜드 헤더 (md: 아이콘만 / lg: 로고+서비스명) */}
           <div className="flex items-center justify-center lg:justify-start gap-2.5 px-1">
-            <div className="w-9 h-9 rounded-xl bg-[#002046] flex items-center justify-center text-white font-headline font-extrabold text-sm shadow-xs shrink-0">
-              공
+            <div className="w-9 h-9 rounded-xl bg-white border border-[#dce9ff] p-0.5 flex items-center justify-center shadow-xs overflow-hidden shrink-0">
+              <img
+                src="/gongmaeEasyIcon.png"
+                alt="공매이지 앱 아이콘"
+                className="w-full h-full object-contain"
+              />
             </div>
             <div className="hidden lg:block min-w-0">
               <div className="flex items-center gap-1.5">

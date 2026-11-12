@@ -180,8 +180,8 @@ export function HomeScreen({
             value={searchKeyword}
             onChange={(e) => setSearchKeyword(e.target.value)}
             onKeyDown={(e) => {
-              // 엔터 키 입력 시 현재 선택된 상품군, 지역, 검색어를 함께 목록 화면으로 전달
-              if (e.key === 'Enter') {
+              // 엔터 키 입력 시(한글 조합 완료 후) 현재 선택된 상품군, 지역, 검색어를 함께 목록 화면으로 전달
+              if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
                 onNavigateToList(
                   currentListCategory,
                   selectedRegion === '전체' ? undefined : selectedRegion,
@@ -189,8 +189,8 @@ export function HomeScreen({
                 )
               }
             }}
-            placeholder="지역, 물건번호, 자산명 검색 (예: 잠실, 제네시스, 기계)"
-            className="w-full h-12 bg-white rounded-2xl pl-10 pr-10 text-sm text-[#0b1c30] placeholder-[#74777f] border border-[#c4c6cf]/60 shadow-xs focus:outline-none focus:ring-2 focus:ring-[#0051d5] focus:border-transparent transition-all"
+            placeholder="지역, 물건번호, 자산명 입력 후 Enter (예: 잠실, 제네시스, 기계)"
+            className="w-full h-12 bg-white rounded-2xl pl-10 pr-18 text-sm text-[#0b1c30] placeholder-[#74777f] border border-[#c4c6cf]/60 shadow-xs focus:outline-none focus:ring-2 focus:ring-[#0051d5] focus:border-transparent transition-all"
           />
           <button
             type="button"
@@ -201,10 +201,10 @@ export function HomeScreen({
                 searchKeyword.trim()
               )
             }
-            className="absolute right-3 text-[#44474e] hover:text-[#0051d5] p-1"
-            aria-label="검색 실행"
+            className="absolute right-2 px-3 py-1.5 rounded-xl bg-[#0051d5] hover:bg-[#003ea8] text-white text-xs font-bold transition-colors cursor-pointer"
+            aria-label="온비드 전체 검색 실행"
           >
-            <span className="material-symbols-outlined text-[20px]">tune</span>
+            검색
           </button>
         </div>
 

@@ -14,6 +14,7 @@
 
 import {
   MOCK_GONG_ITEMS,
+  type AssetGroup,
   type DetailAssetGroup,
   type GongAreaDetail,
   type GongAppraisalDetail,
@@ -194,6 +195,8 @@ export interface OnbidQueryOptions {
   category?: string
   /** 수의계약대상여부 (기본 공매는 'N', 수의계약은 'Y') */
   pvctTrgtYn?: 'Y' | 'N'
+  /** 온비드 OpenAPI 물건명·소재지 검색 키워드 (`onbidCltrNm` 연동) */
+  keyword?: string
 }
 
 // ---------------------------------------------------------------------------
@@ -476,6 +479,53 @@ export function adaptOnbidToGongItem(raw: RawOnbidItem, index: number): GongItem
 // [공통 온비드 목록 OpenAPI 실행 엔진 (Shared Query Executor)]
 // ---------------------------------------------------------------------------
 
+/** 넓은 범위의 일반 분류어 집합 (복합 검색어 중 OpenAPI 질의 대표 토큰 선별 시 후순위 처리) */
+const BROAD_SEARCH_TOKENS = new Set([
+  '아파트',
+  '주택',
+  '빌라',
+  '상가',
+  '오피스텔',
+  '토지',
+  '대지',
+  '임야',
+  '공장',
+  '창고',
+  '자동차',
+  '차량',
+  '승용차',
+  '동산',
+  '물품',
+  '기계',
+  '공매',
+  '경매',
+  '매각',
+  '압류',
+  '신탁',
+  '국유',
+])
+
+/**
+ * 사용자 검색어에서 온비드 목록 OpenAPI `onbidCltrNm` 파라미터에 전달할 핵심 토큰을 추출합니다.
+ * - 복수 단어 입력 시 일반 분류어보다 지역·단지·차종 등 고유 키워드를 우선 선택합니다.
+ */
+function extractOnbidSearchToken(keyword?: string): string | undefined {
+  const trimmed = keyword?.trim()
+  if (!trimmed) return undefined
+
+  const tokens = trimmed.split(/\s+/).filter(Boolean)
+  if (tokens.length <= 1) return tokens[0]
+
+  const specificToken = tokens.find((t) => !BROAD_SEARCH_TOKENS.has(t))
+  return specificToken || tokens[0]
+}
+
+/** 온비드 물건관리번호(`YYYY-XXXX-XXX`) 형식인지 판별합니다. */
+export function isManagementNumberQuery(keyword?: string): boolean {
+  const trimmed = keyword?.trim() || ''
+  return /^\d{4}-\d{4,6}-\d{3,4}$/.test(trimmed)
+}
+
 interface InternalOnbidFetchConfig {
   endpointPath: string
   pageNo: number
@@ -483,6 +533,7 @@ interface InternalOnbidFetchConfig {
   region?: string
   pvctTrgtYn?: 'Y' | 'N'
   prptDivCd: string
+  keyword?: string
   fallbackItems: GongItem[]
   forceCategory?: { id: string; icon: string }
 }
@@ -498,9 +549,18 @@ async function executeOnbidListQuery(config: InternalOnbidFetchConfig): Promise<
     region,
     pvctTrgtYn = 'N',
     prptDivCd,
+    keyword,
     fallbackItems,
     forceCategory,
   } = config
+
+  const searchToken = extractOnbidSearchToken(keyword)
+  const effectiveFallback = searchToken
+    ? fallbackItems.filter((item) => {
+        const text = `${item.title} ${item.address} ${item.auctionType} ${item.area} ${item.cltrMngNo || ''}`.toLowerCase()
+        return text.includes(searchToken.toLowerCase())
+      })
+    : fallbackItems
 
   const baseParams = new URLSearchParams({
     serviceKey: API_KEY,
@@ -511,6 +571,10 @@ async function executeOnbidListQuery(config: InternalOnbidFetchConfig): Promise<
     dspsMthodCd: '0001', // 처분방식: 매각
     prptDivCd,
   })
+
+  if (searchToken) {
+    baseParams.set('onbidCltrNm', searchToken)
+  }
 
   const mapRawList = (rawList: RawOnbidItem[]): GongItem[] =>
     rawList.map((item, idx) => {
@@ -573,7 +637,7 @@ async function executeOnbidListQuery(config: InternalOnbidFetchConfig): Promise<
     // 1. 전국 또는 단일 지역 조회
     if (regionQueries.length <= 1) {
       const result = await fetchSingleRegion(regionQueries[0])
-      return result === null ? fallbackItems : result
+      return result === null ? effectiveFallback : result
     }
 
     // 2. 복수 행정구역 쿼리(예: '전남광주' -> '전남광주통합특별시', '광주광역시', '전라남도') 병렬 호출 및 병합
@@ -590,7 +654,7 @@ async function executeOnbidListQuery(config: InternalOnbidFetchConfig): Promise<
     })
   } catch (error) {
     console.error(`[Onbid API] 통신 예외 발생 (${endpointPath}):`, error)
-    return fallbackItems
+    return effectiveFallback
   }
 }
 
@@ -604,7 +668,7 @@ async function executeOnbidListQuery(config: InternalOnbidFetchConfig): Promise<
  * - 신탁/담보(0007) 및 압류재산(0002) 매물을 우선 조회합니다.
  */
 export async function fetchOnbidRealEstateList(options: OnbidQueryOptions = {}): Promise<GongItem[]> {
-  const { pageNo = 1, numOfRows = 20, region, pvctTrgtYn = 'N' } = options
+  const { pageNo = 1, numOfRows = 20, region, pvctTrgtYn = 'N', keyword } = options
 
   return executeOnbidListQuery({
     endpointPath: '/B010003/OnbidRlstListSrvc2/getRlstCltrList2',
@@ -613,6 +677,7 @@ export async function fetchOnbidRealEstateList(options: OnbidQueryOptions = {}):
     region,
     pvctTrgtYn,
     prptDivCd: '0007,0002',
+    keyword,
     fallbackItems: MOCK_GONG_ITEMS.filter((i) => i.category !== 'car'),
   })
 }
@@ -626,7 +691,8 @@ export async function fetchOnbidRealEstateList(options: OnbidQueryOptions = {}):
 export async function fetchOnbidMovableList(
   pageNo = 1,
   numOfRows = 20,
-  region?: string
+  region?: string,
+  keyword?: string
 ): Promise<GongItem[]> {
   const primary = await executeOnbidListQuery({
     endpointPath: '/B010003/OnbidMvastListSrvc2/getMvastCltrList2',
@@ -634,6 +700,7 @@ export async function fetchOnbidMovableList(
     numOfRows,
     region,
     prptDivCd: '0007,0002',
+    keyword,
     fallbackItems: [],
     forceCategory: { id: 'goods', icon: 'inventory_2' },
   })
@@ -649,6 +716,7 @@ export async function fetchOnbidMovableList(
     numOfRows,
     region,
     prptDivCd: '0004,0010',
+    keyword,
     fallbackItems: [],
     forceCategory: { id: 'goods', icon: 'inventory_2' },
   })
@@ -662,7 +730,8 @@ export async function fetchOnbidMovableList(
 export async function fetchOnbidCarList(
   pageNo = 1,
   numOfRows = 20,
-  region?: string
+  region?: string,
+  keyword?: string
 ): Promise<GongItem[]> {
   return executeOnbidListQuery({
     endpointPath: '/B010003/OnbidCarListSrvc2/getCarCltrList2',
@@ -670,6 +739,7 @@ export async function fetchOnbidCarList(
     numOfRows,
     region,
     prptDivCd: '0007,0002',
+    keyword,
     fallbackItems: [],
     forceCategory: { id: 'car', icon: 'directions_car' },
   })
@@ -682,16 +752,17 @@ export async function fetchOnbidCarList(
 export async function fetchOnbidAllAssetsList(
   pageNo = 1,
   numOfRows = 20,
-  region?: string
+  region?: string,
+  keyword?: string
 ): Promise<GongItem[]> {
   const realEstateCount = Math.max(8, Math.ceil(numOfRows * 0.5))
   const movableCount = Math.max(4, Math.floor(numOfRows * 0.25))
   const carCount = Math.max(4, Math.floor(numOfRows * 0.25))
 
   const [realEstateItems, movableItems, carItems] = await Promise.all([
-    fetchOnbidRealEstateList({ pageNo, numOfRows: realEstateCount, region }),
-    fetchOnbidMovableList(pageNo, movableCount, region),
-    fetchOnbidCarList(pageNo, carCount, region),
+    fetchOnbidRealEstateList({ pageNo, numOfRows: realEstateCount, region, keyword }),
+    fetchOnbidMovableList(pageNo, movableCount, region, keyword),
+    fetchOnbidCarList(pageNo, carCount, region, keyword),
   ])
 
   const combined = [...realEstateItems, ...movableItems, ...carItems]
@@ -919,4 +990,71 @@ export async function fetchOnbidItemDetail(
     console.warn(`[Onbid Detail API] 조회 예외 발생 (${endpointPath}):`, error)
     return null
   }
+}
+
+/**
+ * 물건관리번호(`cltrMngNo`, 예: 2022-05506-004)로 3대 상세 OpenAPI를 조회해 일치하는 공매 물건을 찾습니다.
+ * (목록 API가 `cltrMngNo` 필터를 지원하지 않으므로 관리번호 검색 시 직접 연계합니다.)
+ */
+export async function fetchOnbidItemsByManagementNo(
+  cltrMngNo: string,
+  targetGroup: AssetGroup = 'all'
+): Promise<GongItem[]> {
+  const trimmed = cltrMngNo.trim()
+  if (!API_KEY || !trimmed) return []
+
+  const groupsToQuery: DetailAssetGroup[] =
+    targetGroup === 'all' ? ['real_estate', 'movable', 'car'] : [targetGroup]
+
+  const results = await Promise.all(
+    groupsToQuery.map(async (group) => {
+      const endpointPath = DETAIL_ENDPOINT_MAP[group]
+      const params = new URLSearchParams({
+        serviceKey: API_KEY,
+        resultType: 'json',
+        cltrMngNo: trimmed,
+      })
+
+      try {
+        const res = await fetch(`${BASE_URL}${endpointPath}?${params.toString()}`, {
+          method: 'GET',
+          headers: { Accept: 'application/json' },
+        })
+        if (!res.ok) return []
+
+        const data = await res.json()
+        const header = data.header || data.response?.header
+        if (header?.resultCode !== '00') return []
+
+        const rawItems = (data.body || data.response?.body)?.items?.item
+        if (!rawItems) return []
+
+        const itemList: RawOnbidItem[] = Array.isArray(rawItems) ? rawItems : [rawItems]
+        return itemList.map((raw, idx) => {
+          const item = adaptOnbidToGongItem(raw, idx)
+          item.assetGroup = group
+          if (group === 'car') {
+            item.category = 'car'
+            item.categoryIcon = 'directions_car'
+          } else if (group === 'movable') {
+            item.category = 'goods'
+            item.categoryIcon = 'inventory_2'
+          }
+          // 상세 정보도 함께 캐싱해 진입 시 즉시 활용
+          const cacheKey = `${group}:${item.cltrMngNo || item.onbidCltrno}:${item.pbctCdtnNo || ''}`
+          detailCache.set(cacheKey, adaptRawToDetailInfo(raw, group))
+          return item
+        })
+      } catch {
+        return []
+      }
+    })
+  )
+
+  const seen = new Set<string>()
+  return results.flat().filter((item) => {
+    if (seen.has(item.id)) return false
+    seen.add(item.id)
+    return true
+  })
 }
