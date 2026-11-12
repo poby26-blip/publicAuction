@@ -208,6 +208,24 @@ export default function App() {
   }
 
   /**
+   * 보관함에서 사용자가 선택한 여러 건의 관심물건을 일괄 삭제합니다.
+   * - 상태 변경 후 useEffect를 통해 storageService에도 자동 영구 반영됩니다.
+   * @param targetIds - 삭제할 공매 물건 ID 배열
+   */
+  const removeWatchlistItems = (targetIds: string[]) => {
+    if (targetIds.length === 0) return
+    const idSet = new Set(targetIds)
+    const removedCount = watchlistItems.filter((item) => idSet.has(item.id)).length
+    if (removedCount === 0) return
+
+    setWatchlistItems((prev) => prev.filter((item) => !idSet.has(item.id)))
+    showToast(`선택한 ${removedCount}건의 관심 물건이 삭제되었습니다.`, {
+      type: 'info',
+      duration: 2200,
+    })
+  }
+
+  /**
    * 홈 상단 지역 칩('서울', '경기' 등) 또는 3대 상품군 탭('전체', '부동산', '동산', '자동차') 클릭 시 호출됩니다.
    * 선택된 지역 및 상품군에 알맞은 온비드 OpenAPI를 동적으로 호출하여 홈 화면 실데이터를 갱신합니다.
    * @param region - 선택된 시/도 지역명 (예: '서울', '전남광주', '전체')
@@ -345,9 +363,11 @@ export default function App() {
               items={watchlistItems}
               watchlist={watchlist}
               onToggleWatchlist={toggleWatchlist}
+              onRemoveSelectedWatchlist={removeWatchlistItems}
               onClearWatchlist={clearWatchlist}
               onSelectItem={(item) => setSelectedItem(item)}
               onExplore={() => setActiveTab('list')}
+              onShowToast={showToast}
             />
           )}
 

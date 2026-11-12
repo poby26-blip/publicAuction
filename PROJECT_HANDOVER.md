@@ -175,6 +175,15 @@
 
 ---
 
+### ✅ [9단계] 전역 토스트 알림 전환 및 관심 보관함 선택 삭제 구현 완료
+1. **공통 토스트 팝업 전역화 ([Toast.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/components/common/Toast.tsx), [App.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/App.tsx), [AuctionDetailScreen.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/pages/auction/AuctionDetailScreen.tsx), [MyScreen.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/pages/my/MyScreen.tsx))**:
+   - 기존 `alert()` 호출을 제거하고 `z-[60]` 계층의 공통 `<Toast />` 컴포넌트와 중앙 `showToast` 핸들러로 통합했습니다. (헤더 임박 알림 `'보러가기'`, 상세 화면 클립보드 복사/기일알림/온비드 `'사이트 이동'` 액션 포함)
+2. **관심 공매 보관함 선택 삭제 ([WatchlistScreen.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/pages/watchlist/WatchlistScreen.tsx), [App.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/App.tsx))**:
+   - 보관함 툴바에 `선택 삭제` 모드 전환 버튼을 추가하고, 선택 모드에서 `전체 선택 / 전체 해제`, 카드 체크박스 토글, 하단 플로팅 일괄 삭제 바(`선택한 N건 삭제`)를 구현했습니다.
+   - 삭제 실행 시 `window.confirm` 확인창을 거쳐 `removeWatchlistItems`로 일괄 삭제하고 `storageService` 영구 반영 및 토스트 피드백을 제공합니다.
+
+---
+
 ## 🚀 5. 앞으로 남은 작업 로드맵 (Upcoming Roadmap)
 
 사용자와 합의된 다음 우선순위 작업 로드맵입니다. **에이전트는 작업 전 반드시 사전 계획을 사용자에게 제시하고 승인을 득한 후 진행**해야 합니다.

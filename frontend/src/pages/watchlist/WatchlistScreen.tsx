@@ -5,11 +5,12 @@
  * [주요 기능]
  * 1. storageService를 통해 영구 보관된 공매 실데이터 목록 표출 (목록·차량·타지역 찜 모두 포함)
  * 2. 최신등록순 / 마감임박순 실시간 정렬 토글 및 마감 임박 물건 주의 배너
- * 3. 개별 관심 해제 및 전체 비우기(안전 확인) 관리 기능
+ * 3. 개별 관심 해제, 선택 삭제(체크박스 다중 선택) 및 전체 비우기(안전 확인) 관리 기능
  * 4. 이미지 로드 실패 Fallback 및 D-Day('오늘 마감', '상시 매각') 방어 표출
  */
 
 import { useState } from 'react'
+import { type ShowToastFn } from '../../components/common/Toast'
 import {
   type GongItem,
   formatWon,
@@ -29,6 +30,9 @@ interface WatchlistScreenProps {
   /** 개별 물건 관심 등록 토글(삭제) 콜백 */
   onToggleWatchlist: (item: GongItem) => void
 
+  /** 선택한 여러 물건 일괄 삭제 콜백 */
+  onRemoveSelectedWatchlist?: (ids: string[]) => void
+
   /** 보관함 전체 비우기 콜백 */
   onClearWatchlist?: () => void
 
@@ -37,21 +41,36 @@ interface WatchlistScreenProps {
 
   /** 빈 보관함 상태에서 공매 탐색(목록 탭)으로 이동시키는 콜백 */
   onExplore: () => void
+
+  /** 전역 토스트 팝업 호출 콜백 */
+  onShowToast?: ShowToastFn
 }
 
 export function WatchlistScreen({
   items,
   watchlist,
   onToggleWatchlist,
+  onRemoveSelectedWatchlist,
   onClearWatchlist,
   onSelectItem,
   onExplore,
+  onShowToast,
 }: WatchlistScreenProps) {
   /** 보관함 내 정렬 기준 ('recent': 최신등록순, 'dDay': 마감임박순) */
   const [sortBy, setSortBy] = useState<'recent' | 'dDay'>('recent')
 
+  /** 다중 선택 삭제 모드 활성화 여부 */
+  const [isSelectionMode, setIsSelectionMode] = useState(false)
+
+  /** 선택 모드에서 체크된 물건 ID 배열 */
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+
   /** 전달받은 items 중 현재 watchlist에 포함된 항목 필터링 */
   const savedItems = items.filter((item) => watchlist.includes(item.id))
+
+  /** 현재 보관 중인 물건 기준 유효한 선택 ID 목록 */
+  const savedIdSet = new Set(savedItems.map((item) => item.id))
+  const activeSelectedIds = selectedIds.filter((id) => savedIdSet.has(id))
 
   /** 입찰 마감이 3일 이내로 임박한 물건 수 (상시 매각 제외) */
   const urgentCount = savedItems.filter((item) => item.dDay <= 3).length
@@ -69,6 +88,64 @@ export function WatchlistScreen({
           return (a.auctionDate || '').localeCompare(b.auctionDate || '')
         })
 
+  const isAllSelected =
+    sortedItems.length > 0 && activeSelectedIds.length === sortedItems.length
+
+  /** 선택 모드 진입 */
+  const handleEnterSelectionMode = () => {
+    setIsSelectionMode(true)
+    setSelectedIds([])
+  }
+
+  /** 선택 모드 취소 및 선택 초기화 */
+  const handleExitSelectionMode = () => {
+    setIsSelectionMode(false)
+    setSelectedIds([])
+  }
+
+  /** 개별 카드 선택/해제 토글 */
+  const handleToggleSelectItem = (id: string) => {
+    setSelectedIds((prev) => {
+      const validPrev = prev.filter((itemId) => savedIdSet.has(itemId))
+      return validPrev.includes(id)
+        ? validPrev.filter((itemId) => itemId !== id)
+        : [...validPrev, id]
+    })
+  }
+
+  /** 전체 선택 / 전체 해제 토글 */
+  const handleToggleSelectAll = () => {
+    if (isAllSelected) {
+      setSelectedIds([])
+      return
+    }
+    setSelectedIds(sortedItems.map((item) => item.id))
+  }
+
+  /**
+   * '선택한 N건 삭제' 버튼 클릭 시 확인 창을 거쳐 일괄 삭제를 수행합니다.
+   */
+  const handleDeleteSelected = () => {
+    if (activeSelectedIds.length === 0) {
+      onShowToast?.('삭제할 물건을 먼저 선택해 주세요.', {
+        type: 'warning',
+        duration: 2000,
+      })
+      return
+    }
+    if (!onRemoveSelectedWatchlist) return
+
+    if (
+      window.confirm(
+        `선택한 ${activeSelectedIds.length}건의 관심 물건을 삭제하시겠습니까?`
+      )
+    ) {
+      onRemoveSelectedWatchlist(activeSelectedIds)
+      setIsSelectionMode(false)
+      setSelectedIds([])
+    }
+  }
+
   /**
    * '전체 비우기' 버튼 클릭 시 확인 창을 띄워 실수로 인한 일괄 삭제를 방지합니다.
    */
@@ -76,11 +153,17 @@ export function WatchlistScreen({
     if (!onClearWatchlist || savedItems.length === 0) return
     if (window.confirm(`보관함에 담긴 모든 관심 물건(${savedItems.length}건)을 삭제하시겠습니까?`)) {
       onClearWatchlist()
+      setIsSelectionMode(false)
+      setSelectedIds([])
     }
   }
 
   return (
-    <div className="flex flex-col gap-4 pb-24 px-4 pt-2">
+    <div
+      className={`flex flex-col gap-4 px-4 pt-2 ${
+        isSelectionMode && sortedItems.length > 0 ? 'pb-40' : 'pb-24'
+      }`}
+    >
       {/* 1. 상단 타이틀 및 보관 건수 헤더 */}
       <div className="flex items-center justify-between pb-2 border-b border-[#e5eeff]">
         <div>
@@ -107,49 +190,97 @@ export function WatchlistScreen({
             </div>
           )}
 
-          {/* 정렬 토글 및 전체 비우기 툴바 */}
-          <div className="flex items-center justify-between text-xs">
-            <div className="flex items-center gap-1.5">
+          {/* 정렬 토글 / 선택 삭제 / 전체 비우기 툴바 */}
+          {isSelectionMode ? (
+            <div className="flex items-center justify-between text-xs bg-[#eff4ff]/80 border border-[#d6e2ff] rounded-xl px-3 py-2">
               <button
                 type="button"
-                onClick={() => setSortBy('recent')}
-                className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
-                  sortBy === 'recent'
-                    ? 'bg-[#002046] text-white shadow-2xs'
-                    : 'bg-white border border-[#e5eeff] text-[#74777f] hover:text-[#0b1c30]'
-                }`}
+                onClick={handleToggleSelectAll}
+                className="flex items-center gap-1.5 font-bold text-[#002046] hover:text-[#0051d5] transition-colors cursor-pointer"
               >
-                최신등록순
+                <span
+                  className={`material-symbols-outlined text-[19px] ${
+                    activeSelectedIds.length > 0 ? 'text-[#0051d5]' : 'text-[#74777f]'
+                  }`}
+                >
+                  {isAllSelected
+                    ? 'check_box'
+                    : activeSelectedIds.length > 0
+                      ? 'indeterminate_check_box'
+                      : 'check_box_outline_blank'}
+                </span>
+                <span>
+                  {isAllSelected ? '전체 해제' : '전체 선택'} ({activeSelectedIds.length}/
+                  {sortedItems.length})
+                </span>
               </button>
+
               <button
                 type="button"
-                onClick={() => setSortBy('dDay')}
-                className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
-                  sortBy === 'dDay'
-                    ? 'bg-[#002046] text-white shadow-2xs'
-                    : 'bg-white border border-[#e5eeff] text-[#74777f] hover:text-[#0b1c30]'
-                }`}
+                onClick={handleExitSelectionMode}
+                className="text-[11px] font-bold text-[#43474e] hover:text-[#0b1c30] px-2.5 py-1 rounded-lg bg-white border border-[#d6e2ff] transition-colors cursor-pointer"
               >
-                마감임박순
+                취소
               </button>
             </div>
+          ) : (
+            <div className="flex items-center justify-between text-xs gap-1">
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setSortBy('recent')}
+                  className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
+                    sortBy === 'recent'
+                      ? 'bg-[#002046] text-white shadow-2xs'
+                      : 'bg-white border border-[#e5eeff] text-[#74777f] hover:text-[#0b1c30]'
+                  }`}
+                >
+                  최신등록순
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSortBy('dDay')}
+                  className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
+                    sortBy === 'dDay'
+                      ? 'bg-[#002046] text-white shadow-2xs'
+                      : 'bg-white border border-[#e5eeff] text-[#74777f] hover:text-[#0b1c30]'
+                  }`}
+                >
+                  마감임박순
+                </button>
+              </div>
 
-            {onClearWatchlist && (
-              <button
-                type="button"
-                onClick={handleClearAll}
-                className="text-[11px] font-semibold text-[#74777f] hover:text-[#ba1a1a] flex items-center gap-0.5 px-2 py-1 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer"
-              >
-                <span className="material-symbols-outlined text-[15px]">delete_sweep</span>
-                <span>전체 비우기</span>
-              </button>
-            )}
-          </div>
+              <div className="flex items-center gap-1 shrink-0">
+                {onRemoveSelectedWatchlist && (
+                  <button
+                    type="button"
+                    onClick={handleEnterSelectionMode}
+                    className="text-[11px] font-semibold text-[#0051d5] hover:bg-[#eff4ff] flex items-center gap-0.5 px-2 py-1 rounded-lg transition-colors cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-[15px]">checklist</span>
+                    <span>선택 삭제</span>
+                  </button>
+                )}
+
+                {onClearWatchlist && (
+                  <button
+                    type="button"
+                    onClick={handleClearAll}
+                    className="text-[11px] font-semibold text-[#74777f] hover:text-[#ba1a1a] flex items-center gap-0.5 px-2 py-1 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-[15px]">delete_sweep</span>
+                    <span>전체 비우기</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* 관심 물건 카드 리스트 */}
           <div className="flex flex-col gap-3">
             {sortedItems.map((item) => {
               const fallbackImg = getCategoryFallbackImage(item.category)
+              const isSelected = activeSelectedIds.includes(item.id)
 
               // D-Day 뱃지 텍스트 및 긴급 색상 판정
               const dDayLabel =
@@ -163,9 +294,32 @@ export function WatchlistScreen({
               return (
                 <article
                   key={item.id}
-                  onClick={() => onSelectItem(item)}
-                  className="bg-white rounded-2xl border border-[#e5eeff] p-3.5 flex gap-3 shadow-2xs hover:shadow-xs hover:border-[#0051d5]/40 active:scale-[0.99] cursor-pointer transition-all group"
+                  onClick={() =>
+                    isSelectionMode ? handleToggleSelectItem(item.id) : onSelectItem(item)
+                  }
+                  className={`rounded-2xl border p-3.5 flex gap-3 shadow-2xs active:scale-[0.99] cursor-pointer transition-all group ${
+                    isSelectionMode && isSelected
+                      ? 'bg-[#eff4ff]/50 border-[#0051d5] ring-1 ring-[#0051d5]/25'
+                      : 'bg-white border-[#e5eeff] hover:shadow-xs hover:border-[#0051d5]/40'
+                  }`}
                 >
+                  {/* 선택 모드 체크박스 */}
+                  {isSelectionMode && (
+                    <div className="flex items-center shrink-0" aria-hidden="true">
+                      <span
+                        className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${
+                          isSelected
+                            ? 'bg-[#0051d5] border-[#0051d5] text-white'
+                            : 'bg-white border-[#c3c7cf] text-transparent'
+                        }`}
+                      >
+                        <span className="material-symbols-outlined text-[14px] font-bold">
+                          check
+                        </span>
+                      </span>
+                    </div>
+                  )}
+
                   {/* 썸네일 이미지 및 D-Day 뱃지 */}
                   <div className="w-24 h-24 rounded-xl overflow-hidden bg-slate-100 flex-shrink-0 relative">
                     <img
@@ -200,19 +354,21 @@ export function WatchlistScreen({
                             </span>
                           )}
                         </div>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            onToggleWatchlist(item)
-                          }}
-                          className="text-[#ba1a1a] hover:bg-rose-50 rounded-full p-1 transition-colors cursor-pointer shrink-0"
-                          aria-label="관심 물건 삭제"
-                        >
-                          <span className="material-symbols-outlined text-[18px] fill-1">
-                            favorite
-                          </span>
-                        </button>
+                        {!isSelectionMode && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              onToggleWatchlist(item)
+                            }}
+                            className="text-[#ba1a1a] hover:bg-rose-50 rounded-full p-1 transition-colors cursor-pointer shrink-0"
+                            aria-label="관심 물건 삭제"
+                          >
+                            <span className="material-symbols-outlined text-[18px] fill-1">
+                              favorite
+                            </span>
+                          </button>
+                        )}
                       </div>
                       <h4 className="text-sm font-bold text-[#0b1c30] line-clamp-1 mt-0.5 group-hover:text-[#0051d5] transition-colors">
                         {item.title}
@@ -240,6 +396,37 @@ export function WatchlistScreen({
               )
             })}
           </div>
+
+          {/* 선택 모드 하단 플로팅 일괄 삭제 액션 바 */}
+          {isSelectionMode && (
+            <div className="fixed bottom-[76px] left-0 right-0 max-w-md mx-auto px-4 z-40">
+              <div className="bg-white/95 backdrop-blur-md border border-[#d6e2ff] rounded-2xl shadow-lg p-2.5 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleExitSelectionMode}
+                  className="px-4 py-2.5 rounded-xl bg-[#f1f4f9] hover:bg-[#e5eeff] text-[#43474e] text-xs font-bold transition-colors cursor-pointer shrink-0"
+                >
+                  취소
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeleteSelected}
+                  className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    activeSelectedIds.length > 0
+                      ? 'bg-[#ba1a1a] hover:bg-[#93000a] text-white shadow-xs active:scale-[0.98]'
+                      : 'bg-slate-200 text-slate-500'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[16px]">delete</span>
+                  <span>
+                    {activeSelectedIds.length > 0
+                      ? `선택한 ${activeSelectedIds.length}건 삭제`
+                      : '삭제할 물건을 선택하세요'}
+                  </span>
+                </button>
+              </div>
+            </div>
+          )}
         </>
       ) : (
         /* 3. 보관함이 비어 있는 경우 Empty State */
