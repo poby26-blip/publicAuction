@@ -10,6 +10,7 @@
  */
 
 import { useEffect, useState } from 'react'
+import { PhotoGalleryModal } from '../../components/common/PhotoGalleryModal'
 import { type ShowToastFn } from '../../components/common/Toast'
 import {
   type GongDetailInfo,
@@ -153,6 +154,9 @@ export function AuctionDetailScreen({
 }: AuctionDetailScreenProps) {
   /** 현재 선택된 슬라이더 이미지 인덱스 */
   const [selectedImg, setSelectedImg] = useState<number>(0)
+
+  /** 사진 전체보기 라이트박스 모달 열림 여부 */
+  const [isGalleryOpen, setIsGalleryOpen] = useState<boolean>(false)
 
   /** 온비드 물건상세 OpenAPI 비동기 조회 결과 */
   const [detail, setDetail] = useState<GongDetailInfo | null>(null)
@@ -487,17 +491,21 @@ export function AuctionDetailScreen({
         {/* 좌측 컬럼: 사진 갤러리 + 제목·주소·지도 링크 (태블릿 이상 상단 고정) */}
         <div className="md:col-span-5 md:sticky md:top-[76px] flex flex-col">
           {/* 2. 대표 이미지 슬라이더 영역 */}
-          <div className="relative aspect-4/3 bg-slate-900 overflow-hidden md:rounded-2xl md:border md:border-[#e5eeff] md:shadow-xs">
+          <div className="relative aspect-4/3 bg-slate-900 overflow-hidden md:rounded-2xl md:border md:border-[#e5eeff] md:shadow-xs group">
             <img
               src={galleryImages[safeSelectedImg] || item.imageUrl || fallbackImg}
               alt={item.title}
-              className="w-full h-full object-cover"
+              onClick={() => setIsGalleryOpen(true)}
+              className="w-full h-full object-cover cursor-zoom-in group-hover:scale-[1.02] transition-transform duration-300"
               onError={(e) => {
                 e.currentTarget.src = fallbackImg
               }}
             />
+            {/* 배지 및 버튼 가독성을 위한 상·하단 은은한 그라데이션 */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-black/15 pointer-events-none" />
+
             {/* D-Day 및 공매 유형 뱃지 */}
-            <div className="absolute top-3 left-3 flex items-center gap-1.5">
+            <div className="absolute top-3 left-3 flex items-center gap-1.5 pointer-events-none">
               <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-[#ba1a1a] text-white shadow-xs">
                 {item.dDay <= 0 ? '오늘 마감' : item.dDay > 365 ? '상시 매각' : `D-${item.dDay}`}
               </span>
@@ -505,11 +513,26 @@ export function AuctionDetailScreen({
                 {item.auctionType}
               </span>
             </div>
-            {galleryImages.length > 1 && (
-              <div className="absolute bottom-3 right-3 bg-black/60 text-white text-[11px] font-medium px-2.5 py-0.5 rounded-full backdrop-blur-xs">
-                {safeSelectedImg + 1} / {galleryImages.length}
-              </div>
-            )}
+
+            {/* 우측 하단 순번 배지 & 사진 전체보기 버튼 */}
+            <div className="absolute bottom-3 right-3 flex items-center gap-1.5">
+              {galleryImages.length > 1 && (
+                <span className="bg-black/60 text-white text-[11px] font-medium px-2.5 py-1 rounded-full backdrop-blur-xs pointer-events-none">
+                  {safeSelectedImg + 1} / {galleryImages.length}
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={() => setIsGalleryOpen(true)}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/90 hover:bg-white text-[#002046] text-[11px] font-bold shadow-xs backdrop-blur-xs active:scale-95 transition-all cursor-pointer"
+                aria-label="사진 전체보기 열기"
+              >
+                <span className="material-symbols-outlined text-[14px] text-[#0051d5]">
+                  photo_library
+                </span>
+                <span>전체보기</span>
+              </button>
+            </div>
           </div>
 
           {/* 썸네일 리스트 */}
@@ -897,6 +920,18 @@ export function AuctionDetailScreen({
           <span className="material-symbols-outlined text-[18px]">open_in_new</span>
         </button>
       </div>
+
+      {/* 5. 풀스크린 사진 전체보기 라이트박스 모달 */}
+      {isGalleryOpen && (
+        <PhotoGalleryModal
+          title={item.title}
+          images={galleryImages}
+          currentIndex={safeSelectedImg}
+          fallbackImage={fallbackImg}
+          onSelectIndex={setSelectedImg}
+          onClose={() => setIsGalleryOpen(false)}
+        />
+      )}
     </div>
   )
 }

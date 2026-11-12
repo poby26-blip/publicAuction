@@ -23,7 +23,7 @@
   ├── frontend/
   │   ├── src/
   │   │   ├── components/
-  │   │   │   ├── common/       # Skeleton.tsx, AuctionCard.tsx, Toast.tsx 등 공통 컴포넌트
+  │   │   │   ├── common/       # Skeleton.tsx, AuctionCard.tsx, Toast.tsx, PhotoGalleryModal.tsx 등 공통 컴포넌트
   │   │   │   └── layout/       # AppHeader.tsx, AppBottomNav.tsx 등 레이아웃
   │   │   ├── data/             # mockAuctionData.ts (표준 17개 시도 메타데이터 및 타입 정의)
   │   │   ├── pages/
@@ -206,6 +206,9 @@
 2. **전 화면 다중 컬럼 그리드 · 상세 2컬럼 분할 ([HomeScreen.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/pages/home/HomeScreen.tsx), [AuctionListScreen.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/pages/auction/AuctionListScreen.tsx), [WatchlistScreen.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/pages/watchlist/WatchlistScreen.tsx), [MyScreen.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/pages/my/MyScreen.tsx), [AuctionDetailScreen.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/pages/auction/AuctionDetailScreen.tsx), [Skeleton.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/components/common/Skeleton.tsx))**:
    - 홈·공매목록·관심보관함 물건 리스트를 `1열(모바일) / 2열(폴더블 sm) / 3열(태블릿 lg~xl)` 반응형 그리드로 전환하고, 마이페이지는 `lg:grid-cols-12` 2컬럼 대시보드로 구성했습니다.
    - 상세 화면은 태블릿(`md+`)에서 좌측 `sticky` 요약(사진 갤러리·제목·주소·지도 링크) / 우측 상세(가격·일정·제원·유의사항·감정·권리) 2컬럼 분할 및 하단 가격 요약 포함 액션 독으로 개편했습니다.
+3. **상세 화면 사진 전체보기 라이트박스 ([PhotoGalleryModal.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/components/common/PhotoGalleryModal.tsx), [AuctionDetailScreen.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/pages/auction/AuctionDetailScreen.tsx))**:
+   - 이미지 상·하단 그라데이션, 우측 하단 `전체보기` 버튼 및 대표 이미지 클릭 진입을 구현했습니다.
+   - `z-[70]` 풀스크린 모달에서 원본 비율(`object-contain`), `1x ↔ 확대 보기` 스크롤 팬, 터치 스와이프, 키보드(`ESC`·좌우 방향키), 하단 썸네일 탐색 및 슬라이더 인덱스 동기화를 지원합니다.
 
 ---
 
@@ -214,7 +217,7 @@
 사용자와 합의된 다음 우선순위 작업 로드맵입니다. **에이전트는 작업 전 반드시 사전 계획을 사용자에게 제시하고 승인을 득한 후 진행**해야 합니다.
 
 ### 🎯 [차기 작업 1순위] 상세 화면 UI/UX 고도화 (Stitch 디자인 반영)
-- 이미지 히어로 그라데이션·사진 전체보기, 가격 카드 절감 금액·비율 게이지 바, 공공데이터 출처 카드 등 Google Stitch `'공매이지 - 공매 물건 상세정보'`(`3c5d75841ea4462392f337c1aac35121`) 기반 UI/UX 고도화.
+- 가격 카드 절감 금액·비율 게이지 바, 공공데이터 출처 카드 등 Google Stitch `'공매이지 - 공매 물건 상세정보'`(`3c5d75841ea4462392f337c1aac35121`) 기반 잔여 UI/UX 고도화.
 
 ### 🎯 [2순위] 차기 버전(v2.0) Google Stitch 마이페이지 고도화 기능
 - Google Stitch 프로젝트(`15839425802944736750` / 화면 `e2a6bbf276c74d65a2b1820c793d97a6`, 접속 설정 `.agents/mcp_config.json`)에 기획된 회원·인증 중심 확장 기능:
