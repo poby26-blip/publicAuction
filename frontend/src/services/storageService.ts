@@ -17,7 +17,33 @@ import { type GongItem } from '../data/mockAuctionData'
 export const STORAGE_KEYS = {
   /** 관심 등록(찜)한 공매 물건(GongItem[]) 목록 키 */
   WATCHLIST_ITEMS: 'gong_watchlist_items_v1',
+  /** 사용자 공매 및 입찰 알림 설정(AlertSettings) 키 */
+  USER_ALERT_SETTINGS: 'gong_alert_settings_v1',
 } as const
+
+/**
+ * 공매 및 입찰 알림 설정 인터페이스
+ */
+export interface AlertSettings {
+  /** 입찰 마감 D-1 / D-Day 알림 여부 */
+  ddayAlert: boolean
+  /** 조건 맞춤 신규 공매 등록 알림 여부 */
+  customFilterAlert: boolean
+  /** 감정가 하향 & 유찰 속보 푸시 여부 */
+  priceCutAlert: boolean
+  /** 심야 시간대(21:00 ~ 08:00) 비긴급 알림 음소거 여부 */
+  nightSilence: boolean
+}
+
+/**
+ * 알림 설정 기본값
+ */
+export const DEFAULT_ALERT_SETTINGS: AlertSettings = {
+  ddayAlert: true,
+  customFilterAlert: true,
+  priceCutAlert: true,
+  nightSilence: true,
+}
 
 /**
  * 웹(localStorage) 및 React Native(AsyncStorage / MMKV) 호환용 공통 스토리지 어댑터 인터페이스
@@ -129,5 +155,54 @@ export async function clearWatchlistItems(): Promise<void> {
   } catch (err) {
     console.error('[storageService] 관심물건 초기화 실패:', err)
   }
+}
+
+// ---------------------------------------------------------------------------
+// [알림 설정(Alert Settings) 전용 도메인 스토리지 API]
+// ---------------------------------------------------------------------------
+
+/**
+ * 로컬 저장소에 영구 보관된 공매 알림 설정(AlertSettings)을 비동기로 불러옵니다.
+ * - 데이터가 없거나 파싱 실패 시 안전하게 DEFAULT_ALERT_SETTINGS를 반환합니다.
+ */
+export async function loadAlertSettings(): Promise<AlertSettings> {
+  try {
+    const raw = await activeStorageAdapter.getItem(STORAGE_KEYS.USER_ALERT_SETTINGS)
+    if (!raw) return DEFAULT_ALERT_SETTINGS
+    const parsed = JSON.parse(raw)
+    return {
+      ...DEFAULT_ALERT_SETTINGS,
+      ...(typeof parsed === 'object' && parsed !== null ? parsed : {}),
+    }
+  } catch (err) {
+    console.warn('[storageService] 알림 설정 복원 실패:', err)
+    return DEFAULT_ALERT_SETTINGS
+  }
+}
+
+/**
+ * 사용자의 공매 알림 설정(AlertSettings)을 로컬 저장소에 비동기 영구 저장합니다.
+ */
+export async function saveAlertSettings(settings: AlertSettings): Promise<void> {
+  try {
+    await activeStorageAdapter.setItem(
+      STORAGE_KEYS.USER_ALERT_SETTINGS,
+      JSON.stringify(settings)
+    )
+  } catch (err) {
+    console.error('[storageService] 알림 설정 저장 실패:', err)
+  }
+}
+
+/**
+ * 알림 설정을 기본값으로 초기화하고 저장된 설정 키를 삭제합니다.
+ */
+export async function resetAlertSettings(): Promise<AlertSettings> {
+  try {
+    await activeStorageAdapter.removeItem(STORAGE_KEYS.USER_ALERT_SETTINGS)
+  } catch (err) {
+    console.error('[storageService] 알림 설정 초기화 실패:', err)
+  }
+  return DEFAULT_ALERT_SETTINGS
 }
 

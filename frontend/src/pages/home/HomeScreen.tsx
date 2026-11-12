@@ -4,7 +4,7 @@
  * 
  * [주요 구성 요소]
  * 1. 상단 통합 검색바 & 시/도 지역 칩 필터 (실시간 API 동적 페칭 연동)
- * 2. 8대 자산 카테고리 퀵 내비게이션 그리드 (4x2)
+ * 2. 3대 자산 상품군(전체/부동산/동산/자동차) 대분류 탭 및 세부 카테고리 퀵 내비게이션
  * 3. 온비드 공매 초보 가이드 인사이트 배너
  * 4. '마감 임박! 입찰 D-1 특가' 가로 스크롤 카드 섹션 (D-Day 오름차순 정렬)
  * 5. '이번 주 유찰 추천! 반값 물건' 세로 리스트 섹션 (최고 할인율 내림차순 정렬)
@@ -13,6 +13,8 @@
 
 import { useState } from 'react'
 import {
+  type AssetGroup,
+  GONG_ASSET_GROUPS,
   GONG_CATEGORIES,
   GONG_REGIONS,
   type GongItem,
@@ -41,8 +43,8 @@ interface HomeScreenProps {
   /** 카테고리, 지역, 검색어 필터를 적용하여 공매 목록 탭으로 이동하는 콜백 */
   onNavigateToList: (category?: string, region?: string, keyword?: string) => void
 
-  /** 상단 시/도 지역 칩 선택 시 온비드 OpenAPI 실데이터를 동적 조회하도록 요청하는 콜백 */
-  onRegionChange?: (region: string) => void
+  /** 상단 시/도 지역 칩 또는 3대 상품군 탭 선택 시 온비드 OpenAPI 실데이터를 동적 조회하도록 요청하는 콜백 */
+  onRegionChange?: (region: string, assetGroup?: AssetGroup) => void
 
   /** 온비드 OpenAPI 실데이터 로딩 상태 플래그 (true일 때 Shimmer 스켈레톤 표출) */
   isLoading?: boolean
@@ -61,8 +63,11 @@ export function HomeScreen({
   // [로컬 상태 (Local State)]
   // -------------------------------------------------------------------------
 
-  /** 현재 선택된 시/도 지역 칩 ('전체', '서울', '경기', '부산' 등) */
+  /** 현재 선택된 시/도 지역 칩 ('전체', '서울', '경기', '전남광주' 등) */
   const [selectedRegion, setSelectedRegion] = useState('전체')
+
+  /** 현재 선택된 1차 3대 자산 상품군 대분류 ('all' | 'real_estate' | 'movable' | 'car') */
+  const [selectedAssetGroup, setSelectedAssetGroup] = useState<AssetGroup>('all')
 
   /** 홈 화면 상단 검색 인풋에 입력된 키워드 */
   const [searchKeyword, setSearchKeyword] = useState('')
@@ -74,22 +79,60 @@ export function HomeScreen({
   /**
    * 상단 시/도 지역 칩 클릭 핸들러
    * 1. 로컬 selectedRegion 상태를 업데이트합니다.
-   * 2. 상위 App 컴포넌트의 onRegionChange를 호출하여 해당 지역의 실매물을 OpenAPI로 동적 페칭합니다.
+   * 2. 현재 선택된 상품군(selectedAssetGroup)과 함께 OpenAPI 동적 페칭을 요청합니다.
    */
   const handleRegionClick = (region: string) => {
     setSelectedRegion(region)
-    onRegionChange?.(region)
+    onRegionChange?.(region, selectedAssetGroup)
   }
 
   /**
-   * [엄격한 지역 필터링 원칙 및 표준 행정구역 매칭]
-   * - '전체'일 때는 전달받은 전체 매물 목록을 유지합니다.
-   * - 특정 지역('서울', '경기', '전남광주' 등)이 선택된 경우, 정식 행정구역명과 통합특별시를 모두 포괄하는 isRegionMatch로 엄격히 필터링합니다.
-   * - 데이터가 0건이어도 타 지역 데이터를 섞어서 노출하지 않고 정직한 빈 상태(Empty State)를 표출합니다.
+   * 3대 상품군 대분류 탭('전체' | '부동산' | '동산' | '자동차') 클릭 핸들러
+   * 1. 로컬 selectedAssetGroup 상태를 업데이트합니다.
+   * 2. 선택된 지역과 상품군에 맞춰 해당 OpenAPI 데이터를 실시간으로 재조회합니다.
    */
-  const activeItems = selectedRegion === '전체'
-    ? items
-    : items.filter((item) => isRegionMatch(item.address, selectedRegion))
+  const handleAssetGroupClick = (group: AssetGroup) => {
+    setSelectedAssetGroup(group)
+    onRegionChange?.(selectedRegion, group)
+  }
+
+  /**
+   * [엄격한 지역 & 상품군 필터링 원칙]
+   * - 선택된 시/도 지역(isRegionMatch)과 1차 상품군(selectedAssetGroup)에 모두 부합하는 물건만 추립니다.
+   * - API 응답 수신 전이나 데이터가 0건일 때도 타 상품군/타 지역 데이터를 섞어 노출하지 않습니다.
+   */
+  const activeItems = items.filter((item) => {
+    if (!isRegionMatch(item.address, selectedRegion)) return false
+    if (selectedAssetGroup === 'movable' && item.category !== 'goods') return false
+    if (selectedAssetGroup === 'car' && item.category !== 'car') return false
+    if (
+      selectedAssetGroup === 'real_estate' &&
+      !['apt', 'commercial', 'land', 'factory'].includes(item.category)
+    ) {
+      return false
+    }
+    return true
+  })
+
+  /** 현재 선택된 상품군 라벨 ('전체' | '부동산' | '동산' | '자동차') */
+  const activeGroupLabel =
+    GONG_ASSET_GROUPS.find((g) => g.id === selectedAssetGroup)?.label || '전체'
+
+  /** 현재 활성 필터 안내 라벨 조합 (예: '서울 · 부동산', '동산') */
+  const filterSummaryLabel = [
+    selectedRegion !== '전체' ? selectedRegion : null,
+    selectedAssetGroup !== 'all' ? activeGroupLabel : null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
+
+  /** 목록 화면으로 넘길 기본 카테고리 값 */
+  const currentListCategory = selectedAssetGroup === 'all' ? undefined : selectedAssetGroup
+
+  /** 부동산 4대 세부 카테고리 목록 */
+  const realEstateSubCategories = GONG_CATEGORIES.filter((c) => c.assetGroup === 'real_estate')
+  /** 특가 테마 카테고리 목록 (신규등록, 반값공매) */
+  const themeSubCategories = GONG_CATEGORIES.filter((c) => c.assetGroup === 'theme')
 
   /**
    * [섹션 4: 마감 임박 특가 물건 필터링 및 정렬]
@@ -137,17 +180,27 @@ export function HomeScreen({
             value={searchKeyword}
             onChange={(e) => setSearchKeyword(e.target.value)}
             onKeyDown={(e) => {
-              // 엔터 키 입력 시 현재 선택된 지역과 검색어를 함께 목록 화면으로 전달
+              // 엔터 키 입력 시 현재 선택된 상품군, 지역, 검색어를 함께 목록 화면으로 전달
               if (e.key === 'Enter') {
-                onNavigateToList(undefined, selectedRegion === '전체' ? undefined : selectedRegion, searchKeyword.trim())
+                onNavigateToList(
+                  currentListCategory,
+                  selectedRegion === '전체' ? undefined : selectedRegion,
+                  searchKeyword.trim()
+                )
               }
             }}
-            placeholder="지역, 물건번호, 자산명 검색 (예: 잠실, 제네시스)"
+            placeholder="지역, 물건번호, 자산명 검색 (예: 잠실, 제네시스, 기계)"
             className="w-full h-12 bg-white rounded-2xl pl-10 pr-10 text-sm text-[#0b1c30] placeholder-[#74777f] border border-[#c4c6cf]/60 shadow-xs focus:outline-none focus:ring-2 focus:ring-[#0051d5] focus:border-transparent transition-all"
           />
           <button
             type="button"
-            onClick={() => onNavigateToList(undefined, selectedRegion === '전체' ? undefined : selectedRegion, searchKeyword.trim())}
+            onClick={() =>
+              onNavigateToList(
+                currentListCategory,
+                selectedRegion === '전체' ? undefined : selectedRegion,
+                searchKeyword.trim()
+              )
+            }
             className="absolute right-3 text-[#44474e] hover:text-[#0051d5] p-1"
             aria-label="검색 실행"
           >
@@ -155,7 +208,7 @@ export function HomeScreen({
           </button>
         </div>
 
-        {/* 시/도 지역 칩 가로 스크롤 (전체, 서울, 경기, 인천, 부산, 대전, 대구, 광주) */}
+        {/* 시/도 지역 칩 가로 스크롤 */}
         <div className="flex gap-2 overflow-x-auto no-scrollbar pt-3 pb-1 -mx-4 px-4">
           {GONG_REGIONS.map((region) => {
             const isSelected = selectedRegion === region
@@ -164,7 +217,7 @@ export function HomeScreen({
                 key={region}
                 type="button"
                 onClick={() => handleRegionClick(region)}
-                className={`flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all active:scale-95 ${
+                className={`flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all active:scale-95 cursor-pointer ${
                   isSelected
                     ? 'bg-[#0051d5] text-white shadow-xs'
                     : 'bg-white border border-[#c4c6cf]/50 text-[#44474e] hover:bg-[#e5eeff]'
@@ -176,57 +229,198 @@ export function HomeScreen({
           })}
         </div>
 
-        {/* 지역 필터링 매칭 상태 피드백 바 */}
-        {selectedRegion !== '전체' && (
+        {/* 지역 및 상품군 필터링 매칭 상태 피드백 바 */}
+        {(selectedRegion !== '전체' || selectedAssetGroup !== 'all') && (
           <div className="mt-2.5 flex items-center justify-between text-xs px-3.5 py-2 rounded-xl bg-white border border-[#e5eeff] shadow-2xs">
             {isLoading ? (
               <span className="text-[#0051d5] font-semibold flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-[#0051d5] animate-ping"></span>
-                '{selectedRegion}' 지역 온비드 실시간 매물 조회 중...
+                '{filterSummaryLabel}' 온비드 실시간 매물 조회 중...
               </span>
             ) : activeItems.length > 0 ? (
               <span className="text-[#0051d5] font-semibold flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-[#0051d5]"></span>
-                '{selectedRegion}' 지역 온비드 실시간 매물 {activeItems.length}건
+                '{filterSummaryLabel}' 온비드 실시간 매물 {activeItems.length}건
               </span>
             ) : (
               <span className="text-[#ba1a1a] font-medium flex items-center gap-1">
                 <span className="material-symbols-outlined text-[16px]">info</span>
-                '{selectedRegion}' 지역 실시간 매물이 없습니다.
+                '{filterSummaryLabel}' 실시간 매물이 없습니다.
               </span>
             )}
             <button
               type="button"
-              onClick={() => onNavigateToList(undefined, selectedRegion)}
-              className="text-[#002046] font-bold hover:text-[#0051d5] transition-colors flex items-center text-[11px]"
+              onClick={() =>
+                onNavigateToList(
+                  currentListCategory,
+                  selectedRegion === '전체' ? undefined : selectedRegion
+                )
+              }
+              className="text-[#002046] font-bold hover:text-[#0051d5] transition-colors flex items-center text-[11px] cursor-pointer shrink-0 ml-2"
             >
-              지역 전체보기 &gt;
+              전체보기 &gt;
             </button>
           </div>
         )}
       </section>
 
       {/* =================================================================== */}
-      {/* 2. 8대 자산 카테고리 퀵 내비게이션 그리드 (4x2)                    */}
+      {/* 2. 3대 상품군(전체/부동산/동산/자동차) 탭 & 세부 카테고리 퀵 그리드  */}
       {/* =================================================================== */}
-      <section className="px-4">
-        <div className="grid grid-cols-4 gap-2.5">
-          {GONG_CATEGORIES.map((cat) => (
+      <section className="px-4 flex flex-col gap-3">
+        {/* 1차 상품군 대분류 세그먼트 탭 (목록 화면과 통일된 3대 자산군 구조) */}
+        <div className="grid grid-cols-4 gap-1.5 p-1 bg-[#eff4ff] rounded-2xl border border-[#dce9ff]">
+          {GONG_ASSET_GROUPS.map((group) => {
+            const isActive = selectedAssetGroup === group.id
+            return (
+              <button
+                key={group.id}
+                type="button"
+                onClick={() => handleAssetGroupClick(group.id)}
+                className={`py-2 px-1 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer ${
+                  isActive
+                    ? 'bg-[#002046] text-white shadow-xs'
+                    : 'text-[#44474e] hover:text-[#002046] hover:bg-white/60'
+                }`}
+              >
+                <span className="material-symbols-outlined text-[15px]">{group.icon}</span>
+                <span>{group.label}</span>
+              </button>
+            )
+          })}
+        </div>
+
+        {/* 2차 선택 상품군별 세부 카테고리 퀵 내비게이션 */}
+        {selectedAssetGroup === 'all' && (
+          <div className="grid grid-cols-4 gap-2.5">
+            {GONG_CATEGORIES.map((cat) => (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() =>
+                  onNavigateToList(cat.id, selectedRegion === '전체' ? undefined : selectedRegion)
+                }
+                className="bg-white rounded-2xl p-2.5 flex flex-col items-center justify-center border border-[#e5eeff] shadow-2xs hover:border-[#0051d5] active:scale-95 transition-all group cursor-pointer"
+              >
+                <div className="w-10 h-10 rounded-xl bg-[#eff4ff] flex items-center justify-center text-[#002046] group-hover:bg-[#0051d5] group-hover:text-white transition-colors mb-1.5">
+                  <span className="material-symbols-outlined text-[22px]">{cat.icon}</span>
+                </div>
+                <span className="text-[11px] font-semibold text-[#0b1c30] tracking-tight text-center line-clamp-1">
+                  {cat.label}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {selectedAssetGroup === 'real_estate' && (
+          <div className="flex flex-col gap-2">
+            <div className="grid grid-cols-4 gap-2.5">
+              {realEstateSubCategories.map((cat) => (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() =>
+                    onNavigateToList(cat.id, selectedRegion === '전체' ? undefined : selectedRegion)
+                  }
+                  className="bg-white rounded-2xl p-2.5 flex flex-col items-center justify-center border border-[#e5eeff] shadow-2xs hover:border-[#0051d5] active:scale-95 transition-all group cursor-pointer"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-[#eff4ff] flex items-center justify-center text-[#002046] group-hover:bg-[#0051d5] group-hover:text-white transition-colors mb-1.5">
+                    <span className="material-symbols-outlined text-[22px]">{cat.icon}</span>
+                  </div>
+                  <span className="text-[11px] font-semibold text-[#0b1c30] tracking-tight text-center line-clamp-1">
+                    {cat.label}
+                  </span>
+                </button>
+              ))}
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={() =>
+                  onNavigateToList(
+                    'real_estate',
+                    selectedRegion === '전체' ? undefined : selectedRegion
+                  )
+                }
+                className="bg-white rounded-xl py-2 px-3 border border-[#e5eeff] text-[11px] font-bold text-[#0051d5] hover:bg-[#eff4ff] transition-colors flex items-center justify-center gap-1 cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[15px]">domain</span>
+                <span>부동산 전체</span>
+              </button>
+              {themeSubCategories.map((cat) => (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() =>
+                    onNavigateToList(cat.id, selectedRegion === '전체' ? undefined : selectedRegion)
+                  }
+                  className="bg-white rounded-xl py-2 px-3 border border-[#e5eeff] text-[11px] font-semibold text-[#0b1c30] hover:border-[#0051d5] transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[15px] text-[#0051d5]">
+                    {cat.icon}
+                  </span>
+                  <span>{cat.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {(selectedAssetGroup === 'movable' || selectedAssetGroup === 'car') && (
+          <div className="flex flex-col gap-2">
             <button
-              key={cat.id}
               type="button"
-              onClick={() => onNavigateToList(cat.id, selectedRegion === '전체' ? undefined : selectedRegion)}
-              className="bg-white rounded-2xl p-2.5 flex flex-col items-center justify-center border border-[#e5eeff] shadow-2xs hover:border-[#0051d5] active:scale-95 transition-all group"
+              onClick={() =>
+                onNavigateToList(
+                  selectedAssetGroup,
+                  selectedRegion === '전체' ? undefined : selectedRegion
+                )
+              }
+              className="bg-white rounded-2xl p-3.5 border border-[#e5eeff] shadow-2xs hover:border-[#0051d5] active:scale-[0.99] transition-all flex items-center justify-between cursor-pointer group"
             >
-              <div className="w-10 h-10 rounded-xl bg-[#eff4ff] flex items-center justify-center text-[#002046] group-hover:bg-[#0051d5] group-hover:text-white transition-colors mb-1.5">
-                <span className="material-symbols-outlined text-[22px]">{cat.icon}</span>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[#eff4ff] flex items-center justify-center text-[#0051d5] group-hover:bg-[#0051d5] group-hover:text-white transition-colors">
+                  <span className="material-symbols-outlined text-[22px]">
+                    {selectedAssetGroup === 'movable' ? 'inventory_2' : 'directions_car'}
+                  </span>
+                </div>
+                <div className="text-left">
+                  <p className="text-xs font-bold text-[#002046]">
+                    {selectedAssetGroup === 'movable'
+                      ? '기계·임산물·물품 동산 공매 전체보기'
+                      : '승용·화물·특수차량 공매 전체보기'}
+                  </p>
+                  <p className="text-[11px] text-[#74777f]">
+                    {selectedAssetGroup === 'movable'
+                      ? '온비드 동산 전용 OpenAPI 실시간 매물 전체 탐색'
+                      : '온비드 차량 전용 OpenAPI 실시간 매물 전체 탐색'}
+                  </p>
+                </div>
               </div>
-              <span className="text-[11px] font-semibold text-[#0b1c30] tracking-tight text-center line-clamp-1">
-                {cat.label}
+              <span className="material-symbols-outlined text-[20px] text-[#0051d5]">
+                chevron_right
               </span>
             </button>
-          ))}
-        </div>
+            <div className="grid grid-cols-2 gap-2">
+              {themeSubCategories.map((cat) => (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() =>
+                    onNavigateToList(cat.id, selectedRegion === '전체' ? undefined : selectedRegion)
+                  }
+                  className="bg-white rounded-xl py-2 px-3 border border-[#e5eeff] text-[11px] font-semibold text-[#0b1c30] hover:border-[#0051d5] transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[15px] text-[#0051d5]">
+                    {cat.icon}
+                  </span>
+                  <span>{cat.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </section>
 
       {/* =================================================================== */}
@@ -265,8 +459,13 @@ export function HomeScreen({
           </div>
           <button
             type="button"
-            onClick={() => onNavigateToList(undefined, selectedRegion === '전체' ? undefined : selectedRegion)}
-            className="text-xs text-[#0051d5] font-semibold hover:underline"
+            onClick={() =>
+              onNavigateToList(
+                currentListCategory,
+                selectedRegion === '전체' ? undefined : selectedRegion
+              )
+            }
+            className="text-xs text-[#0051d5] font-semibold hover:underline cursor-pointer"
           >
             더보기 &gt;
           </button>
@@ -280,7 +479,9 @@ export function HomeScreen({
           ) : urgentItems.length === 0 ? (
             // 해당 조건의 매물이 없는 경우: 빈 상태(Empty State) 안내
             <div className="w-full py-8 text-center text-[#74777f] text-xs bg-white rounded-2xl border border-[#e5eeff] px-4">
-              '{selectedRegion}' 지역에 해당하는 마감 임박 물건이 없습니다.
+              {filterSummaryLabel
+                ? `'${filterSummaryLabel}' 조건에 해당하는 마감 임박 물건이 없습니다.`
+                : '현재 마감 임박 물건이 없습니다.'}
             </div>
           ) : (
             // 정상 데이터 바인딩
@@ -412,7 +613,9 @@ export function HomeScreen({
             <ListSkeleton count={3} />
           ) : halfPriceItems.length === 0 ? (
             <div className="bg-white rounded-2xl border border-[#e5eeff] p-8 text-center text-[#74777f] text-xs">
-              '{selectedRegion}' 지역에 해당하는 유찰 추천 물건이 없습니다.
+              {filterSummaryLabel
+                ? `'${filterSummaryLabel}' 조건에 해당하는 유찰 추천 물건이 없습니다.`
+                : '현재 유찰 추천 물건이 없습니다.'}
             </div>
           ) : (
             halfPriceItems.map((item) => {

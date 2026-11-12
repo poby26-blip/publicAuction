@@ -8,13 +8,18 @@
 import { useEffect, useState } from 'react'
 import { AppBottomNav, type AppTab } from './components/layout/AppBottomNav'
 import { AppHeader } from './components/layout/AppHeader'
-import { MOCK_GONG_ITEMS, type GongItem } from './data/mockAuctionData'
+import { type AssetGroup, MOCK_GONG_ITEMS, type GongItem } from './data/mockAuctionData'
 import { AuctionDetailScreen } from './pages/auction/AuctionDetailScreen'
 import { AuctionListScreen } from './pages/auction/AuctionListScreen'
 import { HomeScreen } from './pages/home/HomeScreen'
 import { MyScreen } from './pages/my/MyScreen'
 import { WatchlistScreen } from './pages/watchlist/WatchlistScreen'
-import { fetchOnbidAllAssetsList } from './services/onbidService'
+import {
+  fetchOnbidAllAssetsList,
+  fetchOnbidCarList,
+  fetchOnbidMovableList,
+  fetchOnbidRealEstateList,
+} from './services/onbidService'
 import {
   loadWatchlistItems,
   saveWatchlistItems,
@@ -158,25 +163,44 @@ export default function App() {
   }
 
   /**
-   * 홈 상단 지역 칩('서울', '경기', '부산' 등) 클릭 시 호출됩니다.
-   * 온비드 OpenAPI에 해당 지역명(lctnSdnm)을 전달하여 해당 지역의 실데이터 20건을 동적으로 조회합니다.
-   * @param region - 선택된 시/도 지역명 (예: '서울', '경기', '전체')
+   * 홈 상단 지역 칩('서울', '경기' 등) 또는 3대 상품군 탭('전체', '부동산', '동산', '자동차') 클릭 시 호출됩니다.
+   * 선택된 지역 및 상품군에 알맞은 온비드 OpenAPI를 동적으로 호출하여 홈 화면 실데이터를 갱신합니다.
+   * @param region - 선택된 시/도 지역명 (예: '서울', '전남광주', '전체')
+   * @param assetGroup - 선택된 상품군 대분류 ('all' | 'real_estate' | 'movable' | 'car')
    */
-  const handleRegionChange = async (region: string) => {
+  const handleRegionChange = async (
+    region: string,
+    assetGroup: AssetGroup = 'all'
+  ): Promise<number> => {
     setIsLoading(true)
+    const targetRegion = region === '전체' ? undefined : region
+
     try {
-      const onbidData = await fetchOnbidAllAssetsList(
-        1,
-        20,
-        region === '전체' ? undefined : region
-      )
+      let onbidData: GongItem[] = []
+      if (assetGroup === 'real_estate') {
+        onbidData = await fetchOnbidRealEstateList({
+          region: targetRegion,
+          pageNo: 1,
+          numOfRows: 20,
+        })
+      } else if (assetGroup === 'movable') {
+        onbidData = await fetchOnbidMovableList(1, 20, targetRegion)
+      } else if (assetGroup === 'car') {
+        onbidData = await fetchOnbidCarList(1, 20, targetRegion)
+      } else {
+        onbidData = await fetchOnbidAllAssetsList(1, 20, targetRegion)
+      }
+
       if (onbidData && onbidData.length > 0) {
         setItems(onbidData)
+        return onbidData.length
       } else {
         setItems([])
+        return 0
       }
     } catch (err) {
-      console.error('지역별 온비드 실데이터 로드 실패:', err)
+      console.error('홈 필터별 온비드 실데이터 로드 실패:', err)
+      return 0
     } finally {
       setIsLoading(false)
     }
@@ -278,7 +302,13 @@ export default function App() {
           )}
 
           {/* 4. 마이페이지 탭 화면 */}
-          {activeTab === 'my' && <MyScreen />}
+          {activeTab === 'my' && (
+            <MyScreen
+              isApiSyncing={isLoading}
+              syncedItemCount={items.length}
+              onRefreshApiData={() => handleRegionChange('전체', 'all')}
+            />
+          )}
         </main>
 
         {/* 하단 고정 탭 네비게이션 바 */}

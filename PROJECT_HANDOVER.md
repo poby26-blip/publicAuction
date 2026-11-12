@@ -1,6 +1,6 @@
 # 📋 [공매이지] 프로젝트 인수인계 및 에이전트 작업 지침서 (PROJECT_HANDOVER.md)
 
-> **문서 버전**: v1.2.0  
+> **문서 버전**: v1.3.0  
 > **최종 갱신일**: 2026년 11월 12일  
 > **프로젝트 경로**: `c:\dev\workspace\publicAuction`  
 > **프론트엔드 경로**: `c:\dev\workspace\publicAuction\frontend`  
@@ -161,9 +161,17 @@
    - `executeOnbidListQuery` 공통 엔진 추출을 통해 부동산·동산·자동차 API의 중복 로직을 통합했습니다.
    - **동산 목록조회 API(`fetchOnbidMovableList`)** 및 **3대 상품군 통합 병렬 조회(`fetchOnbidAllAssetsList`)** 를 구축했습니다.
    - `"부동산".includes("동산")` 오분류 버그 해결(`isRealEstate` 선행 가드), 공장/창고(`factory`) 분류 추가, 감정가 미산정(`null`) 방어를 완료했습니다.
-3. **2단 상품군·세부 필터 UI 및 전 화면 Fallback 통일 ([AuctionListScreen.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/pages/auction/AuctionListScreen.tsx), [App.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/App.tsx), [HomeScreen.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/pages/home/HomeScreen.tsx))**:
-   - 목록 화면 상단에 `전체 | 부동산 | 동산 | 자동차` 1차 세그먼트 탭과 세부 카테고리 알약 2단 구조를 배치하고 3대 API 동적 분기 및 페이징을 연결했습니다.
-   - 홈 화면 초기/지역 조회를 `fetchOnbidAllAssetsList`로 통합하고, 전 화면(홈·목록·상세·보관함)의 Fallback 이미지와 감정가 표기를 통일했습니다.
+3. **2단 상품군·세부 필터 UI 및 전 화면 동기화 ([AuctionListScreen.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/pages/auction/AuctionListScreen.tsx), [App.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/App.tsx), [HomeScreen.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/pages/home/HomeScreen.tsx))**:
+   - **홈 화면 및 목록 화면 양쪽 모두** 상단에 `전체 | 부동산 | 동산 | 자동차` 1차 세그먼트 탭과 선택된 상품군별 세부 카테고리 2단 구조를 동일하게 적용했습니다.
+   - 홈 화면에서 3대 상품군 또는 지역 선택 시 해당 OpenAPI를 실시간 분기 호출하며, 목록 화면으로 이동 시 선택한 상품군과 지역 필터가 그대로 전달됩니다.
+   - 전 화면(홈·목록·상세·보관함)의 Fallback 이미지와 감정가 표기를 통일했습니다.
+
+### ✅ [8단계] 마이페이지 (`MyScreen.tsx`) 1차 실용 설정 기능 구현 완료
+1. **알림 설정 영구 저장소 확장 ([storageService.ts](file:///c:/dev/workspace/publicAuction/frontend/src/services/storageService.ts))**:
+   - RN 호환 비동기 스토리지 추상화 레이어에 `AlertSettings` 영구 저장·복원·초기화(`loadAlertSettings`, `saveAlertSettings`, `resetAlertSettings`) API를 추가했습니다.
+2. **공매 및 입찰 알림 설정 & 앱 기본 설정 구현 ([MyScreen.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/pages/my/MyScreen.tsx), [App.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/App.tsx))**:
+   - Google Stitch 마이페이지 디자인 토큰 기반의 상단 플로팅 토스트 피드백 및 4종 알림 토글 스위치(D-1/D-Day 알림, 조건 맞춤 신규 공매, 감정가 하향/유찰 속보, 야간 알림 제한)를 구현했습니다.
+   - 차세대 온비드 OpenAPI 연동 상태 및 `새로고침` 실시간 재조회, 임시 설정 캐시 초기화(관심물건 보존), 공매 가이드 FAQ 및 이용약관/처리방침 모바일 모달을 완성했습니다.
 
 ---
 
@@ -171,12 +179,15 @@
 
 사용자와 합의된 다음 우선순위 작업 로드맵입니다. **에이전트는 작업 전 반드시 사전 계획을 사용자에게 제시하고 승인을 득한 후 진행**해야 합니다.
 
-### 🎯 [차기 작업 1순위] 마이페이지 ([MyScreen.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/pages/my/MyScreen.tsx)) 개발
-- 사용자 프로필 영역, 관심 공매 요약 통계(저장 건수, 마감 임박 건수 연동), 최근 본 물건 이력(`storageService` 확장 활용), 온비드 공매 이용 안내 FAQ 등 화면 구성.
-
-### 🎯 [2순위] 기일 알림 영구화 및 온비드 전자입찰 부가 기능 고도화
+### 🎯 [차기 작업 1순위] 기일 알림 영구화 및 온비드 전자입찰 부가 기능 고도화
 - 상세 화면의 '기일 알림' 상태를 `storageService`와 연동하여 영구 저장.
 - '온비드 입찰 참여하기' 클릭 시 실제 캠코 온비드 해당 물건 상세 페이지 웹 링크(`www.onbid.co.kr`) 연결 지원.
+
+### 🎯 [2순위] 차기 버전(v2.0) Google Stitch 마이페이지 고도화 기능
+- Google Stitch 프로젝트(`15839425802944736750` / 화면 `e2a6bbf276c74d65a2b1820c793d97a6`, 접속 설정 `.agents/mcp_config.json`)에 기획된 회원·인증 중심 확장 기능:
+  - 프로필 카드 및 프로필 관리, 온비드(KAMCO) 실명·공동인증서 관리
+  - 3열 자산 펄스 대시보드(관심물건·입찰참여·맞춤알림) 및 AI 권리분석 가이드 보관함
+  - 나의 모의/실전 입찰 내역 조회, 로그아웃/회원탈퇴
 
 ### 🎯 [3순위] React Native 네이티브 앱 전환
 - `storageService.ts` 어댑터를 `AsyncStorage` 또는 `MMKV`로 교체하고, UI 컴포넌트를 React Native 네이티브 컴포넌트(`<View>`, `<FlatList>` 등)로 이식.
@@ -238,5 +249,5 @@ git push origin main
 
 새로운 PC에서 작업을 이어갈 때, 사용자가 아래와 같이 에이전트에게 지시하면 즉시 작업을 이어갈 수 있습니다:
 
-> *"저장소 루트에 있는 `PROJECT_HANDOVER.md` 파일을 먼저 읽고, 프로젝트 전체 맥락과 에이전트 준수 규칙을 파악한 후 다음 우선순위 작업인 '마이페이지(MyScreen.tsx) 개발'의 작업 계획을 한국어로 제시해줘."*
+> *"저장소 루트에 있는 `PROJECT_HANDOVER.md` 파일을 먼저 읽고, 프로젝트 전체 맥락과 에이전트 준수 규칙을 파악한 후 다음 우선순위 작업인 '상세 화면 기일 알림 영구화 및 온비드 입찰 연결 고도화'의 작업 계획을 한국어로 제시해줘."*
 
