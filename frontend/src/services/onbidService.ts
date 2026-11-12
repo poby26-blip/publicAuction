@@ -14,22 +14,63 @@
 
 import {
   MOCK_GONG_ITEMS,
+  type DetailAssetGroup,
+  type GongAreaDetail,
+  type GongAppraisalDetail,
+  type GongDetailInfo,
   type GongItem,
+  type GongRightDetail,
   getRegionApiQueries,
   getCategoryFallbackImage,
+  resolveAssetGroup,
 } from '../data/mockAuctionData'
+
+/** 온비드 상세 사진 URL 아이템 */
+interface RawOnbidPhotoItem {
+  urlAdr?: string
+}
+
+/** 온비드 면적/지분 상세 아이템 */
+interface RawOnbidSqmsItem {
+  clandCont?: string
+  sqmsCont?: string
+  dtlCltrNm?: string
+}
+
+/** 온비드 감정평가 상세 아이템 */
+interface RawOnbidAppraisalItem {
+  apslEvlYmd?: string
+  apslEvlOrgNm?: string
+  apslEvlAmt?: number
+  urlAdr?: string
+}
+
+/** 온비드 등기부 주요 권리 아이템 */
+interface RawOnbidRightItem {
+  irstDivNm?: string
+  cltrInprNm?: string
+  rgstYmd?: string
+  inprStngAmt?: number | null
+}
 
 /**
  * 차세대 온비드(B010003) API 원시 JSON 응답 아이템 인터페이스
+ * (목록 조회 및 3대 상품군 물건상세 조회 공통/특화 필드 포함)
  */
 export interface RawOnbidItem {
   /** 물건식별고유번호 */
   onbidCltrno?: number | string
   /** 관리번호 (예: 2022-05506-004) */
   cltrMngNo?: string
-  /** 온비드 물건명 (예: 부산 서구 아미동2가 토지) */
-  onbidCltrNm?: string
-  /** 재산구분코드 (0007: 금융기관담보/신탁재산, 0002: 압류재산 등) */
+  /** 공매조건번호 (상세조회 연계 키) */
+  pbctCdtnNo?: number | string
+  /** 공고번호 */
+  onbidPbancNo?: number | string
+  /** 공매번호 */
+  pbctNo?: number | string
+  /** 공매 회차 */
+  pbctNsq?: string
+  /** 재산구분코드 (0007: 압류재산, 0002: 공유재산 등) */
   prptDivCd?: string
   /** 재산구분명 (압류재산, 신탁공매, 국유재산 등) */
   prptDivNm?: string
@@ -37,12 +78,20 @@ export interface RawOnbidItem {
   dspsMthodCd?: string
   /** 처분방식명 */
   dspsMthodNm?: string
+  /** 입찰구분명 (전자입찰 등) */
+  bidDivNm?: string
+  /** 입찰방식명 (최고가방식 등) */
+  bidMthodNm?: string
+  /** 경쟁방식명 (일반경쟁 등) */
+  cptnMthodNm?: string
   /** 용도대분류명 (부동산, 차량, 동산) */
   cltrUsgLclsCtgrNm?: string
   /** 용도중분류명 (주거용건물, 상가용및업무용건물, 토지 등) */
   cltrUsgMclsCtgrNm?: string
   /** 용도소분류명 (아파트, 단독주택, 근린생활시설 등) */
   cltrUsgSclsCtgrNm?: string
+  /** 온비드 물건명 (예: 부산 서구 아미동2가 토지) */
+  onbidCltrNm?: string
   /** 감정평가금액 (원) */
   apslEvlAmt?: number
   /** 최저입찰가 표시내용 (문자열 또는 숫자) */
@@ -59,14 +108,76 @@ export interface RawOnbidItem {
   lctnSggnm?: string
   /** 물건 소재지 읍면동명 (예: 등촌동, 장당동) */
   lctnEmdNm?: string
+  /** 의뢰기관명 */
+  rqstOrgNm?: string | null
+  /** 집행기관명 */
+  orgNm?: string | null
+  /** 명도/인도 책임 */
+  evcRsbyTrgtCont?: string | null
+  /** 배분요구종기일 */
+  dtbtRqrEdtmCont?: string | null
   /** 토지면적 (㎡) */
   landSqms?: number
   /** 건물면적 (㎡) */
   bldSqms?: number
+  /** 공고진행상태코드 */
+  pbctStatCd?: string
   /** 공고진행상태명 (입찰준비중, 입찰진행중 등) */
   pbctStatNm?: string
   /** 유찰횟수 (0회, 1회 등) */
   usbdNft?: number
+
+  // --- 상세 조회 및 자산군 특화 필드 ---
+  /** 지번 주소 */
+  zadrNm?: string | null
+  /** 도로명 주소 */
+  cltrRadr?: string | null
+  /** 차량/동산 인도장소 */
+  dlvrPlcNm?: string | null
+  /** 동산 보관장소 */
+  cltrCstdPlcNm?: string | null
+  cstdPlcNm?: string | null
+  /** 위치 및 주변현황 */
+  locVntyPscdCont?: string | null
+  /** 이용현황 */
+  utlzPscdCont?: string | null
+  /** 입찰 유의사항 */
+  pytnMtrsCont?: string | null
+  /** 기타 특이사항 (고장·불용 사유 등) */
+  cltrEtcCont?: string | null
+  /** 부대조건 */
+  icdlCdtnCont?: string | null
+  /** 최초 공고일자 (YYYYMMDD) */
+  frstPbancYmd?: string | null
+  /** 상세 다중 사진 URL 목록 */
+  potoUrlList?: RawOnbidPhotoItem[] | null
+  /** 부동산 면적·지분 내역 */
+  sqmsList?: RawOnbidSqmsItem[] | null
+  /** 감정평가 이력 목록 */
+  apslEvlClgList?: RawOnbidAppraisalItem[] | null
+  /** 등기부 주요 권리 정보 목록 */
+  rgstPrmrInfList?: RawOnbidRightItem[] | null
+  /** 임대차 정보 목록 */
+  leasInfList?: unknown[] | null
+  /** 점유 관계 목록 */
+  ocpyRelList?: unknown[] | null
+
+  // --- 자동차/동산 제원 필드 ---
+  cltrMkrNm?: string | null
+  carVhknNm?: string | null
+  carMdlNm?: string | null
+  yrmdl?: string | null
+  vhrnoCont?: string | null
+  drvDstc?: number | null
+  dsvlm?: string | number | null
+  pnsNm?: string | null
+  fuelCont?: string | null
+  carColrNm?: string | null
+  mdlNm?: string | null
+  mnftYr?: string | null
+  qntyCont?: string | null
+  mvastSizeCont?: string | null
+  cltrWt?: string | null
 }
 
 /**
@@ -94,6 +205,58 @@ const API_KEY = import.meta.env.VITE_PUBLIC_DATA_API_KEY || ''
 
 /** 온비드 API 기본 엔드포인트 URL (개발 환경: /api/public-data 프록시) */
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/public-data'
+
+/** 공백이나 '-' 의미없는 문자열을 안전하게 정리합니다. */
+function cleanText(value?: string | null): string | undefined {
+  const trimmed = value?.trim()
+  if (!trimmed || trimmed === '-') return undefined
+  return trimmed
+}
+
+/** 온비드 YYYYMMDD 문자열을 'YYYY.MM.DD' 형식으로 포맷팅합니다. */
+function formatOnbidYmd(rawYmd?: string | null): string | undefined {
+  const text = cleanText(rawYmd)
+  if (!text) return undefined
+  if (/^\d{8}$/.test(text)) {
+    return `${text.substring(0, 4)}.${text.substring(4, 6)}.${text.substring(6, 8)}`
+  }
+  return text
+}
+
+/** 온비드 YYYYMMDDHHmm 문자열을 'YYYY.MM.DD HH:mm' 문자열로 변환합니다. */
+function formatOnbidDateTime(rawDate?: string): string | undefined {
+  if (!rawDate || rawDate.length < 8) return undefined
+  if (rawDate.startsWith('2999')) return '상시 매각'
+
+  const year = rawDate.substring(0, 4)
+  const month = rawDate.substring(4, 6)
+  const day = rawDate.substring(6, 8)
+  const hour = rawDate.length >= 10 ? rawDate.substring(8, 10) : '10'
+  const minute = rawDate.length >= 12 ? rawDate.substring(10, 12) : '00'
+  return `${year}.${month}.${day} ${hour}:${minute}`
+}
+
+/** 공고진행상태(코드/명칭 혼재)를 사용자 친화적 한글 상태로 정규화합니다. */
+function normalizeBidStatus(statNm?: string | null, statCd?: string | null): string | undefined {
+  const CODE_MAP: Record<string, string> = {
+    '0001': '입찰준비중',
+    '0002': '입찰진행중',
+    '0003': '입찰마감',
+  }
+  const name = cleanText(statNm)
+  if (name && !/^\d+$/.test(name)) return name
+  const code = cleanText(statCd) || name
+  return code ? CODE_MAP[code] || name : undefined
+}
+
+/** 입찰구분/입찰방식/경쟁방식 메타데이터를 조합합니다. */
+function formatBidMethod(raw: RawOnbidItem): string | undefined {
+  const parts = [cleanText(raw.bidDivNm), cleanText(raw.bidMthodNm)].filter(Boolean)
+  const cptn = cleanText(raw.cptnMthodNm)
+  if (parts.length === 0 && !cptn) return undefined
+  const base = parts.join(' · ')
+  return cptn ? (base ? `${base} (${cptn})` : cptn) : base
+}
 
 /**
  * 온비드 날짜 형식 문자열(YYYYMMDDHHmm)을 파싱하여 D-Day 및 포맷팅된 날짜 문자열을 반환합니다.
@@ -126,9 +289,10 @@ function parseOnbidDate(rawDate?: string): { dDay: number; formattedDate: string
   const diffTime = targetDate.getTime() - now.getTime()
   const diffDays = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)))
 
-  const formattedDate = `${year}.${String(month + 1).padStart(2, '0')}.${String(day).padStart(2, '0')} ${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`
-
-  return { dDay: diffDays, formattedDate }
+  return {
+    dDay: diffDays,
+    formattedDate: formatOnbidDateTime(rawDate) || '일정 확인중',
+  }
 }
 
 /**
@@ -253,6 +417,22 @@ export function adaptOnbidToGongItem(raw: RawOnbidItem, index: number): GongItem
     auctionType = rawDivNm
   }
 
+  const assetGroup: DetailAssetGroup = isRealEstate
+    ? 'real_estate'
+    : category === 'car'
+      ? 'car'
+      : category === 'goods'
+        ? 'movable'
+        : 'real_estate'
+
+  const usageName = [
+    cleanText(raw.cltrUsgLclsCtgrNm),
+    cleanText(raw.cltrUsgMclsCtgrNm),
+    cleanText(raw.cltrUsgSclsCtgrNm),
+  ]
+    .filter(Boolean)
+    .join(' > ')
+
   return {
     id: String(raw.onbidCltrno || raw.cltrMngNo || `onbid-${index}`),
     title: raw.onbidCltrNm?.trim() || '온비드 공매 물건',
@@ -275,6 +455,20 @@ export function adaptOnbidToGongItem(raw: RawOnbidItem, index: number): GongItem
     isHalfPrice: discountRate >= 40,
     imageUrl: validImageUrl,
     images: [validImageUrl],
+    assetGroup,
+    cltrMngNo: cleanText(raw.cltrMngNo),
+    pbctCdtnNo: raw.pbctCdtnNo,
+    onbidCltrno: raw.onbidCltrno,
+    onbidPbancNo: raw.onbidPbancNo,
+    bidStartDate: formatOnbidDateTime(raw.cltrBidBgngDt),
+    bidRound: cleanText(raw.pbctNsq),
+    bidStatus: normalizeBidStatus(raw.pbctStatNm, raw.pbctStatCd),
+    bidMethod: formatBidMethod(raw),
+    orgName: cleanText(raw.orgNm),
+    rqstOrgName: cleanText(raw.rqstOrgNm),
+    evictionResponsibility: cleanText(raw.evcRsbyTrgtCont),
+    distributionDeadline: cleanText(raw.dtbtRqrEdtmCont),
+    usageName: usageName || undefined,
   }
 }
 
@@ -324,6 +518,12 @@ async function executeOnbidListQuery(config: InternalOnbidFetchConfig): Promise<
       if (forceCategory) {
         gongItem.category = forceCategory.id
         gongItem.categoryIcon = forceCategory.icon
+        gongItem.assetGroup =
+          forceCategory.id === 'car'
+            ? 'car'
+            : forceCategory.id === 'goods'
+              ? 'movable'
+              : 'real_estate'
         // 강제 보정된 카테고리의 이미지로 Fallback 재동기화
         if (gongItem.imageUrl.includes('images.unsplash.com')) {
           const fallbackUrl = getCategoryFallbackImage(forceCategory.id)
@@ -501,4 +701,222 @@ export async function fetchOnbidAllAssetsList(
     seen.add(item.id)
     return true
   })
+}
+
+// ---------------------------------------------------------------------------
+// [3대 상품군 물건상세 OpenAPI 연계 (Detail Info Service)]
+// ---------------------------------------------------------------------------
+
+/** 자산 상품군별 차세대 온비드 상세조회 OpenAPI 엔드포인트 매핑 */
+const DETAIL_ENDPOINT_MAP: Record<DetailAssetGroup, string> = {
+  real_estate: '/B010003/OnbidRlstDtlSrvc2/getRlstDtlInf2',
+  movable: '/B010003/OnbidMvastDtlSrvc2/getMvastDtlInf2',
+  car: '/B010003/OnbidCarDtlSrvc2/getCarDtlInf2',
+}
+
+/** 동일 물건 재진입 시 중복 네트워크 호출을 방지하는 인메모리 상세 캐시 */
+const detailCache = new Map<string, GongDetailInfo>()
+
+/**
+ * 온비드 상세 API 원시 응답을 UI 표준 상세 모델(GongDetailInfo)로 변환합니다.
+ */
+function adaptRawToDetailInfo(
+  raw: RawOnbidItem,
+  assetGroup: DetailAssetGroup
+): GongDetailInfo {
+  const photos = Array.from(
+    new Set(
+      (raw.potoUrlList || [])
+        .map((p) => p?.urlAdr?.trim())
+        .filter((url): url is string => Boolean(url && url.startsWith('http')))
+    )
+  )
+
+  const areaDetails: GongAreaDetail[] = (raw.sqmsList || [])
+    .filter((s) => s && (s.clandCont || s.sqmsCont || s.dtlCltrNm))
+    .map((s) => ({
+      kind: cleanText(s.clandCont),
+      area: cleanText(s.sqmsCont),
+      shareInfo: cleanText(s.dtlCltrNm),
+    }))
+
+  const appraisals: GongAppraisalDetail[] = (raw.apslEvlClgList || [])
+    .filter((a) => a && (a.apslEvlOrgNm || a.apslEvlAmt || a.urlAdr))
+    .map((a) => ({
+      orgName: cleanText(a.apslEvlOrgNm),
+      date: formatOnbidYmd(a.apslEvlYmd),
+      amount: typeof a.apslEvlAmt === 'number' && a.apslEvlAmt > 0 ? a.apslEvlAmt : undefined,
+      reportUrl:
+        a.urlAdr && a.urlAdr.startsWith('http') ? a.urlAdr.trim() : undefined,
+    }))
+
+  const rights: GongRightDetail[] = (raw.rgstPrmrInfList || [])
+    .filter((r) => Boolean(r?.irstDivNm))
+    .map((r) => ({
+      rightType: r.irstDivNm!.trim(),
+      holderName: cleanText(r.cltrInprNm),
+      regDate: formatOnbidYmd(r.rgstYmd),
+      amount:
+        typeof r.inprStngAmt === 'number' && r.inprStngAmt > 0
+          ? r.inprStngAmt
+          : undefined,
+    }))
+
+  const vehicleSpec =
+    assetGroup === 'car' || raw.carMdlNm || raw.vhrnoCont || raw.yrmdl
+      ? {
+          maker: cleanText(raw.cltrMkrNm),
+          vehicleType: cleanText(raw.carVhknNm),
+          model: cleanText(raw.carMdlNm),
+          year: cleanText(raw.yrmdl),
+          plateNumber: cleanText(raw.vhrnoCont),
+          mileageKm:
+            typeof raw.drvDstc === 'number' && raw.drvDstc >= 0
+              ? raw.drvDstc
+              : undefined,
+          displacement:
+            raw.dsvlm !== null && raw.dsvlm !== undefined && String(raw.dsvlm).trim() !== ''
+              ? String(raw.dsvlm).trim()
+              : undefined,
+          transmission: cleanText(raw.pnsNm),
+          fuel: cleanText(raw.fuelCont),
+          color: cleanText(raw.carColrNm),
+        }
+      : undefined
+
+  const hasVehicleData = Boolean(
+    vehicleSpec && Object.values(vehicleSpec).some((v) => v !== undefined)
+  )
+
+  const movableSpec =
+    assetGroup === 'movable'
+      ? {
+          maker: cleanText(raw.cltrMkrNm),
+          model: cleanText(raw.mdlNm),
+          year: cleanText(raw.mnftYr),
+          quantity: cleanText(raw.qntyCont),
+          size: cleanText(raw.mvastSizeCont),
+          weight: cleanText(raw.cltrWt),
+          storagePlace: cleanText(raw.cltrCstdPlcNm) || cleanText(raw.cstdPlcNm),
+        }
+      : undefined
+
+  const hasMovableData = Boolean(
+    movableSpec && Object.values(movableSpec).some((v) => v !== undefined)
+  )
+
+  return {
+    photos,
+    jibunAddress: cleanText(raw.zadrNm),
+    roadAddress: cleanText(raw.cltrRadr),
+    deliveryPlace:
+      cleanText(raw.dlvrPlcNm) ||
+      cleanText(raw.cltrCstdPlcNm) ||
+      cleanText(raw.cstdPlcNm),
+    locationNote: cleanText(raw.locVntyPscdCont),
+    usageNote: cleanText(raw.utlzPscdCont),
+    noticeNote: cleanText(raw.pytnMtrsCont),
+    etcNote: cleanText(raw.cltrEtcCont),
+    incidentalCondition: cleanText(raw.icdlCdtnCont),
+    firstNoticeDate: formatOnbidYmd(raw.frstPbancYmd),
+    bidRound: cleanText(raw.pbctNsq),
+    bidStatus: normalizeBidStatus(raw.pbctStatNm, raw.pbctStatCd),
+    orgName: cleanText(raw.orgNm),
+    rqstOrgName: cleanText(raw.rqstOrgNm),
+    bidMethod: formatBidMethod(raw),
+    evictionResponsibility: cleanText(raw.evcRsbyTrgtCont),
+    distributionDeadline: cleanText(raw.dtbtRqrEdtmCont),
+    areaDetails,
+    appraisals,
+    rights,
+    leaseCount: Array.isArray(raw.leasInfList) ? raw.leasInfList.length : 0,
+    occupantCount: Array.isArray(raw.ocpyRelList) ? raw.ocpyRelList.length : 0,
+    vehicleSpec: hasVehicleData ? vehicleSpec : undefined,
+    movableSpec: hasMovableData ? movableSpec : undefined,
+  }
+}
+
+/**
+ * 선택한 공매 물건의 상세 정보(다중 사진, 등기 권리내역, 감정평가서, 유의사항, 차량/동산 제원)를
+ * 차세대 온비드 물건상세 OpenAPI로 비동기 조회합니다.
+ */
+export async function fetchOnbidItemDetail(
+  item: GongItem
+): Promise<GongDetailInfo | null> {
+  if (!API_KEY || item.id.startsWith('gong-')) {
+    return null
+  }
+
+  // 기존에 보관함에 저장된 물건(확장 키 미보유)도 id 형태를 판별해 조회 키를 보완합니다.
+  const inferredMngNo =
+    item.cltrMngNo || (/^\d{4}-/.test(item.id) ? item.id : undefined)
+  const inferredCltrNo =
+    item.onbidCltrno ?? (/^\d+$/.test(item.id) ? item.id : undefined)
+
+  if (!inferredMngNo && !inferredCltrNo) {
+    return null
+  }
+
+  const resolvedGroup = resolveAssetGroup(item.category)
+  const assetGroup: DetailAssetGroup =
+    item.assetGroup ??
+    (resolvedGroup === 'movable' || resolvedGroup === 'car'
+      ? resolvedGroup
+      : 'real_estate')
+
+  const cacheKey = `${assetGroup}:${inferredMngNo || inferredCltrNo}:${item.pbctCdtnNo || ''}`
+  const cached = detailCache.get(cacheKey)
+  if (cached) {
+    return cached
+  }
+
+  const endpointPath = DETAIL_ENDPOINT_MAP[assetGroup]
+  const params = new URLSearchParams({
+    serviceKey: API_KEY,
+    resultType: 'json',
+  })
+
+  if (inferredMngNo) params.set('cltrMngNo', inferredMngNo)
+  if (inferredCltrNo !== undefined) params.set('onbidCltrno', String(inferredCltrNo))
+  if (item.pbctCdtnNo !== undefined && item.pbctCdtnNo !== '') {
+    params.set('pbctCdtnNo', String(item.pbctCdtnNo))
+  }
+
+  try {
+    const res = await fetch(`${BASE_URL}${endpointPath}?${params.toString()}`, {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+    })
+
+    if (!res.ok) {
+      console.warn(`[Onbid Detail API] HTTP 오류 (${res.status}) - ${endpointPath}`)
+      return null
+    }
+
+    const data = await res.json()
+    const header = data.header || data.response?.header
+    if (header?.resultCode !== '00') {
+      console.warn(
+        `[Onbid Detail API] 응답 오류 (${header?.resultCode}: ${header?.resultMsg})`
+      )
+      return null
+    }
+
+    const body = data.body || data.response?.body
+    const rawItems = body?.items?.item
+    const rawDetail: RawOnbidItem | undefined = Array.isArray(rawItems)
+      ? rawItems[0]
+      : rawItems
+
+    if (!rawDetail) {
+      return null
+    }
+
+    const adapted = adaptRawToDetailInfo(rawDetail, assetGroup)
+    detailCache.set(cacheKey, adapted)
+    return adapted
+  } catch (error) {
+    console.warn(`[Onbid Detail API] 조회 예외 발생 (${endpointPath}):`, error)
+    return null
+  }
 }

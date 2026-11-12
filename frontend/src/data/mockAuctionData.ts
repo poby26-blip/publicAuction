@@ -1,3 +1,6 @@
+/** 온비드 OpenAPI 상세 조회 분기를 위한 3대 자산 상품군 타입 */
+export type DetailAssetGroup = 'real_estate' | 'movable' | 'car'
+
 export interface GongItem {
   id: string
   title: string
@@ -18,6 +21,135 @@ export interface GongItem {
   viewCount: number
   isUrgent?: boolean
   isHalfPrice?: boolean
+  /** 3대 자산 상품군 구분 ('real_estate' | 'movable' | 'car') */
+  assetGroup?: DetailAssetGroup
+  /** 물건관리번호 (예: 2022-05506-004) */
+  cltrMngNo?: string
+  /** 공매조건번호 (상세조회 연계 키) */
+  pbctCdtnNo?: number | string
+  /** 온비드물건고유번호 */
+  onbidCltrno?: number | string
+  /** 온비드공고번호 */
+  onbidPbancNo?: number | string
+  /** 입찰시작일시 포맷 문자열 */
+  bidStartDate?: string
+  /** 공매 회차 */
+  bidRound?: string
+  /** 공고 진행 상태명 (예: 입찰진행중, 입찰준비중) */
+  bidStatus?: string
+  /** 입찰 및 경쟁 방식 */
+  bidMethod?: string
+  /** 집행기관명 */
+  orgName?: string
+  /** 의뢰기관명 */
+  rqstOrgName?: string
+  /** 명도/인도 책임 */
+  evictionResponsibility?: string
+  /** 배분요구종기일 */
+  distributionDeadline?: string
+  /** 세부 용도 경로명 (예: 부동산 > 토지 > 대지) */
+  usageName?: string
+}
+
+/** 부동산 면적·지분 세부 내역 */
+export interface GongAreaDetail {
+  kind?: string
+  area?: string
+  shareInfo?: string
+}
+
+/** 감정평가 이력 및 평가서 링크 */
+export interface GongAppraisalDetail {
+  orgName?: string
+  date?: string
+  amount?: number
+  reportUrl?: string
+}
+
+/** 등기부 주요 권리 내역 */
+export interface GongRightDetail {
+  rightType: string
+  holderName?: string
+  regDate?: string
+  amount?: number
+}
+
+/** 자동차 물건 상세 제원 */
+export interface GongVehicleSpec {
+  maker?: string
+  vehicleType?: string
+  model?: string
+  year?: string
+  plateNumber?: string
+  mileageKm?: number
+  displacement?: string
+  transmission?: string
+  fuel?: string
+  color?: string
+}
+
+/** 동산 물건 상세 제원 */
+export interface GongMovableSpec {
+  maker?: string
+  model?: string
+  year?: string
+  quantity?: string
+  size?: string
+  weight?: string
+  storagePlace?: string
+}
+
+/**
+ * 차세대 온비드 물건상세 조회 OpenAPI 응답 표준 모델
+ */
+export interface GongDetailInfo {
+  /** 실제 현장 사진 URL 목록 */
+  photos: string[]
+  /** 지번 주소 */
+  jibunAddress?: string
+  /** 도로명 주소 */
+  roadAddress?: string
+  /** 인도/보관 장소 */
+  deliveryPlace?: string
+  /** 위치 및 주변현황 */
+  locationNote?: string
+  /** 이용현황 */
+  usageNote?: string
+  /** 입찰 주의·유의사항 */
+  noticeNote?: string
+  /** 기타 특이사항 (고장/불용 사유 등) */
+  etcNote?: string
+  /** 부대조건 */
+  incidentalCondition?: string
+  /** 최초 공고일자 */
+  firstNoticeDate?: string
+  /** 공매 회차 */
+  bidRound?: string
+  /** 공고 진행 상태 */
+  bidStatus?: string
+  /** 집행기관명 */
+  orgName?: string
+  /** 의뢰기관명 */
+  rqstOrgName?: string
+  /** 입찰 및 경쟁 방식 */
+  bidMethod?: string
+  /** 명도/인도 책임 */
+  evictionResponsibility?: string
+  /** 배분요구종기일 */
+  distributionDeadline?: string
+  /** 토지/건물 면적·지분 상세 내역 */
+  areaDetails: GongAreaDetail[]
+  /** 감정평가 이력 및 원문 링크 */
+  appraisals: GongAppraisalDetail[]
+  /** 등기부 주요 권리 내역 */
+  rights: GongRightDetail[]
+  /** 임대차/점유 등록 건수 */
+  leaseCount: number
+  occupantCount: number
+  /** 자동차 전용 제원 */
+  vehicleSpec?: GongVehicleSpec
+  /** 동산 전용 제원 */
+  movableSpec?: GongMovableSpec
 }
 
 /**

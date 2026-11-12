@@ -186,13 +186,27 @@
 
 ---
 
+### ✅ [10단계] 상세 화면 온비드 3대 상품군 물건상세 OpenAPI 연계 완료
+1. **데이터 모델 및 상세조회 API 연동 ([mockAuctionData.ts](file:///c:/dev/workspace/publicAuction/frontend/src/data/mockAuctionData.ts), [onbidService.ts](file:///c:/dev/workspace/publicAuction/frontend/src/services/onbidService.ts))**:
+   - `GongItem`에 목록 API의 `cltrMngNo`, `pbctCdtnNo`, `onbidCltrno`, `assetGroup`, 기관명, 입찰/경쟁방식, 회차, 명도책임, 배분요구종기, 진행상태 필드를 확장 매핑했습니다.
+   - `GongDetailInfo` 모델 및 `fetchOnbidItemDetail` 함수를 추가하여 `getRlstDtlInf2`(부동산), `getMvastDtlInf2`(동산), `getCarDtlInf2`(자동차) 상세 API를 자동 분기 호출하고 인메모리 캐싱합니다.
+2. **상세 화면 실데이터 바인딩 ([AuctionDetailScreen.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/pages/auction/AuctionDetailScreen.tsx))**:
+   - 다중 현장 사진(`potoUrlList`), 지번/도로명 주소, 면적·지분 내역(`sqmsList`), 자동차/동산 전용 제원, 물건 현황·입찰 유의·특이사항, 감정평가 내역 및 평가서 링크(`apslEvlClgList`), 등기부 주요 권리 내역(`rgstPrmrInfList`)을 실데이터로 표출합니다.
+3. **식별번호·주소 복사 및 지도/온비드 연계 ([AuctionDetailScreen.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/pages/auction/AuctionDetailScreen.tsx))**:
+   - 안전 클립보드 복사 유틸(`copyTextSafely`)과 `DetailRowList` `copyable` 지원을 통해 물건관리번호·온비드 물건번호·소재지 주소·인도/보관장소 원클릭 복사 및 토스트 안내를 구현했습니다.
+   - 주소 하단에 `네이버 지도` / `카카오맵` 위치 검색 연결 버튼을 추가하고, `온비드 입찰 참여하기` 클릭 시 관리번호를 자동 복사한 뒤 `온비드 이동` 토스트 액션을 제공합니다.
+4. **기일 알림 상태 영구화 및 보관함 '알림중' 표시 ([storageService.ts](file:///c:/dev/workspace/publicAuction/frontend/src/services/storageService.ts), [App.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/App.tsx), [WatchlistScreen.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/pages/watchlist/WatchlistScreen.tsx))**:
+   - `BID_DATE_ALERT_ITEMS` 스토리지 키 및 `loadBidAlertItems`/`saveBidAlertItems`/`clearBidAlertItems` 도메인 API를 추가해 기일 알림 설정을 영구 저장합니다.
+   - 상단 헤더 알림 배지(`totalUrgentAlarmCount`) 및 알림 토스트가 관심물건·기일알림 임박 건수를 중복 없이 통합 연동하며, 관심 보관함 카드에도 `'알림중'` 배지를 표출합니다.
+
+---
+
 ## 🚀 5. 앞으로 남은 작업 로드맵 (Upcoming Roadmap)
 
 사용자와 합의된 다음 우선순위 작업 로드맵입니다. **에이전트는 작업 전 반드시 사전 계획을 사용자에게 제시하고 승인을 득한 후 진행**해야 합니다.
 
-### 🎯 [차기 작업 1순위] 기일 알림 영구화 및 온비드 전자입찰 부가 기능 고도화
-- 상세 화면의 '기일 알림' 상태를 `storageService`와 연동하여 영구 저장.
-- '온비드 입찰 참여하기' 클릭 시 실제 캠코 온비드 해당 물건 상세 페이지 웹 링크(`www.onbid.co.kr`) 연결 지원.
+### 🎯 [차기 작업 1순위] 상세 화면 UI/UX 고도화 (Stitch 디자인 반영)
+- 이미지 히어로 그라데이션·사진 전체보기, 가격 카드 절감 금액·비율 게이지 바, 공공데이터 출처 카드 등 Google Stitch `'공매이지 - 공매 물건 상세정보'`(`3c5d75841ea4462392f337c1aac35121`) 기반 UI/UX 고도화.
 
 ### 🎯 [2순위] 차기 버전(v2.0) Google Stitch 마이페이지 고도화 기능
 - Google Stitch 프로젝트(`15839425802944736750` / 화면 `e2a6bbf276c74d65a2b1820c793d97a6`, 접속 설정 `.agents/mcp_config.json`)에 기획된 회원·인증 중심 확장 기능:

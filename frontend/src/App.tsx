@@ -25,6 +25,8 @@ import {
   loadWatchlistItems,
   saveWatchlistItems,
   clearWatchlistItems,
+  loadBidAlertItems,
+  saveBidAlertItems,
 } from './services/storageService'
 
 export default function App() {
@@ -57,8 +59,31 @@ export default function App() {
   /** 하트 UI 활성화 여부 판정 및 뱃지 카운트용 관심물건 ID 파생 배열 */
   const watchlist = watchlistItems.map((item) => item.id)
 
-  /** 입찰 마감이 3일 이내로 임박한 관심물건 수 (상단 헤더 알림 뱃지용) */
+  /** 입찰 마감이 3일 이내로 임박한 관심물건 수 */
   const urgentWatchlistCount = watchlistItems.filter((item) => item.dDay <= 3).length
+
+  /**
+   * 사용자가 상세 화면에서 '기일알림'을 설정한 공매 물건 객체 배열
+   * - storageService를 통해 영구 보관되며, 앱 재실행 후에도 알림 상태와 임박 건수를 유지합니다.
+   */
+  const [alertItems, setAlertItems] = useState<GongItem[]>([])
+  const [isAlertInitialized, setIsAlertInitialized] = useState<boolean>(false)
+
+  /** 기일알림 활성화 여부 판정용 ID 배열 */
+  const alertIds = alertItems.map((item) => item.id)
+
+  /** 관심물건 + 기일알림 물건 중 3일 이내 임박 물건 (중복 ID 제거) */
+  const urgentAlarmItems = (() => {
+    const map = new Map<string, GongItem>()
+    for (const item of watchlistItems) {
+      if (item.dDay <= 3) map.set(item.id, item)
+    }
+    for (const item of alertItems) {
+      if (item.dDay <= 3 && !map.has(item.id)) map.set(item.id, item)
+    }
+    return Array.from(map.values())
+  })()
+  const totalUrgentAlarmCount = urgentAlarmItems.length
 
   /** 현재 상세 화면에 열려 있는 공매 물건 (null이면 메인 탭 화면 표시) */
   const [selectedItem, setSelectedItem] = useState<GongItem | null>(null)
@@ -198,6 +223,35 @@ export default function App() {
     saveWatchlistItems(watchlistItems)
   }, [watchlistItems, isWatchlistInitialized])
 
+  /**
+   * 앱 최초 마운트 시 스토리지 추상화 레이어(storageService)를 통해 기일 알림 물건 데이터를 복원합니다.
+   */
+  useEffect(() => {
+    let isMounted = true
+
+    async function initBidAlerts() {
+      const loaded = await loadBidAlertItems()
+      if (isMounted) {
+        setAlertItems(loaded)
+        setIsAlertInitialized(true)
+      }
+    }
+
+    initBidAlerts()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  /**
+   * 기일 알림(alertItems) 상태 변경 시 storageService에 비동기 영구 저장합니다.
+   */
+  useEffect(() => {
+    if (!isAlertInitialized) return
+    saveBidAlertItems(alertItems)
+  }, [alertItems, isAlertInitialized])
+
   // -------------------------------------------------------------------------
   // [이벤트 핸들러 (Event Handlers)]
   // -------------------------------------------------------------------------
@@ -219,6 +273,25 @@ export default function App() {
         ? '관심 공매 보관함에서 해제되었습니다.'
         : '관심 공매 보관함에 담았습니다.',
       { type: exists ? 'info' : 'success', duration: 2000 }
+    )
+  }
+
+  /**
+   * 특정 공매 물건의 기일 알림 설정 여부를 토글하고 스토리지에 영구 저장합니다.
+   * @param targetItem - 기일 알림을 토글할 공매 물건(GongItem) 객체
+   */
+  const toggleBidAlert = (targetItem: GongItem) => {
+    const exists = alertItems.some((item) => item.id === targetItem.id)
+    setAlertItems((prev) =>
+      exists
+        ? prev.filter((item) => item.id !== targetItem.id)
+        : [targetItem, ...prev]
+    )
+    showToast(
+      exists
+        ? '입찰 마감일 알림이 해제되었습니다.'
+        : '입찰 마감일 알림이 설정되었습니다.',
+      { type: exists ? 'info' : 'success', duration: 2200 }
     )
   }
 
@@ -313,16 +386,20 @@ export default function App() {
    * - alert()/confirm() 대신 토스트 팝업으로 긴급 마감 안내 및 원클릭 이동을 제공합니다.
    */
   const handleAlarmClick = () => {
-    if (urgentWatchlistCount > 0) {
+    if (totalUrgentAlarmCount > 0) {
       showToast(
-        `입찰 마감이 3일 이내로 임박한 관심 물건이 ${urgentWatchlistCount}건 있습니다.`,
+        `입찰 마감이 3일 이내로 임박한 관심·알림 물건이 ${totalUrgentAlarmCount}건 있습니다.`,
         {
           type: 'warning',
           actionLabel: '보러가기',
           duration: 3800,
           onAction: () => {
-            setSelectedItem(null)
-            setActiveTab('watchlist')
+            if (urgentWatchlistCount > 0) {
+              setSelectedItem(null)
+              setActiveTab('watchlist')
+            } else {
+              setSelectedItem(urgentAlarmItems[0])
+            }
           },
         }
       )
@@ -330,9 +407,17 @@ export default function App() {
     }
 
     const urgentMarketCount = items.filter((item) => item.dDay <= 3).length
+    if (alertItems.length > 0 && urgentMarketCount === 0) {
+      showToast(
+        `기일 알림 설정 ${alertItems.length}건 · 현재 3일 이내 마감 임박 물건은 없습니다.`,
+        { type: 'info' }
+      )
+      return
+    }
+
     showToast(
       urgentMarketCount > 0
-        ? `관심 마감 임박 없음 · 전체 공매 임박 물건 ${urgentMarketCount}건 등록 중`
+        ? `관심·알림 임박 없음 · 전체 공매 임박 물건 ${urgentMarketCount}건 등록 중`
         : '현재 등록된 긴급 마감 알림이 없습니다.',
       { type: 'info' }
     )
@@ -350,7 +435,7 @@ export default function App() {
         <AppHeader
           onSearchClick={() => navigateToListWithFilters()}
           onAlarmClick={handleAlarmClick}
-          alarmCount={urgentWatchlistCount}
+          alarmCount={totalUrgentAlarmCount}
         />
 
         {/* 메인 탭 화면 본체 (탭 전환 시 마운트/언마운트) */}
@@ -386,6 +471,7 @@ export default function App() {
             <WatchlistScreen
               items={watchlistItems}
               watchlist={watchlist}
+              alertIds={alertIds}
               onToggleWatchlist={toggleWatchlist}
               onRemoveSelectedWatchlist={removeWatchlistItems}
               onClearWatchlist={clearWatchlist}
@@ -431,7 +517,9 @@ export default function App() {
               key={selectedItem.id}
               item={selectedItem}
               isSaved={watchlist.includes(selectedItem.id)}
+              isAlertEnabled={alertIds.includes(selectedItem.id)}
               onToggleWatchlist={toggleWatchlist}
+              onToggleAlert={toggleBidAlert}
               onShowToast={showToast}
               onBack={() => setSelectedItem(null)}
             />

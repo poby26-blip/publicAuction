@@ -17,6 +17,8 @@ import { type GongItem } from '../data/mockAuctionData'
 export const STORAGE_KEYS = {
   /** 관심 등록(찜)한 공매 물건(GongItem[]) 목록 키 */
   WATCHLIST_ITEMS: 'gong_watchlist_items_v1',
+  /** 기일 알림이 설정된 공매 물건(GongItem[]) 목록 키 */
+  BID_DATE_ALERT_ITEMS: 'gong_bid_date_alert_items_v1',
   /** 사용자 공매 및 입찰 알림 설정(AlertSettings) 키 */
   USER_ALERT_SETTINGS: 'gong_alert_settings_v1',
 } as const
@@ -112,6 +114,42 @@ export function setStorageAdapter(adapter: AppStorageAdapter): void {
 }
 
 // ---------------------------------------------------------------------------
+// [공매 물건 배열 공통 스토리지 헬퍼]
+// ---------------------------------------------------------------------------
+
+async function loadGongItemList(storageKey: string, label: string): Promise<GongItem[]> {
+  try {
+    const raw = await activeStorageAdapter.getItem(storageKey)
+    if (!raw) return []
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed : []
+  } catch (err) {
+    console.warn(`[storageService] ${label} 복원 실패:`, err)
+    return []
+  }
+}
+
+async function saveGongItemList(
+  storageKey: string,
+  items: GongItem[],
+  label: string
+): Promise<void> {
+  try {
+    await activeStorageAdapter.setItem(storageKey, JSON.stringify(items))
+  } catch (err) {
+    console.error(`[storageService] ${label} 저장 실패:`, err)
+  }
+}
+
+async function removeStorageKey(storageKey: string, label: string): Promise<void> {
+  try {
+    await activeStorageAdapter.removeItem(storageKey)
+  } catch (err) {
+    console.error(`[storageService] ${label} 초기화 실패:`, err)
+  }
+}
+
+// ---------------------------------------------------------------------------
 // [관심물건(Watchlist) 전용 도메인 스토리지 API]
 // ---------------------------------------------------------------------------
 
@@ -122,15 +160,7 @@ export function setStorageAdapter(adapter: AppStorageAdapter): void {
  * @returns 저장된 GongItem 배열 Promise
  */
 export async function loadWatchlistItems(): Promise<GongItem[]> {
-  try {
-    const raw = await activeStorageAdapter.getItem(STORAGE_KEYS.WATCHLIST_ITEMS)
-    if (!raw) return []
-    const parsed = JSON.parse(raw)
-    return Array.isArray(parsed) ? parsed : []
-  } catch (err) {
-    console.warn('[storageService] 관심물건 복원 실패:', err)
-    return []
-  }
+  return loadGongItemList(STORAGE_KEYS.WATCHLIST_ITEMS, '관심물건')
 }
 
 /**
@@ -139,22 +169,39 @@ export async function loadWatchlistItems(): Promise<GongItem[]> {
  * @param items - 저장할 GongItem 객체 배열
  */
 export async function saveWatchlistItems(items: GongItem[]): Promise<void> {
-  try {
-    await activeStorageAdapter.setItem(STORAGE_KEYS.WATCHLIST_ITEMS, JSON.stringify(items))
-  } catch (err) {
-    console.error('[storageService] 관심물건 저장 실패:', err)
-  }
+  return saveGongItemList(STORAGE_KEYS.WATCHLIST_ITEMS, items, '관심물건')
 }
 
 /**
  * 로컬 저장소에 보관된 모든 관심물건 데이터를 일괄 삭제합니다.
  */
 export async function clearWatchlistItems(): Promise<void> {
-  try {
-    await activeStorageAdapter.removeItem(STORAGE_KEYS.WATCHLIST_ITEMS)
-  } catch (err) {
-    console.error('[storageService] 관심물건 초기화 실패:', err)
-  }
+  return removeStorageKey(STORAGE_KEYS.WATCHLIST_ITEMS, '관심물건')
+}
+
+// ---------------------------------------------------------------------------
+// [기일 알림 물건(Bid Date Alert) 전용 도메인 스토리지 API]
+// ---------------------------------------------------------------------------
+
+/**
+ * 로컬 저장소에 영구 보관된 기일 알림 설정 물건(GongItem[]) 목록을 비동기로 불러옵니다.
+ */
+export async function loadBidAlertItems(): Promise<GongItem[]> {
+  return loadGongItemList(STORAGE_KEYS.BID_DATE_ALERT_ITEMS, '기일알림')
+}
+
+/**
+ * 기일 알림이 설정된 물건(GongItem[]) 목록을 로컬 저장소에 비동기 영구 저장합니다.
+ */
+export async function saveBidAlertItems(items: GongItem[]): Promise<void> {
+  return saveGongItemList(STORAGE_KEYS.BID_DATE_ALERT_ITEMS, items, '기일알림')
+}
+
+/**
+ * 로컬 저장소에 보관된 기일 알림 물건 목록을 일괄 삭제합니다.
+ */
+export async function clearBidAlertItems(): Promise<void> {
+  return removeStorageKey(STORAGE_KEYS.BID_DATE_ALERT_ITEMS, '기일알림')
 }
 
 // ---------------------------------------------------------------------------

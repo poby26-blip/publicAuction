@@ -27,6 +27,9 @@ interface WatchlistScreenProps {
   /** 관심 등록(찜)된 물건 ID 배열 */
   watchlist: string[]
 
+  /** 기일 알림이 설정된 물건 ID 배열 */
+  alertIds?: string[]
+
   /** 개별 물건 관심 등록 토글(삭제) 콜백 */
   onToggleWatchlist: (item: GongItem) => void
 
@@ -49,6 +52,7 @@ interface WatchlistScreenProps {
 export function WatchlistScreen({
   items,
   watchlist,
+  alertIds = [],
   onToggleWatchlist,
   onRemoveSelectedWatchlist,
   onClearWatchlist,
@@ -281,6 +285,7 @@ export function WatchlistScreen({
             {sortedItems.map((item) => {
               const fallbackImg = getCategoryFallbackImage(item.category)
               const isSelected = activeSelectedIds.includes(item.id)
+              const hasBidAlert = alertIds.includes(item.id)
 
               // D-Day 뱃지 텍스트 및 긴급 색상 판정
               const dDayLabel =
@@ -348,6 +353,14 @@ export function WatchlistScreen({
                           <span className="text-[10px] font-bold text-[#0051d5] bg-[#eff4ff] px-1.5 py-0.5 rounded shrink-0">
                             {item.auctionType}
                           </span>
+                          {hasBidAlert && (
+                            <span className="text-[10px] font-bold text-[#0051d5] bg-[#dce9ff] px-1.5 py-0.5 rounded inline-flex items-center gap-0.5 shrink-0">
+                              <span className="material-symbols-outlined text-[11px] fill-1">
+                                notifications_active
+                              </span>
+                              <span>알림중</span>
+                            </span>
+                          )}
                           {item.failCount > 0 && (
                             <span className="text-[10px] font-medium text-[#74777f] shrink-0">
                               {item.failCount}회 유찰
