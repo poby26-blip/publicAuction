@@ -10,13 +10,11 @@
  */
 
 import { useState } from 'react'
-import { type GongItem, formatWon } from '../../data/mockAuctionData'
-
-/** 카테고리별 안전 대체 이미지 URL */
-const CAR_FALLBACK_IMG =
-  'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=800&auto=format&fit=crop&q=80'
-const REAL_ESTATE_FALLBACK_IMG =
-  'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&auto=format&fit=crop&q=80'
+import {
+  type GongItem,
+  formatWon,
+  getCategoryFallbackImage,
+} from '../../data/mockAuctionData'
 
 /**
  * WatchlistScreen 컴포넌트의 Props 인터페이스
@@ -151,8 +149,7 @@ export function WatchlistScreen({
           {/* 관심 물건 카드 리스트 */}
           <div className="flex flex-col gap-3">
             {sortedItems.map((item) => {
-              const fallbackImg =
-                item.category === 'car' ? CAR_FALLBACK_IMG : REAL_ESTATE_FALLBACK_IMG
+              const fallbackImg = getCategoryFallbackImage(item.category)
 
               // D-Day 뱃지 텍스트 및 긴급 색상 판정
               const dDayLabel =

@@ -2,14 +2,22 @@
  * @file onbidService.ts
  * @description 공공데이터포털(data.go.kr)의 한국자산관리공사(KAMCO) 차세대 온비드 OpenAPI(기관코드: B010003) 연동 서비스 모듈입니다.
  * 
- * [연동 핵심 규격 및 개발 주의사항]
- * 1. Base URL: 개발 환경에서는 Vite 프록시(/api/public-data)를 통하여 CORS(교차 출처 리소스 공유)를 우회합니다.
- * 2. Operation명: 가이드 문서의 오탈자와 달리 실제 운영 서버에서는 숫자 '2'가 붙은 'getRlstCltrList2'를 호출해야 정상 동작합니다.
- * 3. 필수 파라미터: 수의계약대상여부(pvctTrgtYn='N') 및 처분방식코드(dspsMthodCd='0001': 매각)가 반드시 포함되어야 합니다.
- * 4. 재산유형코드: 신탁/담보(0007) 및 압류재산(0002) 31,000여 건을 우선 조회하여 실제 아파트, 주택, 상가 매물을 확보합니다.
+ * [3대 자산 상품군 OpenAPI 오퍼레이션 규격]
+ * 1. 부동산 목록: /B010003/OnbidRlstListSrvc2/getRlstCltrList2
+ * 2. 동산 목록:   /B010003/OnbidMvastListSrvc2/getMvastCltrList2
+ * 3. 자동차 목록: /B010003/OnbidCarListSrvc2/getCarCltrList2
+ * 
+ * [연동 핵심 규격 및 주의사항]
+ * - Base URL: 개발 환경에서는 Vite 프록시(/api/public-data)를 통하여 CORS를 우회합니다.
+ * - 필수 파라미터: 수의계약대상여부(pvctTrgtYn='N'), 처분방식코드(dspsMthodCd='0001': 매각), 재산구분코드(prptDivCd).
  */
 
-import { MOCK_GONG_ITEMS, type GongItem, getRegionApiQueries } from '../data/mockAuctionData'
+import {
+  MOCK_GONG_ITEMS,
+  type GongItem,
+  getRegionApiQueries,
+  getCategoryFallbackImage,
+} from '../data/mockAuctionData'
 
 /**
  * 차세대 온비드(B010003) API 원시 JSON 응답 아이템 인터페이스
@@ -139,13 +147,15 @@ function parseOnbidDate(rawDate?: string): { dDay: number; formattedDate: string
  * @returns 공매이지 앱 컴포넌트에서 직접 사용하는 GongItem 객체
  */
 export function adaptOnbidToGongItem(raw: RawOnbidItem, index: number): GongItem {
-  // 감정평가금액 (원)
-  const appraisal = raw.apslEvlAmt || 0
+  // 원시 감정평가금액 및 최저입찰가 파싱 (동산/불용품 중 감정가 미정 시 최저가로 안전 보정)
+  const rawAppraisal = raw.apslEvlAmt || 0
 
   // 최저입찰가 (문자열에 콤마가 포함된 경우 숫자 변환)
   const minBid = typeof raw.lowstBidPrcIndctCont === 'string'
-    ? parseInt(raw.lowstBidPrcIndctCont.replace(/,/g, ''), 10) || appraisal
-    : raw.lowstBidPrcIndctCont || appraisal
+    ? parseInt(raw.lowstBidPrcIndctCont.replace(/,/g, ''), 10) || rawAppraisal
+    : raw.lowstBidPrcIndctCont || rawAppraisal
+
+  const appraisal = rawAppraisal > 0 ? rawAppraisal : minBid
 
   // 감정가 대비 할인율(%) 계산
   const discountRate = appraisal > 0 && minBid < appraisal
@@ -155,53 +165,85 @@ export function adaptOnbidToGongItem(raw: RawOnbidItem, index: number): GongItem
   // 입찰 마감일자 파싱
   const { dDay, formattedDate } = parseOnbidDate(raw.cltrBidEndDt)
 
-  // 자산 용도 분류 매핑
+  // 자산 용도 분류 매핑 (주의: '부동산' 문자열에 '동산'이 포함되므로 isRealEstate 선행 판별 필수)
   let category = 'apt'
   let categoryIcon = 'apartment'
+  const lcls = raw.cltrUsgLclsCtgrNm || ''
   const mcls = raw.cltrUsgMclsCtgrNm || ''
+  const scls = raw.cltrUsgSclsCtgrNm || ''
+  const cltrTitle = raw.onbidCltrNm || ''
+  const isRealEstate = lcls.includes('부동산')
 
-  if (mcls.includes('토지') || mcls.includes('대지') || mcls.includes('임야')) {
-    category = 'land'
-    categoryIcon = 'landscape'
-  } else if (mcls.includes('상가') || mcls.includes('업무') || mcls.includes('오피스')) {
-    category = 'commercial'
-    categoryIcon = 'storefront'
-  } else if (mcls.includes('차량') || mcls.includes('자동차')) {
+  if (
+    !isRealEstate &&
+    (lcls === '동산' ||
+      mcls.includes('기계') ||
+      mcls.includes('유가증권') ||
+      mcls.includes('물품') ||
+      mcls.includes('귀금속'))
+  ) {
+    category = 'goods'
+    categoryIcon = 'inventory_2'
+  } else if (
+    !isRealEstate &&
+    (lcls.includes('차량') || mcls.includes('차량') || mcls.includes('자동차'))
+  ) {
     category = 'car'
     categoryIcon = 'directions_car'
+  } else if (
+    mcls.includes('공장') ||
+    mcls.includes('창고') ||
+    mcls.includes('산업') ||
+    scls.includes('공장') ||
+    scls.includes('창고') ||
+    cltrTitle.includes('공장') ||
+    cltrTitle.includes('창고')
+  ) {
+    category = 'factory'
+    categoryIcon = 'factory'
+  } else if (mcls.includes('토지') || mcls.includes('대지') || mcls.includes('임야')) {
+    category = 'land'
+    categoryIcon = 'landscape'
+  } else if (
+    mcls.includes('상가') ||
+    mcls.includes('업무') ||
+    mcls.includes('오피스') ||
+    mcls.includes('근린생활')
+  ) {
+    category = 'commercial'
+    categoryIcon = 'storefront'
   } else if (mcls.includes('주거') || mcls.includes('아파트') || mcls.includes('주택')) {
     category = 'apt'
     categoryIcon = 'apartment'
   }
 
   // 시/도, 시군구, 읍면동을 결합한 표준 도로명/지번 주소 구성
-  const address = [raw.lctnSdnm, raw.lctnSggnm, raw.lctnEmdNm].filter(Boolean).join(' ') || raw.onbidCltrNm || '소재지 확인중'
+  const address =
+    [raw.lctnSdnm, raw.lctnSggnm, raw.lctnEmdNm].filter(Boolean).join(' ') ||
+    raw.onbidCltrNm ||
+    '소재지 확인중'
 
-  // 면적 표기 및 평수 환산
+  // 면적 또는 용도 제원 표기
   let area = ''
   if (raw.bldSqms && raw.bldSqms > 0) {
     area = `건물 ${raw.bldSqms}㎡ (약 ${(raw.bldSqms * 0.3025).toFixed(1)}평)`
   } else if (raw.landSqms && raw.landSqms > 0) {
     area = `토지 ${raw.landSqms}㎡ (약 ${(raw.landSqms * 0.3025).toFixed(1)}평)`
   } else {
-    area = raw.cltrUsgSclsCtgrNm || raw.cltrUsgMclsCtgrNm || '상세 정보 참조'
+    area = raw.cltrUsgSclsCtgrNm || raw.cltrUsgMclsCtgrNm || raw.cltrUsgLclsCtgrNm || '상세 정보 참조'
   }
 
-  // 썸네일 이미지 유효성 확인 및 Fallback 플레이스홀더 이미지 배열
-  const fallbackImages = [
-    'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=800&auto=format&fit=crop&q=80',
-  ]
-  const validImageUrl = raw.thnlImgUrlAdr && raw.thnlImgUrlAdr.startsWith('http')
-    ? raw.thnlImgUrlAdr
-    : fallbackImages[index % fallbackImages.length]
+  // 카테고리 전용 안전 Fallback 썸네일 이미지 적용
+  const categoryFallback = getCategoryFallbackImage(category)
+  const validImageUrl =
+    raw.thnlImgUrlAdr && raw.thnlImgUrlAdr.startsWith('http')
+      ? raw.thnlImgUrlAdr
+      : categoryFallback
 
   // 공매 재산구분명 표준화 (신탁공매, 압류재산, 국유재산, 일반공매)
   let auctionType = '온비드공매'
   const rawDivNm = raw.prptDivNm || ''
-  if (rawDivNm.includes('신탁') || rawDivNm.includes('담보')) {
+  if (rawDivNm.includes('신탁') || rawDivNm.includes('담보') || rawDivNm.includes('수탁')) {
     auctionType = '신탁공매'
   } else if (rawDivNm.includes('압류') || rawDivNm.includes('체납')) {
     auctionType = '압류재산'
@@ -221,118 +263,125 @@ export function adaptOnbidToGongItem(raw: RawOnbidItem, index: number): GongItem
     minimumPrice: minBid,
     discountRate,
     dDay,
-    deadlineTime: raw.cltrBidEndDt?.substring(8, 12) ? `${raw.cltrBidEndDt.substring(8, 10)}:${raw.cltrBidEndDt.substring(10, 12)} 마감` : undefined,
+    deadlineTime: raw.cltrBidEndDt?.substring(8, 12)
+      ? `${raw.cltrBidEndDt.substring(8, 10)}:${raw.cltrBidEndDt.substring(10, 12)} 마감`
+      : undefined,
     failCount: raw.usbdNft || 0,
     auctionType,
     auctionDate: formattedDate,
     area,
-    viewCount: 100 + (index * 37) % 1500,
+    viewCount: 100 + ((index * 37) % 1500),
     isUrgent: dDay <= 3,
     isHalfPrice: discountRate >= 40,
     imageUrl: validImageUrl,
-    images: [validImageUrl, ...fallbackImages.slice(0, 2)],
+    images: [validImageUrl],
   }
 }
 
+// ---------------------------------------------------------------------------
+// [공통 온비드 목록 OpenAPI 실행 엔진 (Shared Query Executor)]
+// ---------------------------------------------------------------------------
+
+interface InternalOnbidFetchConfig {
+  endpointPath: string
+  pageNo: number
+  numOfRows: number
+  region?: string
+  pvctTrgtYn?: 'Y' | 'N'
+  prptDivCd: string
+  fallbackItems: GongItem[]
+  forceCategory?: { id: string; icon: string }
+}
+
 /**
- * 차세대 온비드 부동산 물건 목록을 실시간으로 조회합니다.
- * 
- * - API 식별자: B010003 / OnbidRlstListSrvc2 / getRlstCltrList2
- * - 신탁/담보(0007) 및 압류재산(0002) 31,000+건을 우선 조회합니다.
- * - 지역(region) 파라미터가 주어진 경우 해당 시/도(lctnSdnm)로 필터링하여 조회합니다.
- * 
- * @param options - 페이징 번호, 건수, 지역 필터 등의 쿼리 옵션
- * @returns 어댑터를 통해 정규화된 GongItem 배열 (통신 실패 시 MOCK_GONG_ITEMS fallback)
+ * 단일/복수 지역 쿼리 병렬 페칭 및 ID 중복 제거를 공통으로 수행하는 내부 API 실행기입니다.
  */
-export async function fetchOnbidRealEstateList(options: OnbidQueryOptions = {}): Promise<GongItem[]> {
+async function executeOnbidListQuery(config: InternalOnbidFetchConfig): Promise<GongItem[]> {
   const {
-    pageNo = 1,
-    numOfRows = 20,
+    endpointPath,
+    pageNo,
+    numOfRows,
     region,
     pvctTrgtYn = 'N',
-  } = options
+    prptDivCd,
+    fallbackItems,
+    forceCategory,
+  } = config
 
-  // 요청 파라미터 빌드
-  const params = new URLSearchParams({
+  const baseParams = new URLSearchParams({
     serviceKey: API_KEY,
     resultType: 'json',
     pageNo: String(pageNo),
     numOfRows: String(numOfRows),
     pvctTrgtYn,
     dspsMthodCd: '0001', // 처분방식: 매각
-    prptDivCd: '0007,0002', // 신탁/담보 및 압류재산 우선 (31,000+건 실거래 물건)
+    prptDivCd,
   })
 
-  // 시/도 지역 필터링 (예: '서울', '충북', '전남광주' 등)
-  const regionQueries = getRegionApiQueries(region)
-
-  // 단일 지역 또는 전국 조회 시
-  if (regionQueries.length <= 1) {
-    if (regionQueries.length === 1) {
-      params.append('lctnSdnm', regionQueries[0])
-    }
-
-    const requestUrl = `${BASE_URL}/B010003/OnbidRlstListSrvc2/getRlstCltrList2?${params.toString()}`
-
-    try {
-      const res = await fetch(requestUrl, {
-        method: 'GET',
-        headers: {
-          Accept: 'application/json',
-        },
-      })
-
-      // HTTP 상태 코드 에러 시 Fallback 반환
-      if (!res.ok) {
-        console.warn(`[Onbid API] HTTP 오류 (${res.status}): fallback 샘플 데이터를 사용합니다.`)
-        return MOCK_GONG_ITEMS
+  const mapRawList = (rawList: RawOnbidItem[]): GongItem[] =>
+    rawList.map((item, idx) => {
+      const gongItem = adaptOnbidToGongItem(item, idx)
+      if (forceCategory) {
+        gongItem.category = forceCategory.id
+        gongItem.categoryIcon = forceCategory.icon
+        // 강제 보정된 카테고리의 이미지로 Fallback 재동기화
+        if (gongItem.imageUrl.includes('images.unsplash.com')) {
+          const fallbackUrl = getCategoryFallbackImage(forceCategory.id)
+          gongItem.imageUrl = fallbackUrl
+          gongItem.images = [fallbackUrl]
+        }
       }
-
-      const data = await res.json()
-
-      // 온비드 응답 헤더 결과코드 검증 ('00'이 정상 코드)
-      const header = data.header || data.response?.header
-      if (header?.resultCode !== '00') {
-        console.warn(`[Onbid API] 응답 오류 (${header?.resultCode}: ${header?.resultMsg})`)
-        return MOCK_GONG_ITEMS
-      }
-
-      // JSON 응답 본체 아이템 추출
-      const body = data.body || data.response?.body
-      const rawItems = body?.items?.item
-
-      // 조회 결과가 0건인 경우 빈 배열 반환
-      if (!rawItems || (Array.isArray(rawItems) && rawItems.length === 0)) {
-        return []
-      }
-
-      // 단일 객체 또는 배열 응답 정규화 후 어댑터 변환
-      const itemList: RawOnbidItem[] = Array.isArray(rawItems) ? rawItems : [rawItems]
-      return itemList.map((item, idx) => adaptOnbidToGongItem(item, idx))
-    } catch (error) {
-      console.error('[Onbid API] 통신 예외 발생:', error)
-      return MOCK_GONG_ITEMS
-    }
-  }
-
-  // 복수 쿼리 대상(예: '전남광주' -> '전남광주통합특별시', '광주광역시', '전라남도') 병렬 호출 및 병합
-  try {
-    const promises = regionQueries.slice(0, 3).map(async (queryName) => {
-      const p = new URLSearchParams(params)
-      p.set('lctnSdnm', queryName)
-      const res = await fetch(`${BASE_URL}/B010003/OnbidRlstListSrvc2/getRlstCltrList2?${p.toString()}`)
-      if (!res.ok) return []
-      const data = await res.json()
-      const raw = data.body?.items?.item || data.response?.body?.items?.item
-      if (!raw) return []
-      const list: RawOnbidItem[] = Array.isArray(raw) ? raw : [raw]
-      return list.map((item, idx) => adaptOnbidToGongItem(item, idx))
+      return gongItem
     })
 
-    const results = await Promise.all(promises)
-    const combined = results.flat()
+  const fetchSingleRegion = async (lctnSdnm?: string): Promise<GongItem[] | null> => {
+    const p = new URLSearchParams(baseParams)
+    if (lctnSdnm) {
+      p.append('lctnSdnm', lctnSdnm)
+    }
 
-    // 물건 고유 ID 기준 중복 제거
+    const res = await fetch(`${BASE_URL}${endpointPath}?${p.toString()}`, {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+    })
+
+    if (!res.ok) {
+      console.warn(`[Onbid API] HTTP 오류 (${res.status}) - ${endpointPath}`)
+      return null
+    }
+
+    const data = await res.json()
+    const header = data.header || data.response?.header
+    if (header?.resultCode !== '00') {
+      console.warn(`[Onbid API] 응답 오류 (${header?.resultCode}: ${header?.resultMsg})`)
+      return null
+    }
+
+    const body = data.body || data.response?.body
+    const rawItems = body?.items?.item
+    if (!rawItems || (Array.isArray(rawItems) && rawItems.length === 0)) {
+      return []
+    }
+
+    const itemList: RawOnbidItem[] = Array.isArray(rawItems) ? rawItems : [rawItems]
+    return mapRawList(itemList)
+  }
+
+  const regionQueries = getRegionApiQueries(region)
+
+  try {
+    // 1. 전국 또는 단일 지역 조회
+    if (regionQueries.length <= 1) {
+      const result = await fetchSingleRegion(regionQueries[0])
+      return result === null ? fallbackItems : result
+    }
+
+    // 2. 복수 행정구역 쿼리(예: '전남광주' -> '전남광주통합특별시', '광주광역시', '전라남도') 병렬 호출 및 병합
+    const results = await Promise.all(
+      regionQueries.slice(0, 3).map((queryName) => fetchSingleRegion(queryName))
+    )
+    const combined = results.flatMap((r) => r || [])
+
     const seen = new Set<string>()
     return combined.filter((item) => {
       if (seen.has(item.id)) return false
@@ -340,91 +389,116 @@ export async function fetchOnbidRealEstateList(options: OnbidQueryOptions = {}):
       return true
     })
   } catch (error) {
-    console.error('[Onbid API] 복수 지역 통신 예외 발생:', error)
-    return MOCK_GONG_ITEMS
+    console.error(`[Onbid API] 통신 예외 발생 (${endpointPath}):`, error)
+    return fallbackItems
   }
 }
 
+// ---------------------------------------------------------------------------
+// [3대 상품군(부동산 / 동산 / 자동차) 및 통합 OpenAPI 서비스]
+// ---------------------------------------------------------------------------
+
 /**
- * 차세대 온비드 자동차 물건 목록을 실시간으로 조회합니다.
- * 
- * - API 식별자: B010003 / OnbidCarListSrvc2 / getCarCltrList2
- * - 승용차, 화물/특수차량 공매 목록을 조회합니다.
- * - 신탁/담보(0007) 및 압류재산(0002) 차량 목록을 우선 조회합니다.
- * 
- * @param pageNo - 페이지 번호 (기본값: 1)
- * @param numOfRows - 가져올 건수 (기본값: 20)
- * @param region - 시/도 지역명 필터 (선택적)
- * @returns 어댑터를 통해 정규화된 차량 GongItem 배열
+ * 1. 차세대 온비드 [부동산] 물건 목록을 실시간으로 조회합니다.
+ * - API 식별자: B010003 / OnbidRlstListSrvc2 / getRlstCltrList2
+ * - 신탁/담보(0007) 및 압류재산(0002) 매물을 우선 조회합니다.
  */
-export async function fetchOnbidCarList(pageNo = 1, numOfRows = 20, region?: string): Promise<GongItem[]> {
-  const params = new URLSearchParams({
-    serviceKey: API_KEY,
-    resultType: 'json',
-    pageNo: String(pageNo),
-    numOfRows: String(numOfRows),
-    pvctTrgtYn: 'N',
-    dspsMthodCd: '0001',
-    prptDivCd: '0007,0002', // 신탁/담보 및 압류재산 공매 차량 조회
+export async function fetchOnbidRealEstateList(options: OnbidQueryOptions = {}): Promise<GongItem[]> {
+  const { pageNo = 1, numOfRows = 20, region, pvctTrgtYn = 'N' } = options
+
+  return executeOnbidListQuery({
+    endpointPath: '/B010003/OnbidRlstListSrvc2/getRlstCltrList2',
+    pageNo,
+    numOfRows,
+    region,
+    pvctTrgtYn,
+    prptDivCd: '0007,0002',
+    fallbackItems: MOCK_GONG_ITEMS.filter((i) => i.category !== 'car'),
+  })
+}
+
+/**
+ * 2. 차세대 온비드 [동산] 물건 목록을 실시간으로 조회합니다.
+ * - API 식별자: B010003 / OnbidMvastListSrvc2 / getMvastCltrList2
+ * - 기계기구, 유가증권, 귀금속, 불용품, 기타 동산(차량 제외) 공매 목록을 조회합니다.
+ * - 1차 압류/공유(0007,0002) 조회 후 0건인 경우 불용품/국유 동산(0004,0010)을 추가 탐색합니다.
+ */
+export async function fetchOnbidMovableList(
+  pageNo = 1,
+  numOfRows = 20,
+  region?: string
+): Promise<GongItem[]> {
+  const primary = await executeOnbidListQuery({
+    endpointPath: '/B010003/OnbidMvastListSrvc2/getMvastCltrList2',
+    pageNo,
+    numOfRows,
+    region,
+    prptDivCd: '0007,0002',
+    fallbackItems: [],
+    forceCategory: { id: 'goods', icon: 'inventory_2' },
   })
 
-  // 시/도 지역 필터 (예: '서울', '전남광주', '부산' 등)
-  const regionQueries = getRegionApiQueries(region)
-
-  if (regionQueries.length <= 1) {
-    if (regionQueries.length === 1) {
-      params.append('lctnSdnm', regionQueries[0])
-    }
-
-    const requestUrl = `${BASE_URL}/B010003/OnbidCarListSrvc2/getCarCltrList2?${params.toString()}`
-
-    try {
-      const res = await fetch(requestUrl)
-      if (!res.ok) return []
-      const data = await res.json()
-      const rawItems = data.body?.items?.item || data.response?.body?.items?.item
-      if (!rawItems) return []
-      const list: RawOnbidItem[] = Array.isArray(rawItems) ? rawItems : [rawItems]
-      return list.map((item, idx) => {
-        const gongItem = adaptOnbidToGongItem(item, idx)
-        gongItem.category = 'car'
-        gongItem.categoryIcon = 'directions_car'
-        return gongItem
-      })
-    } catch {
-      return []
-    }
+  if (primary.length > 0 || pageNo > 1) {
+    return primary
   }
 
-  // 복수 쿼리 대상(예: '전남광주') 병렬 호출 및 병합
-  try {
-    const promises = regionQueries.slice(0, 3).map(async (queryName) => {
-      const p = new URLSearchParams(params)
-      p.set('lctnSdnm', queryName)
-      const res = await fetch(`${BASE_URL}/B010003/OnbidCarListSrvc2/getCarCltrList2?${p.toString()}`)
-      if (!res.ok) return []
-      const data = await res.json()
-      const raw = data.body?.items?.item || data.response?.body?.items?.item
-      if (!raw) return []
-      const list: RawOnbidItem[] = Array.isArray(raw) ? raw : [raw]
-      return list.map((item, idx) => {
-        const gongItem = adaptOnbidToGongItem(item, idx)
-        gongItem.category = 'car'
-        gongItem.categoryIcon = 'directions_car'
-        return gongItem
-      })
-    })
+  // 1페이지 압류/신탁 동산이 없는 경우 불용품(0004) 및 국유재산(0010) 동산 추가 탐색
+  return executeOnbidListQuery({
+    endpointPath: '/B010003/OnbidMvastListSrvc2/getMvastCltrList2',
+    pageNo,
+    numOfRows,
+    region,
+    prptDivCd: '0004,0010',
+    fallbackItems: [],
+    forceCategory: { id: 'goods', icon: 'inventory_2' },
+  })
+}
 
-    const results = await Promise.all(promises)
-    const combined = results.flat()
+/**
+ * 3. 차세대 온비드 [자동차] 물건 목록을 실시간으로 조회합니다.
+ * - API 식별자: B010003 / OnbidCarListSrvc2 / getCarCltrList2
+ * - 승용차, 화물/특수차량 공매 목록을 조회합니다.
+ */
+export async function fetchOnbidCarList(
+  pageNo = 1,
+  numOfRows = 20,
+  region?: string
+): Promise<GongItem[]> {
+  return executeOnbidListQuery({
+    endpointPath: '/B010003/OnbidCarListSrvc2/getCarCltrList2',
+    pageNo,
+    numOfRows,
+    region,
+    prptDivCd: '0007,0002',
+    fallbackItems: [],
+    forceCategory: { id: 'car', icon: 'directions_car' },
+  })
+}
 
-    const seen = new Set<string>()
-    return combined.filter((item) => {
-      if (seen.has(item.id)) return false
-      seen.add(item.id)
-      return true
-    })
-  } catch {
-    return []
-  }
+/**
+ * 4. 3대 상품군(부동산 + 동산 + 자동차) 공매 물건을 병렬 호출하여 통합 목록으로 제공합니다.
+ * - '전체 보기' 탭 등에서 모든 자산 유형을 고르게 탐색할 때 사용합니다.
+ */
+export async function fetchOnbidAllAssetsList(
+  pageNo = 1,
+  numOfRows = 20,
+  region?: string
+): Promise<GongItem[]> {
+  const realEstateCount = Math.max(8, Math.ceil(numOfRows * 0.5))
+  const movableCount = Math.max(4, Math.floor(numOfRows * 0.25))
+  const carCount = Math.max(4, Math.floor(numOfRows * 0.25))
+
+  const [realEstateItems, movableItems, carItems] = await Promise.all([
+    fetchOnbidRealEstateList({ pageNo, numOfRows: realEstateCount, region }),
+    fetchOnbidMovableList(pageNo, movableCount, region),
+    fetchOnbidCarList(pageNo, carCount, region),
+  ])
+
+  const combined = [...realEstateItems, ...movableItems, ...carItems]
+  const seen = new Set<string>()
+  return combined.filter((item) => {
+    if (seen.has(item.id)) return false
+    seen.add(item.id)
+    return true
+  })
 }

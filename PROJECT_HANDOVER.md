@@ -1,6 +1,6 @@
 # 📋 [공매이지] 프로젝트 인수인계 및 에이전트 작업 지침서 (PROJECT_HANDOVER.md)
 
-> **문서 버전**: v1.1.0  
+> **문서 버전**: v1.2.0  
 > **최종 갱신일**: 2026년 11월 12일  
 > **프로젝트 경로**: `c:\dev\workspace\publicAuction`  
 > **프론트엔드 경로**: `c:\dev\workspace\publicAuction\frontend`  
@@ -94,7 +94,8 @@
 | :--- | :--- |
 | **기관 코드** | `B010003` (한국자산관리공사 차세대 온비드) |
 | **Base URL** | `https://apis.data.go.kr` (로컬 개발 시 Vite 프록시 `/api/public-data` 사용) |
-| **부동산 목록 오퍼레이션** | `/B010003/OnbidRlstListSrvc2/getRlstCltrList2` ⚠️ *가이드 문서의 오탈자와 달리 숫자 `2`가 붙은 엔드포인트를 호출해야 정상 응답* |
+| **부동산 목록 오퍼레이션** | `/B010003/OnbidRlstListSrvc2/getRlstCltrList2` ⚠️ *숫자 `2` 필수. `cltrUsgLclsCtgrNm="부동산"`이 `"동산"` 부분 문자열에 매칭되지 않도록 선행 판별 필수* |
+| **동산 목록 오퍼레이션** | `/B010003/OnbidMvastListSrvc2/getMvastCltrList2` (기계기구·임산물·불용품 등 2,400+건, `apslEvlAmt: null` 방어 및 1차 `0007,0002` / 2차 `0004,0010` Fallback 조회) |
 | **차량 목록 오퍼레이션** | `/B010003/OnbidCarListSrvc2/getCarCltrList2` (실거래 차량 186+건 확보) |
 | **필수 파라미터** | 1) `pvctTrgtYn=N` (수의계약 제외)<br>2) `dspsMthodCd=0001` (처분방식: 매각)<br>3) `prptDivCd=0007,0002` (신탁/담보 및 압류재산 31,000+건)<br>⚠️ *누락 시 코드 11(`NO_MANDATORY_REQUEST_PARAMETERS_ERROR`) 발생* |
 | **2026년 행정통합 반영** | **'전남광주통합특별시'** (2026.07.01 공식 출범 반영)<br>- 온비드 DB 과도기 특성상 `전남광주통합특별시` + `광주광역시` + `전라남도` 3개 쿼리를 병렬 호출하여 통합 수집 및 중복 제거 처리 |
@@ -152,6 +153,17 @@
    - 최신등록순 / 마감임박순 정렬 토글, 전체 비우기(`window.confirm` 확인 후 일괄 삭제), 3일 이내 마감 임박 물건 주의 배너, 이미지 Fallback 및 D-Day('오늘 마감', '상시 매각') 방어 처리를 구현했습니다.
 4. **전 화면 실시간 동기화 및 실데이터 알림 연동 ([AppHeader.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/components/layout/AppHeader.tsx))**:
    - 홈·목록·상세·보관함 어느 화면에서 하트를 누르든 하단 탭 뱃지(`watchlistCount`)와 상단 헤더의 3일 이내 마감 임박 관심물건 알림(`urgentWatchlistCount`)이 실시간 동기화됩니다.
+
+### ✅ [7단계] 3대 상품군(부동산·동산·자동차) 카테고리 정리 및 동산 OpenAPI 연동 완료
+1. **상품군 메타데이터 및 공통 헬퍼 구축 ([mockAuctionData.ts](file:///c:/dev/workspace/publicAuction/frontend/src/data/mockAuctionData.ts))**:
+   - `AssetGroup` (`'all' | 'real_estate' | 'movable' | 'car'`) 및 `GONG_ASSET_GROUPS`, 카테고리별 Fallback 이미지 헬퍼 `getCategoryFallbackImage`, 대분류 판별기 `resolveAssetGroup`을 구현했습니다.
+2. **동산 OpenAPI 연동 및 공통 쿼리 실행기 리팩토링 ([onbidService.ts](file:///c:/dev/workspace/publicAuction/frontend/src/services/onbidService.ts))**:
+   - `executeOnbidListQuery` 공통 엔진 추출을 통해 부동산·동산·자동차 API의 중복 로직을 통합했습니다.
+   - **동산 목록조회 API(`fetchOnbidMovableList`)** 및 **3대 상품군 통합 병렬 조회(`fetchOnbidAllAssetsList`)** 를 구축했습니다.
+   - `"부동산".includes("동산")` 오분류 버그 해결(`isRealEstate` 선행 가드), 공장/창고(`factory`) 분류 추가, 감정가 미산정(`null`) 방어를 완료했습니다.
+3. **2단 상품군·세부 필터 UI 및 전 화면 Fallback 통일 ([AuctionListScreen.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/pages/auction/AuctionListScreen.tsx), [App.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/App.tsx), [HomeScreen.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/pages/home/HomeScreen.tsx))**:
+   - 목록 화면 상단에 `전체 | 부동산 | 동산 | 자동차` 1차 세그먼트 탭과 세부 카테고리 알약 2단 구조를 배치하고 3대 API 동적 분기 및 페이징을 연결했습니다.
+   - 홈 화면 초기/지역 조회를 `fetchOnbidAllAssetsList`로 통합하고, 전 화면(홈·목록·상세·보관함)의 Fallback 이미지와 감정가 표기를 통일했습니다.
 
 ---
 

@@ -191,16 +191,92 @@ export function getRegionApiQueries(selectedRegion?: string): string[] {
   return meta ? meta.apiQueries : [selectedRegion]
 }
 
-export const GONG_CATEGORIES = [
-  { id: 'apt', label: '아파트/주택', icon: 'apartment', count: 142 },
-  { id: 'commercial', label: '상가/오피스', icon: 'storefront', count: 89 },
-  { id: 'land', label: '토지/임야', icon: 'landscape', count: 215 },
-  { id: 'car', label: '자동차/운송', icon: 'directions_car', count: 64 },
-  { id: 'goods', label: '동산/귀금속', icon: 'inventory_2', count: 37 },
-  { id: 'factory', label: '공장/창고', icon: 'factory', count: 48 },
-  { id: 'new', label: '신규등록', icon: 'bolt', count: 52 },
-  { id: 'half', label: '반값공매', icon: 'local_fire_department', count: 76 },
+/**
+ * 온비드 OpenAPI 3대 자산 상품군 대분류 타입
+ * - all: 전체 통합 (부동산 + 동산 + 자동차)
+ * - real_estate: 부동산 (OnbidRlstListSrvc2)
+ * - movable: 동산 (OnbidMvastListSrvc2)
+ * - car: 자동차 (OnbidCarListSrvc2)
+ */
+export type AssetGroup = 'all' | 'real_estate' | 'movable' | 'car'
+
+/**
+ * 상단 상품별 대분류 탭 메타데이터
+ */
+export const GONG_ASSET_GROUPS: { id: AssetGroup; label: string; icon: string }[] = [
+  { id: 'all', label: '전체', icon: 'apps' },
+  { id: 'real_estate', label: '부동산', icon: 'domain' },
+  { id: 'movable', label: '동산', icon: 'inventory_2' },
+  { id: 'car', label: '자동차', icon: 'directions_car' },
 ]
+
+/**
+ * 공매 세부 카테고리 메타데이터 인터페이스
+ */
+export interface CategoryMeta {
+  id: string
+  label: string
+  icon: string
+  /** 해당 세부 카테고리가 속한 OpenAPI 상품군 ('real_estate' | 'movable' | 'car' | 'theme') */
+  assetGroup: 'real_estate' | 'movable' | 'car' | 'theme'
+  count?: number
+}
+
+/**
+ * 홈 8대 숏컷 및 목록 필터용 표준 카테고리 목록
+ */
+export const GONG_CATEGORIES: CategoryMeta[] = [
+  { id: 'apt', label: '아파트/주택', icon: 'apartment', assetGroup: 'real_estate', count: 142 },
+  { id: 'commercial', label: '상가/오피스', icon: 'storefront', assetGroup: 'real_estate', count: 89 },
+  { id: 'land', label: '토지/임야', icon: 'landscape', assetGroup: 'real_estate', count: 215 },
+  { id: 'factory', label: '공장/창고', icon: 'factory', assetGroup: 'real_estate', count: 48 },
+  { id: 'goods', label: '동산/물품', icon: 'inventory_2', assetGroup: 'movable', count: 37 },
+  { id: 'car', label: '자동차/운송', icon: 'directions_car', assetGroup: 'car', count: 64 },
+  { id: 'new', label: '신규등록', icon: 'bolt', assetGroup: 'theme', count: 52 },
+  { id: 'half', label: '반값공매', icon: 'local_fire_department', assetGroup: 'theme', count: 76 },
+]
+
+/**
+ * 카테고리별 안전 대체(Fallback) 이미지 URL 매핑 테이블
+ */
+export const CATEGORY_FALLBACK_IMAGES: Record<string, string> = {
+  apt: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&auto=format&fit=crop&q=80',
+  commercial: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&auto=format&fit=crop&q=80',
+  land: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&auto=format&fit=crop&q=80',
+  factory: 'https://images.unsplash.com/photo-1565514020179-026b92b84bb6?w=800&auto=format&fit=crop&q=80',
+  goods: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80',
+  car: 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=800&auto=format&fit=crop&q=80',
+}
+
+/**
+ * 물건 카테고리에 맞는 기본 대체(Fallback) 이미지 URL을 반환합니다.
+ * @param category - 물건 카테고리 ID
+ */
+export function getCategoryFallbackImage(category?: string): string {
+  if (category && CATEGORY_FALLBACK_IMAGES[category]) {
+    return CATEGORY_FALLBACK_IMAGES[category]
+  }
+  return CATEGORY_FALLBACK_IMAGES.apt
+}
+
+/**
+ * 세부 카테고리 ID가 속한 1차 상품군 대분류(AssetGroup)를 판별해 반환합니다.
+ * @param categoryId - 세부 카테고리 ID ('apt', 'goods', 'car', 'real_estate', 'all' 등)
+ */
+export function resolveAssetGroup(categoryId?: string): AssetGroup {
+  if (!categoryId || categoryId === 'all' || categoryId === 'new' || categoryId === 'half') {
+    return 'all'
+  }
+  if (categoryId === 'real_estate') return 'real_estate'
+  if (categoryId === 'movable' || categoryId === 'goods') return 'movable'
+  if (categoryId === 'car') return 'car'
+
+  const found = GONG_CATEGORIES.find((c) => c.id === categoryId)
+  if (found && found.assetGroup !== 'theme') {
+    return found.assetGroup
+  }
+  return 'real_estate'
+}
 
 export const MOCK_GONG_ITEMS: GongItem[] = [
   // 마감 임박 특가 물건

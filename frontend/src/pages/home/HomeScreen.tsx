@@ -17,6 +17,7 @@ import {
   GONG_REGIONS,
   type GongItem,
   formatWon,
+  getCategoryFallbackImage,
   isRegionMatch,
 } from '../../data/mockAuctionData'
 import { CardSkeleton, ListSkeleton } from '../../components/common/Skeleton'
@@ -294,20 +295,23 @@ export function HomeScreen({
                   {/* 상단 썸네일 이미지 및 마감 뱃지 영역 */}
                   <div className="relative aspect-16/10 bg-slate-100 overflow-hidden">
                     <img
-                      src={item.imageUrl}
+                      src={item.imageUrl || getCategoryFallbackImage(item.category)}
                       alt={item.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       loading="lazy"
                       onError={(e) => {
-                        // 온비드 원본 이미지 실패 시 안전한 대체 플레이스홀더 이미지 적용
-                        const target = e.currentTarget
-                        target.src = 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&auto=format&fit=crop&q=80'
+                        // 온비드 원본 이미지 실패 시 카테고리 전용 대체 이미지 적용
+                        e.currentTarget.src = getCategoryFallbackImage(item.category)
                       }}
                     />
                     {/* D-Day 및 마감 시각 뱃지 */}
                     <div className="absolute top-2.5 left-2.5 flex items-center gap-1">
                       <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-[#ba1a1a] text-white shadow-xs">
-                        {item.dDay <= 0 ? '오늘 마감' : `D-${item.dDay}`}
+                        {item.dDay <= 0
+                          ? '오늘 마감'
+                          : item.dDay > 365
+                            ? '상시 매각'
+                            : `D-${item.dDay}`}
                       </span>
                       {item.deadlineTime && (
                         <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-black/60 text-white backdrop-blur-xs">
@@ -365,9 +369,15 @@ export function HomeScreen({
                           </span>
                         </div>
                       </div>
-                      <p className="text-[11px] text-[#74777f] line-through mt-0.5">
-                        감정가 {formatWon(item.appraisalPrice)}
-                      </p>
+                      {item.appraisalPrice > item.minimumPrice ? (
+                        <p className="text-[11px] text-[#74777f] line-through mt-0.5">
+                          감정가 {formatWon(item.appraisalPrice)}
+                        </p>
+                      ) : (
+                        <p className="text-[11px] text-[#74777f] mt-0.5">
+                          최저입찰가 (감정가 동일/미산정)
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -416,13 +426,12 @@ export function HomeScreen({
                   {/* 좌측 정사각형 썸네일 */}
                   <div className="w-24 h-24 rounded-xl overflow-hidden bg-slate-100 flex-shrink-0 relative">
                     <img
-                      src={item.imageUrl}
+                      src={item.imageUrl || getCategoryFallbackImage(item.category)}
                       alt={item.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       loading="lazy"
                       onError={(e) => {
-                        const target = e.currentTarget
-                        target.src = 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&auto=format&fit=crop&q=80'
+                        e.currentTarget.src = getCategoryFallbackImage(item.category)
                       }}
                     />
                     {item.failCount > 0 ? (

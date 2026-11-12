@@ -10,7 +10,7 @@
  */
 
 import { useState } from 'react'
-import { type GongItem, formatWon } from '../../data/mockAuctionData'
+import { type GongItem, formatWon, getCategoryFallbackImage } from '../../data/mockAuctionData'
 
 /**
  * AuctionDetailScreen 컴포넌트의 Props 인터페이스
@@ -45,9 +45,7 @@ export function AuctionDetailScreen({
   const deposit = Math.floor(item.minimumPrice * 0.1)
 
   /** 카테고리별 안전 Fallback 이미지 */
-  const fallbackImg = item.category === 'car'
-    ? 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=800&auto=format&fit=crop&q=80'
-    : 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&auto=format&fit=crop&q=80'
+  const fallbackImg = getCategoryFallbackImage(item.category)
 
   /**
    * 모바일 Web Share API를 통한 공매 물건 공유 핸들러
@@ -193,9 +191,15 @@ export function AuctionDetailScreen({
             </div>
             <div className="text-right">
               <span className="text-xs text-[#74777f]">감정평가액</span>
-              <p className="text-sm font-semibold text-[#74777f] line-through">
-                {formatWon(item.appraisalPrice)}
-              </p>
+              {item.appraisalPrice > item.minimumPrice ? (
+                <p className="text-sm font-semibold text-[#74777f] line-through">
+                  {formatWon(item.appraisalPrice)}
+                </p>
+              ) : (
+                <p className="text-xs font-medium text-[#74777f]">
+                  {item.appraisalPrice > 0 ? formatWon(item.appraisalPrice) : '미산정'}
+                </p>
+              )}
             </div>
           </div>
 

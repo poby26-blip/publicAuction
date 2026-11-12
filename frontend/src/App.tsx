@@ -14,7 +14,7 @@ import { AuctionListScreen } from './pages/auction/AuctionListScreen'
 import { HomeScreen } from './pages/home/HomeScreen'
 import { MyScreen } from './pages/my/MyScreen'
 import { WatchlistScreen } from './pages/watchlist/WatchlistScreen'
-import { fetchOnbidRealEstateList } from './services/onbidService'
+import { fetchOnbidAllAssetsList } from './services/onbidService'
 import {
   loadWatchlistItems,
   saveWatchlistItems,
@@ -81,7 +81,7 @@ export default function App() {
     async function loadRealTimeOnbidData() {
       setIsLoading(true)
       try {
-        const onbidData = await fetchOnbidRealEstateList({ pageNo: 1, numOfRows: 20 })
+        const onbidData = await fetchOnbidAllAssetsList(1, 20)
         if (isMounted && onbidData && onbidData.length > 0) {
           setItems(onbidData)
         }
@@ -165,11 +165,11 @@ export default function App() {
   const handleRegionChange = async (region: string) => {
     setIsLoading(true)
     try {
-      const onbidData = await fetchOnbidRealEstateList({
-        region: region === '전체' ? undefined : region,
-        pageNo: 1,
-        numOfRows: 20,
-      })
+      const onbidData = await fetchOnbidAllAssetsList(
+        1,
+        20,
+        region === '전체' ? undefined : region
+      )
       if (onbidData && onbidData.length > 0) {
         setItems(onbidData)
       } else {

@@ -3,25 +3,32 @@
  * @description '공매이지' 앱의 공매 물건 전체 목록 화면 컴포넌트입니다.
  * 
  * [주요 기능]
- * 1. 실시간 키워드 검색 (물건명, 도로명/지번 주소)
- * 2. 카테고리 필터 탭 (전체, 아파트, 상가, 토지, 차량 등)
- * 3. 시/도 지역 선택 드롭다운 (전국, 서울, 경기, 부산 등)
- * 4. 공매 유형 필터 칩 (전체, 신탁공매, 압류재산, 국유재산)
- * 5. 4대 다중 정렬 (마감임박순, 할인율높은순, 최저입찰가순, 인기순)
- * 6. 홈 화면 등 외부에서 유입된 초기 필터(initialCategory, initialRegion, initialKeyword) 자동 동기화
- * 7. 차세대 온비드 OpenAPI(부동산 getRlstCltrList2 / 차량 getCarCltrList2) 실시간 동적 페칭 및 스켈레톤 로딩 UI
+ * 1. 상품별 3대 자산군 대분류 탭 (전체, 부동산, 동산, 자동차) 및 세부 카테고리 2단 필터
+ * 2. 차세대 온비드 OpenAPI 3종 실시간 동적 분기 페칭 (부동산 getRlstCltrList2 / 동산 getMvastCltrList2 / 자동차 getCarCltrList2)
+ * 3. 대용량 데이터 페이징 ('공매 물건 더보기' 누적 로드)
+ * 4. 시/도 지역(전남광주통합특별시 포함), 재산구분(신탁공매/압류재산/국유재산), 복합 키워드 다중 필터링
+ * 5. 실시간 4대 다중 정렬 (마감임박순, 할인율높은순, 최저입찰가순, 인기순)
  */
 
 import { useEffect, useState } from 'react'
 import {
+  type AssetGroup,
+  GONG_ASSET_GROUPS,
   GONG_CATEGORIES,
   GONG_REGION_METAS,
   type GongItem,
   formatWon,
+  getCategoryFallbackImage,
   isRegionMatch,
+  resolveAssetGroup,
 } from '../../data/mockAuctionData'
 import { ListSkeleton } from '../../components/common/Skeleton'
-import { fetchOnbidRealEstateList, fetchOnbidCarList } from '../../services/onbidService'
+import {
+  fetchOnbidAllAssetsList,
+  fetchOnbidCarList,
+  fetchOnbidMovableList,
+  fetchOnbidRealEstateList,
+} from '../../services/onbidService'
 
 /**
  * AuctionListScreen 컴포넌트의 속성(Props) 인터페이스
@@ -39,14 +46,31 @@ interface AuctionListScreenProps {
   /** 물건 카드 클릭 시 상세 화면으로 이동시키는 콜백 */
   onSelectItem: (item: GongItem) => void
 
-  /** 홈 화면 등에서 전달받은 초기 카테고리 ID (예: 'apt', 'land') */
+  /** 홈 화면 등에서 전달받은 초기 카테고리 ID (예: 'apt', 'goods', 'car', 'all') */
   initialCategory?: string
 
-  /** 홈 화면 등에서 전달받은 초기 시/도 지역명 (예: '서울', '경기', '전체') */
+  /** 홈 화면 등에서 전달받은 초기 시/도 지역명 (예: '서울', '전남광주', '전체') */
   initialRegion?: string
 
   /** 홈 화면 상단 검색창 등에서 전달받은 초기 검색어 */
   initialKeyword?: string
+}
+
+/**
+ * 전달받은 초기 카테고리 값으로부터 1차 상품군(AssetGroup)과 2차 세부 필터를 분리합니다.
+ */
+function parseInitialCategoryFilter(cat?: string): {
+  group: AssetGroup
+  sub: string
+} {
+  if (!cat || cat === 'all') return { group: 'all', sub: 'all' }
+  if (cat === 'new' || cat === 'half') return { group: 'all', sub: cat }
+  if (cat === 'real_estate') return { group: 'real_estate', sub: 'all' }
+  if (cat === 'movable' || cat === 'goods') return { group: 'movable', sub: 'all' }
+  if (cat === 'car') return { group: 'car', sub: 'all' }
+
+  const group = resolveAssetGroup(cat)
+  return { group, sub: cat }
 }
 
 export function AuctionListScreen({
@@ -58,14 +82,19 @@ export function AuctionListScreen({
   initialRegion = '전체',
   initialKeyword = '',
 }: AuctionListScreenProps) {
+  const initialParsed = parseInitialCategoryFilter(initialCategory)
+
   // -------------------------------------------------------------------------
   // [필터 및 정렬 로컬 상태 (Local State)]
   // -------------------------------------------------------------------------
 
-  /** 선택된 카테고리 ID ('all' 또는 'apt', 'commercial', 'land', 'car' 등) */
-  const [selectedCategory, setSelectedCategory] = useState<string>(initialCategory || 'all')
+  /** 1차 상품군 대분류 ('all' | 'real_estate' | 'movable' | 'car') */
+  const [assetGroup, setAssetGroup] = useState<AssetGroup>(initialParsed.group)
 
-  /** 선택된 시/도 지역 ('전체', '서울', '경기', '부산' 등) */
+  /** 2차 세부 카테고리 ('all', 'apt', 'commercial', 'land', 'factory', 'new', 'half') */
+  const [subCategory, setSubCategory] = useState<string>(initialParsed.sub)
+
+  /** 선택된 시/도 지역 ('전체', '서울', '경기', '전남광주' 등) */
   const [selectedRegion, setSelectedRegion] = useState<string>(initialRegion || '전체')
 
   /** 선택된 공매 재산구분 유형 ('all', '신탁공매', '압류재산', '국유재산') */
@@ -93,29 +122,59 @@ export function AuctionListScreen({
   const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false)
 
   // -------------------------------------------------------------------------
-  // [상위 Props 변경 감지 및 동기화 (State Synchronization)]
+  // [상위 Props 변경 감지 및 동기화 (Render-time Prop Sync)]
   // -------------------------------------------------------------------------
 
-  /**
-   * 홈 화면 등 외부에서 카테고리 바로가기나 검색창 Enter를 통해
-   * 새로운 필터 값을 가지고 목록 화면으로 유입되었을 때, 로컬 상태를 즉각 동기화합니다.
-   */
-  useEffect(() => {
-    if (initialCategory !== undefined) setSelectedCategory(initialCategory)
+  const [prevInitialProps, setPrevInitialProps] = useState({
+    initialCategory,
+    initialRegion,
+    initialKeyword,
+  })
+
+  if (
+    prevInitialProps.initialCategory !== initialCategory ||
+    prevInitialProps.initialRegion !== initialRegion ||
+    prevInitialProps.initialKeyword !== initialKeyword
+  ) {
+    setPrevInitialProps({ initialCategory, initialRegion, initialKeyword })
+    if (initialCategory !== undefined) {
+      const parsed = parseInitialCategoryFilter(initialCategory)
+      setAssetGroup(parsed.group)
+      setSubCategory(parsed.sub)
+    }
     if (initialRegion !== undefined) setSelectedRegion(initialRegion)
     if (initialKeyword !== undefined) setKeyword(initialKeyword)
-  }, [initialCategory, initialRegion, initialKeyword])
+  }
 
   // -------------------------------------------------------------------------
-  // [OpenAPI 실데이터 동적 페칭 파이프라인 (1단계 & 2단계 페이징)]
+  // [3대 상품군 OpenAPI 실데이터 동적 페칭 및 페이징 파이프라인]
   // -------------------------------------------------------------------------
 
   /**
-   * 카테고리 또는 시/도 지역 필터가 변경될 때마다 차세대 온비드 OpenAPI를 실시간 호출합니다.
-   * - 페이지 번호를 1페이지로 리셋하고 기존 목록을 새 데이터로 갱신합니다.
-   * - 카테고리가 'car'(자동차/운송)인 경우: 차량 전용 API(fetchOnbidCarList) 호출
-   * - 그 외 카테고리인 경우: 부동산 물건 목록 API(fetchOnbidRealEstateList) 호출
-   * - 받아온 데이터가 요청 규격(20건) 미만이면 추가 페이지가 없는 것으로 판정(hasMore = false)합니다.
+   * 선택된 상품군(assetGroup)에 맞는 차세대 온비드 OpenAPI를 호출하는 공통 헬퍼입니다.
+   */
+  const fetchByAssetGroup = async (
+    group: AssetGroup,
+    page: number,
+    regionName: string
+  ): Promise<GongItem[]> => {
+    const targetRegion = regionName === '전체' ? undefined : regionName
+
+    if (group === 'car') {
+      return fetchOnbidCarList(page, 20, targetRegion)
+    }
+    if (group === 'movable') {
+      return fetchOnbidMovableList(page, 20, targetRegion)
+    }
+    if (group === 'real_estate') {
+      return fetchOnbidRealEstateList({ region: targetRegion, pageNo: page, numOfRows: 20 })
+    }
+    // 'all': 부동산 + 동산 + 자동차 3대 상품군 병렬 통합 조회
+    return fetchOnbidAllAssetsList(page, 20, targetRegion)
+  }
+
+  /**
+   * 1차 상품군 대분류(assetGroup) 또는 시/도 지역 필터가 변경될 때마다 OpenAPI를 실시간 호출합니다.
    */
   useEffect(() => {
     let isMounted = true
@@ -126,30 +185,13 @@ export function AuctionListScreen({
       setHasMore(true)
 
       try {
-        let data: GongItem[] = []
-
-        if (selectedCategory === 'car') {
-          // 온비드 차량 전용 API 호출 (getCarCltrList2)
-          data = await fetchOnbidCarList(
-            1,
-            20,
-            selectedRegion === '전체' ? undefined : selectedRegion
-          )
-        } else {
-          // 온비드 부동산 물건 목록 API 호출 (getRlstCltrList2)
-          data = await fetchOnbidRealEstateList({
-            category: selectedCategory === 'all' ? undefined : selectedCategory,
-            region: selectedRegion === '전체' ? undefined : selectedRegion,
-            pageNo: 1,
-            numOfRows: 20,
-          })
-        }
+        const data = await fetchByAssetGroup(assetGroup, 1, selectedRegion)
+        const minPageThreshold = assetGroup === 'all' ? 10 : 20
 
         if (isMounted) {
           if (data && data.length > 0) {
             setListItems(data)
-            // 첫 페이지가 20건 미만이면 더 이상 추가 데이터 없음
-            setHasMore(data.length >= 20)
+            setHasMore(data.length >= minPageThreshold)
           } else {
             setListItems([])
             setHasMore(false)
@@ -173,11 +215,10 @@ export function AuctionListScreen({
     return () => {
       isMounted = false
     }
-  }, [selectedCategory, selectedRegion])
+  }, [assetGroup, selectedRegion])
 
   /**
-   * [2단계] 목록 하단 '더보기' 버튼 클릭 시 다음 페이지(pageNo + 1)의 온비드 OpenAPI 데이터를 호출하여
-   * 기존 물건 목록(listItems) 뒤에 누적 결합합니다.
+   * 하단 '공매 물건 더보기' 클릭 시 다음 페이지(pageNo + 1) 데이터를 누적 결합합니다.
    */
   const handleLoadMore = async () => {
     if (isLoading || isLoadingMore || !hasMore) return
@@ -186,34 +227,20 @@ export function AuctionListScreen({
     setIsLoadingMore(true)
 
     try {
-      let nextData: GongItem[] = []
-
-      if (selectedCategory === 'car') {
-        // 온비드 차량 전용 API 다음 페이지 호출
-        nextData = await fetchOnbidCarList(
-          nextPage,
-          20,
-          selectedRegion === '전체' ? undefined : selectedRegion
-        )
-      } else {
-        // 온비드 부동산 물건 목록 API 다음 페이지 호출
-        nextData = await fetchOnbidRealEstateList({
-          category: selectedCategory === 'all' ? undefined : selectedCategory,
-          region: selectedRegion === '전체' ? undefined : selectedRegion,
-          pageNo: nextPage,
-          numOfRows: 20,
-        })
-      }
+      const nextData = await fetchByAssetGroup(assetGroup, nextPage, selectedRegion)
+      const minPageThreshold = assetGroup === 'all' ? 10 : 20
 
       if (nextData && nextData.length > 0) {
-        setListItems((prev) => [...prev, ...nextData])
+        setListItems((prev) => {
+          const existingIds = new Set(prev.map((p) => p.id))
+          const uniqueNext = nextData.filter((n) => !existingIds.has(n.id))
+          return [...prev, ...uniqueNext]
+        })
         setPageNo(nextPage)
-        // 새로 받아온 건수가 20건 미만이면 마지막 페이지로 간주
-        if (nextData.length < 20) {
+        if (nextData.length < minPageThreshold) {
           setHasMore(false)
         }
       } else {
-        // 추가 데이터가 없으면 페이징 종료
         setHasMore(false)
       }
     } catch (err) {
@@ -224,26 +251,72 @@ export function AuctionListScreen({
     }
   }
 
+  /**
+   * 1차 상품군 대분류 탭 클릭 핸들러
+   */
+  const handleSelectAssetGroup = (group: AssetGroup) => {
+    setAssetGroup(group)
+    setSubCategory('all')
+  }
+
+  /**
+   * 2차 세부 카테고리 알약 클릭 핸들러
+   */
+  const handleSelectSubCategory = (catId: string) => {
+    if (catId === 'goods') {
+      setAssetGroup('movable')
+      setSubCategory('all')
+      return
+    }
+    if (catId === 'car') {
+      setAssetGroup('car')
+      setSubCategory('all')
+      return
+    }
+    if (['apt', 'commercial', 'land', 'factory'].includes(catId)) {
+      setAssetGroup('real_estate')
+      setSubCategory(catId)
+      return
+    }
+    setSubCategory(catId)
+  }
+
+  /** 현재 선택된 상품군에 따라 표시할 2차 세부 알약 목록 */
+  const visibleSubCategories = GONG_CATEGORIES.filter((cat) => {
+    if (assetGroup === 'all') return true
+    if (assetGroup === 'real_estate') {
+      return cat.assetGroup === 'real_estate' || cat.assetGroup === 'theme'
+    }
+    // 동산('movable') 또는 자동차('car') 선택 시 특가 테마 알약만 표출
+    return cat.assetGroup === 'theme'
+  })
+
   /** 지원하는 공매 재산 구분 탭 목록 */
   const auctionTypes = ['all', '신탁공매', '압류재산', '국유재산']
 
   // -------------------------------------------------------------------------
-  // [3단계: 다중 조건 필터링 파이프라인 (Multi-criteria Filtering)]
+  // [다중 조건 필터링 파이프라인 (Multi-criteria Filtering)]
   // -------------------------------------------------------------------------
 
   const filtered = listItems.filter((item) => {
-    // 1. 카테고리 필터 (차량, 반값, 신규, 아파트, 상가, 토지 등)
-    if (selectedCategory !== 'all') {
-      if (selectedCategory === 'car') {
-        if (item.category !== 'car') return false
-      } else if (selectedCategory === 'half') {
-        // 반값 특가: 할인율 40% 이상 물건
-        if (item.discountRate < 40) return false
-      } else if (selectedCategory === 'new') {
-        // 신규 공매: 유찰 횟수 0회 물건
-        if (item.failCount > 0) return false
-      } else if (['apt', 'commercial', 'land'].includes(selectedCategory)) {
-        if (item.category !== selectedCategory) return false
+    // 1. 1차 상품군 및 2차 세부 카테고리 필터
+    if (assetGroup === 'movable' && item.category !== 'goods') return false
+    if (assetGroup === 'car' && item.category !== 'car') return false
+    if (
+      assetGroup === 'real_estate' &&
+      !['apt', 'commercial', 'land', 'factory'].includes(item.category)
+    ) {
+      return false
+    }
+
+    if (subCategory !== 'all') {
+      if (subCategory === 'half' && item.discountRate < 40) return false
+      if (subCategory === 'new' && item.failCount > 0) return false
+      if (
+        ['apt', 'commercial', 'land', 'factory', 'goods', 'car'].includes(subCategory) &&
+        item.category !== subCategory
+      ) {
+        return false
       }
     }
 
@@ -267,7 +340,6 @@ export function AuctionListScreen({
     if (keyword.trim()) {
       const tokens = keyword.toLowerCase().trim().split(/\s+/).filter(Boolean)
       const searchableText = `${item.title} ${item.address} ${item.auctionType} ${item.area}`.toLowerCase()
-      // 입력된 모든 단어가 포함되어야 매칭
       const isMatch = tokens.every((token) => searchableText.includes(token))
       if (!isMatch) return false
     }
@@ -276,51 +348,30 @@ export function AuctionListScreen({
   })
 
   // -------------------------------------------------------------------------
-  // [3단계: 실시간 4대 다중 정렬 파이프라인 (Sorting Pipeline)]
+  // [실시간 4대 다중 정렬 파이프라인 (Sorting Pipeline)]
   // -------------------------------------------------------------------------
 
   const sorted = [...filtered].sort((a, b) => {
     if (sortBy === 'dDay') {
-      // 1) 상시 매각(dDay > 365) 물건은 마감임박순에서는 맨 뒤로 배치
       const aIsPerpetual = a.dDay > 365
       const bIsPerpetual = b.dDay > 365
       if (aIsPerpetual && !bIsPerpetual) return 1
       if (!aIsPerpetual && bIsPerpetual) return -1
-
-      // 2) 마감 임박순 (D-Day 오름차순)
       if (a.dDay !== b.dDay) return a.dDay - b.dDay
-
-      // 3) D-Day 동일 시 마감일시(auctionDate) 문자열 기준 2차 정밀 정렬
       return (a.auctionDate || '').localeCompare(b.auctionDate || '')
     }
-
     if (sortBy === 'discount') {
-      // 1) 할인율 높은순 (내림차순)
-      if (b.discountRate !== a.discountRate) {
-        return b.discountRate - a.discountRate
-      }
-      // 2) 할인율 동일 시 D-Day 임박순 2차 정렬
+      if (b.discountRate !== a.discountRate) return b.discountRate - a.discountRate
       return a.dDay - b.dDay
     }
-
     if (sortBy === 'price') {
-      // 1) 최저입찰가 낮은순 (오름차순)
-      if (a.minimumPrice !== b.minimumPrice) {
-        return a.minimumPrice - b.minimumPrice
-      }
-      // 2) 최저가 동일 시 할인율 높은순 2차 정렬
+      if (a.minimumPrice !== b.minimumPrice) return a.minimumPrice - b.minimumPrice
       return b.discountRate - a.discountRate
     }
-
     if (sortBy === 'views') {
-      // 1) 조회수 높은순 (인기순 내림차순)
-      if (b.viewCount !== a.viewCount) {
-        return b.viewCount - a.viewCount
-      }
-      // 2) 조회수 동일 시 D-Day 임박순 2차 정렬
+      if (b.viewCount !== a.viewCount) return b.viewCount - a.viewCount
       return a.dDay - b.dDay
     }
-
     return 0
   })
 
@@ -329,7 +380,7 @@ export function AuctionListScreen({
   // -------------------------------------------------------------------------
 
   return (
-    <div className="flex flex-col gap-4 pb-24 px-4 pt-2">
+    <div className="flex flex-col gap-3.5 pb-24 px-4 pt-2">
       {/* 1. 상단 키워드 검색창 */}
       <div className="relative">
         <span className="material-symbols-outlined text-[20px] text-[#74777f] absolute left-3.5 top-1/2 -translate-y-1/2">
@@ -339,10 +390,9 @@ export function AuctionListScreen({
           type="text"
           value={keyword}
           onChange={(e) => setKeyword(e.target.value)}
-          placeholder="공매 물건 검색 (예: 잠실, 제네시스, 상가)"
+          placeholder="공매 물건 검색 (예: 잠실, 제네시스, 기계)"
           className="w-full h-11 bg-white rounded-2xl pl-10 pr-9 text-xs text-[#0b1c30] placeholder-[#74777f] border border-[#c4c6cf]/60 focus:outline-none focus:ring-2 focus:ring-[#0051d5] shadow-xs"
         />
-        {/* 검색어 초기화 (X) 버튼 */}
         {keyword && (
           <button
             type="button"
@@ -355,29 +405,57 @@ export function AuctionListScreen({
         )}
       </div>
 
-      {/* 2. 카테고리 필터 알약(Pill) 가로 스크롤 */}
-      <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 pb-1">
+      {/* 2-1. 1차 상품군 대분류 세그먼트 탭 (전체 | 부동산 | 동산 | 자동차) */}
+      <div className="grid grid-cols-4 gap-1.5 p-1 bg-[#eff4ff] rounded-2xl border border-[#dce9ff]">
+        {GONG_ASSET_GROUPS.map((group) => {
+          const isActive = assetGroup === group.id
+          return (
+            <button
+              key={group.id}
+              type="button"
+              onClick={() => handleSelectAssetGroup(group.id)}
+              className={`py-2 px-1 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer ${
+                isActive
+                  ? 'bg-[#002046] text-white shadow-xs'
+                  : 'text-[#44474e] hover:text-[#002046] hover:bg-white/60'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[15px]">{group.icon}</span>
+              <span>{group.label}</span>
+            </button>
+          )
+        })}
+      </div>
+
+      {/* 2-2. 2차 세부 카테고리 알약(Pill) 가로 스크롤 */}
+      <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 pb-0.5">
         <button
           type="button"
-          onClick={() => setSelectedCategory('all')}
-          className={`flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all ${
-            selectedCategory === 'all'
-              ? 'bg-[#002046] text-white shadow-xs'
+          onClick={() => setSubCategory('all')}
+          className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+            subCategory === 'all'
+              ? 'bg-[#0051d5] text-white shadow-xs'
               : 'bg-white border border-[#c4c6cf]/50 text-[#44474e] hover:bg-[#e5eeff]'
           }`}
         >
-          전체 보기
+          {assetGroup === 'all'
+            ? '전체 보기'
+            : assetGroup === 'real_estate'
+              ? '부동산 전체'
+              : assetGroup === 'movable'
+                ? '동산 전체'
+                : '자동차 전체'}
         </button>
-        {GONG_CATEGORIES.map((cat) => {
-          const isSelected = selectedCategory === cat.id
+        {visibleSubCategories.map((cat) => {
+          const isSelected = subCategory === cat.id
           return (
             <button
               key={cat.id}
               type="button"
-              onClick={() => setSelectedCategory(cat.id)}
-              className={`flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all ${
+              onClick={() => handleSelectSubCategory(cat.id)}
+              className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
                 isSelected
-                  ? 'bg-[#002046] text-white shadow-xs'
+                  ? 'bg-[#0051d5] text-white shadow-xs'
                   : 'bg-white border border-[#c4c6cf]/50 text-[#44474e] hover:bg-[#e5eeff]'
               }`}
             >
@@ -422,7 +500,7 @@ export function AuctionListScreen({
         {/* 4대 정렬 기준 선택 셀렉트박스 */}
         <select
           value={sortBy}
-          onChange={(e) => setSortBy(e.target.value as any)}
+          onChange={(e) => setSortBy(e.target.value as 'dDay' | 'discount' | 'price' | 'views')}
           className="bg-transparent text-[11px] font-semibold text-[#002046] border-none focus:outline-none cursor-pointer shrink-0"
         >
           <option value="dDay">마감임박순</option>
@@ -432,7 +510,7 @@ export function AuctionListScreen({
         </select>
       </div>
 
-      {/* 4. 조회 결과 건수 및 활성 필터 태그 안내 */}
+      {/* 4. 조회 결과 건수 및 활성 필터/실시간 API 연동 상태 안내 */}
       <div className="flex flex-wrap items-center justify-between text-xs text-[#74777f] px-1 gap-1">
         <div className="flex items-center gap-1.5 flex-wrap">
           <span>
@@ -446,9 +524,24 @@ export function AuctionListScreen({
         </div>
 
         <div className="flex items-center gap-1.5 flex-wrap">
-          {selectedCategory === 'car' && (
+          {assetGroup === 'movable' && (
+            <span className="text-purple-700 font-semibold bg-purple-50 px-1.5 py-0.5 rounded text-[10px]">
+              동산 실시간 연동
+            </span>
+          )}
+          {assetGroup === 'car' && (
             <span className="text-[#ba1a1a] font-semibold bg-rose-50 px-1.5 py-0.5 rounded text-[10px]">
               자동차 실시간 연동
+            </span>
+          )}
+          {assetGroup === 'real_estate' && (
+            <span className="text-[#0051d5] font-semibold bg-[#eff4ff] px-1.5 py-0.5 rounded text-[10px]">
+              부동산 실시간 연동
+            </span>
+          )}
+          {assetGroup === 'all' && (
+            <span className="text-[#002046] font-semibold bg-slate-100 px-1.5 py-0.5 rounded text-[10px]">
+              3대 상품 통합 연동
             </span>
           )}
           {selectedRegion !== '전체' && (
@@ -479,7 +572,6 @@ export function AuctionListScreen({
 
       {/* 5. 공매 물건 카드 리스트 */}
       {isLoading ? (
-        // 실데이터 비동기 통신 중: 세로 리스트 스켈레톤 4개 표출
         <div className="flex flex-col gap-3.5">
           <ListSkeleton count={4} />
         </div>
@@ -487,6 +579,14 @@ export function AuctionListScreen({
         <div className="flex flex-col gap-3.5">
           {sorted.map((item, idx) => {
             const isSaved = watchlist.includes(item.id)
+            const fallbackImg = getCategoryFallbackImage(item.category)
+            const dDayLabel =
+              item.dDay <= 0
+                ? '오늘 마감'
+                : item.dDay > 365
+                  ? '상시 매각'
+                  : `D-${item.dDay}`
+
             return (
               <article
                 key={`${item.id}-${idx}`}
@@ -496,21 +596,22 @@ export function AuctionListScreen({
                 {/* 썸네일 영역 */}
                 <div className="relative aspect-16/9 bg-slate-100 overflow-hidden">
                   <img
-                    src={item.imageUrl}
+                    src={item.imageUrl || fallbackImg}
                     alt={item.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     loading="lazy"
                     onError={(e) => {
-                      const target = e.currentTarget
-                      target.src = selectedCategory === 'car'
-                        ? 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=800&auto=format&fit=crop&q=80'
-                        : 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&auto=format&fit=crop&q=80'
+                      e.currentTarget.src = fallbackImg
                     }}
                   />
                   {/* D-Day 및 공매 유형 뱃지 */}
                   <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
-                    <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-[#ba1a1a] text-white shadow-xs">
-                      {item.dDay <= 0 ? '오늘 마감' : `D-${item.dDay}`}
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-xs font-bold text-white shadow-xs ${
+                        item.dDay <= 3 ? 'bg-[#ba1a1a]' : 'bg-[#002046]/85'
+                      }`}
+                    >
+                      {dDayLabel}
                     </span>
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-black/60 text-white backdrop-blur-xs">
                       {item.auctionType}
@@ -534,7 +635,7 @@ export function AuctionListScreen({
                       favorite
                     </span>
                   </button>
-                  {/* 면적 정보 태그 */}
+                  {/* 면적/제원 정보 태그 */}
                   <div className="absolute bottom-2 left-2.5">
                     <span className="text-[10px] font-semibold bg-white/90 text-[#0b1c30] px-2 py-0.5 rounded-md backdrop-blur-xs">
                       {item.area}
@@ -563,9 +664,15 @@ export function AuctionListScreen({
                           {formatWon(item.minimumPrice)}
                         </span>
                       </div>
-                      <span className="text-[11px] text-[#74777f] line-through">
-                        감정가 {formatWon(item.appraisalPrice)}
-                      </span>
+                      {item.appraisalPrice > item.minimumPrice ? (
+                        <span className="text-[11px] text-[#74777f] line-through">
+                          감정가 {formatWon(item.appraisalPrice)}
+                        </span>
+                      ) : (
+                        <span className="text-[11px] text-[#74777f]">
+                          최저입찰가 (감정가 동일/미산정)
+                        </span>
+                      )}
                     </div>
 
                     <div className="text-right">
@@ -582,7 +689,7 @@ export function AuctionListScreen({
             )
           })}
 
-          {/* 6. [2단계 페이징] 하단 더보기 버튼 및 로딩 / 전체 로드 완료 피드백 */}
+          {/* 6. 하단 더보기 버튼 및 로딩 / 전체 로드 완료 피드백 */}
           {hasMore ? (
             <div className="pt-2 pb-2">
               <button
@@ -627,11 +734,12 @@ export function AuctionListScreen({
             search_off
           </span>
           <p className="text-sm font-bold text-[#0b1c30]">검색 조건에 맞는 공매 물건이 없습니다.</p>
-          <p className="text-xs text-[#74777f] mt-1">지역, 카테고리 또는 검색어를 변경해 보세요.</p>
+          <p className="text-xs text-[#74777f] mt-1">상품군, 지역 또는 검색어를 변경해 보세요.</p>
           <button
             type="button"
             onClick={() => {
-              setSelectedCategory('all')
+              setAssetGroup('all')
+              setSubCategory('all')
               setSelectedRegion('전체')
               setSelectedType('all')
               setKeyword('')
