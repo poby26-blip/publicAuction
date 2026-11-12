@@ -380,55 +380,57 @@ export function AuctionListScreen({
   // -------------------------------------------------------------------------
 
   return (
-    <div className="flex flex-col gap-3.5 pb-24 px-4 pt-2">
-      {/* 1. 상단 키워드 검색창 */}
-      <div className="relative">
-        <span className="material-symbols-outlined text-[20px] text-[#74777f] absolute left-3.5 top-1/2 -translate-y-1/2">
-          search
-        </span>
-        <input
-          type="text"
-          value={keyword}
-          onChange={(e) => setKeyword(e.target.value)}
-          placeholder="공매 물건 검색 (예: 잠실, 제네시스, 기계)"
-          className="w-full h-11 bg-white rounded-2xl pl-10 pr-9 text-xs text-[#0b1c30] placeholder-[#74777f] border border-[#c4c6cf]/60 focus:outline-none focus:ring-2 focus:ring-[#0051d5] shadow-xs"
-        />
-        {keyword && (
-          <button
-            type="button"
-            onClick={() => setKeyword('')}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-[#74777f] hover:text-[#0b1c30]"
-            aria-label="검색어 지우기"
-          >
-            <span className="material-symbols-outlined text-[18px]">close</span>
-          </button>
-        )}
-      </div>
-
-      {/* 2-1. 1차 상품군 대분류 세그먼트 탭 (전체 | 부동산 | 동산 | 자동차) */}
-      <div className="grid grid-cols-4 gap-1.5 p-1 bg-[#eff4ff] rounded-2xl border border-[#dce9ff]">
-        {GONG_ASSET_GROUPS.map((group) => {
-          const isActive = assetGroup === group.id
-          return (
+    <div className="flex flex-col gap-3.5 pb-24 md:pb-8 px-4 md:px-6 pt-2">
+      {/* 1 & 2-1. 상단 키워드 검색창 + 1차 상품군 세그먼트 탭 (태블릿 이상 2단 병렬 배치) */}
+      <div className="flex flex-col gap-3 md:grid md:grid-cols-12 md:items-center">
+        <div className="relative md:col-span-6">
+          <span className="material-symbols-outlined text-[20px] text-[#74777f] absolute left-3.5 top-1/2 -translate-y-1/2">
+            search
+          </span>
+          <input
+            type="text"
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+            placeholder="공매 물건 검색 (예: 잠실, 제네시스, 기계)"
+            className="w-full h-11 bg-white rounded-2xl pl-10 pr-9 text-xs text-[#0b1c30] placeholder-[#74777f] border border-[#c4c6cf]/60 focus:outline-none focus:ring-2 focus:ring-[#0051d5] shadow-xs"
+          />
+          {keyword && (
             <button
-              key={group.id}
               type="button"
-              onClick={() => handleSelectAssetGroup(group.id)}
-              className={`py-2 px-1 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer ${
-                isActive
-                  ? 'bg-[#002046] text-white shadow-xs'
-                  : 'text-[#44474e] hover:text-[#002046] hover:bg-white/60'
-              }`}
+              onClick={() => setKeyword('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#74777f] hover:text-[#0b1c30]"
+              aria-label="검색어 지우기"
             >
-              <span className="material-symbols-outlined text-[15px]">{group.icon}</span>
-              <span>{group.label}</span>
+              <span className="material-symbols-outlined text-[18px]">close</span>
             </button>
-          )
-        })}
+          )}
+        </div>
+
+        {/* 1차 상품군 대분류 세그먼트 탭 (전체 | 부동산 | 동산 | 자동차) */}
+        <div className="grid grid-cols-4 gap-1.5 p-1 bg-[#eff4ff] rounded-2xl border border-[#dce9ff] md:col-span-6">
+          {GONG_ASSET_GROUPS.map((group) => {
+            const isActive = assetGroup === group.id
+            return (
+              <button
+                key={group.id}
+                type="button"
+                onClick={() => handleSelectAssetGroup(group.id)}
+                className={`py-2 px-1 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer ${
+                  isActive
+                    ? 'bg-[#002046] text-white shadow-xs'
+                    : 'text-[#44474e] hover:text-[#002046] hover:bg-white/60'
+                }`}
+              >
+                <span className="material-symbols-outlined text-[15px]">{group.icon}</span>
+                <span>{group.label}</span>
+              </button>
+            )
+          })}
+        </div>
       </div>
 
-      {/* 2-2. 2차 세부 카테고리 알약(Pill) 가로 스크롤 */}
-      <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 pb-0.5">
+      {/* 2-2. 2차 세부 카테고리 알약(Pill) 가로 스크롤 (태블릿 이상 줄바꿈 지원) */}
+      <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 md:mx-0 md:px-0 md:flex-wrap pb-0.5">
         <button
           type="button"
           onClick={() => setSubCategory('all')}
@@ -570,14 +572,15 @@ export function AuctionListScreen({
         </div>
       </div>
 
-      {/* 5. 공매 물건 카드 리스트 */}
+      {/* 5. 공매 물건 카드 리스트 (모바일 1열 / 폴더블 sm 2열 / 태블릿 lg 3열) */}
       {isLoading ? (
-        <div className="flex flex-col gap-3.5">
-          <ListSkeleton count={4} />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <ListSkeleton count={6} />
         </div>
       ) : sorted.length > 0 ? (
-        <div className="flex flex-col gap-3.5">
-          {sorted.map((item, idx) => {
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {sorted.map((item, idx) => {
             const isSaved = watchlist.includes(item.id)
             const fallbackImg = getCategoryFallbackImage(item.category)
             const dDayLabel =
@@ -688,8 +691,9 @@ export function AuctionListScreen({
               </article>
             )
           })}
+          </div>
 
-          {/* 6. 하단 더보기 버튼 및 로딩 / 전체 로드 완료 피드백 */}
+          {/* 6. 하단 더보기 버튼 및 로딩 / 전체 로드 완료 피드백 (그리드 전체 폭) */}
           {hasMore ? (
             <div className="pt-2 pb-2">
               <button
@@ -726,7 +730,7 @@ export function AuctionListScreen({
               <span>해당 조건의 모든 공매 물건을 불러왔습니다 (총 {listItems.length}건)</span>
             </div>
           )}
-        </div>
+        </>
       ) : (
         // 검색/필터 결과가 없을 때의 Empty State
         <div className="py-16 text-center text-[#74777f] flex flex-col items-center">

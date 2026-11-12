@@ -56,7 +56,7 @@ export function Toast({
     <div
       role="status"
       aria-live="polite"
-      className={`fixed top-18 left-1/2 -translate-x-1/2 z-[60] w-max max-w-[min(92vw,416px)] transition-all duration-300 pointer-events-none ${
+      className={`fixed top-18 left-1/2 -translate-x-1/2 z-[60] w-max max-w-[min(92vw,480px)] transition-all duration-300 pointer-events-none ${
         message ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-3'
       }`}
     >

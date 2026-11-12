@@ -164,8 +164,8 @@ export function WatchlistScreen({
 
   return (
     <div
-      className={`flex flex-col gap-4 px-4 pt-2 ${
-        isSelectionMode && sortedItems.length > 0 ? 'pb-40' : 'pb-24'
+      className={`flex flex-col gap-4 px-4 md:px-6 pt-2 ${
+        isSelectionMode && sortedItems.length > 0 ? 'pb-40 md:pb-16' : 'pb-24 md:pb-8'
       }`}
     >
       {/* 1. 상단 타이틀 및 보관 건수 헤더 */}
@@ -280,8 +280,8 @@ export function WatchlistScreen({
             </div>
           )}
 
-          {/* 관심 물건 카드 리스트 */}
-          <div className="flex flex-col gap-3">
+          {/* 관심 물건 카드 리스트 (모바일 1열 / 폴더블 sm 2열 / 태블릿 xl 3열) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3.5">
             {sortedItems.map((item) => {
               const fallbackImg = getCategoryFallbackImage(item.category)
               const isSelected = activeSelectedIds.includes(item.id)
@@ -410,9 +410,9 @@ export function WatchlistScreen({
             })}
           </div>
 
-          {/* 선택 모드 하단 플로팅 일괄 삭제 액션 바 */}
+          {/* 선택 모드 하단 플로팅 일괄 삭제 액션 바 (콘텐츠 컬럼 중앙 정렬) */}
           {isSelectionMode && (
-            <div className="fixed bottom-[76px] left-0 right-0 max-w-md mx-auto px-4 z-40">
+            <div className="sticky bottom-[80px] md:bottom-6 z-40 mt-2 w-full max-w-lg mx-auto">
               <div className="bg-white/95 backdrop-blur-md border border-[#d6e2ff] rounded-2xl shadow-lg p-2.5 flex items-center gap-2">
                 <button
                   type="button"

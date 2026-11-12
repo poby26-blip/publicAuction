@@ -202,9 +202,10 @@ export function MyScreen({
     alertSettings.ddayAlert || alertSettings.customFilterAlert || alertSettings.priceCutAlert
 
   return (
-    <div className="flex flex-col gap-5 pb-24 px-4 pt-3 relative">
-      {/* 1. 공매 및 입찰 알림 설정 섹션 (Stitch Section 3) */}
-      <section className="flex flex-col gap-2.5">
+    <div className="flex flex-col gap-5 pb-24 md:pb-8 px-4 md:px-6 pt-3 relative">
+      <div className="flex flex-col gap-5 lg:grid lg:grid-cols-12 lg:gap-6 lg:items-start">
+        {/* 1. 공매 및 입찰 알림 설정 섹션 (Stitch Section 3) */}
+        <section className="flex flex-col gap-2.5 lg:col-span-7">
         <div className="flex items-center justify-between px-1">
           <div className="flex items-center gap-1.5">
             <span className="material-symbols-outlined text-[#0051d5] text-[20px]">
@@ -271,6 +272,8 @@ export function MyScreen({
         </div>
       </section>
 
+      {/* 2 & 3. 우측 컬럼: 공공데이터 OpenAPI 연동 + 앱 기본 설정 & 고객지원 */}
+      <div className="flex flex-col gap-5 lg:col-span-5">
       {/* 2. 공공데이터 OpenAPI 연동 관리 카드 */}
       <section className="flex flex-col gap-2.5">
         <div className="flex items-center gap-1.5 px-1">
@@ -419,15 +422,17 @@ export function MyScreen({
           © KAMCO 공공데이터 연계 서비스 · 공매이지
         </p>
       </section>
+      </div>
+      </div>
 
       {/* 4. 공매 FAQ / 이용약관 안내 모달 바텀시트 */}
       {infoModal && (
         <div
-          className="fixed inset-0 z-50 bg-black/45 backdrop-blur-xs flex items-end sm:items-center justify-center"
+          className="fixed inset-0 z-50 bg-black/45 backdrop-blur-xs flex items-end sm:items-center justify-center sm:p-4"
           onClick={() => setInfoModal(null)}
         >
           <div
-            className="w-full max-w-md bg-white rounded-t-3xl sm:rounded-3xl p-5 max-h-[82vh] overflow-y-auto shadow-2xl"
+            className="w-full max-w-md sm:max-w-lg bg-white rounded-t-3xl sm:rounded-3xl p-5 max-h-[82vh] overflow-y-auto shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between pb-3 mb-4 border-b border-[#e5eeff]">

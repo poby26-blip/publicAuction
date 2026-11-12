@@ -199,6 +199,14 @@
    - `BID_DATE_ALERT_ITEMS` 스토리지 키 및 `loadBidAlertItems`/`saveBidAlertItems`/`clearBidAlertItems` 도메인 API를 추가해 기일 알림 설정을 영구 저장합니다.
    - 상단 헤더 알림 배지(`totalUrgentAlarmCount`) 및 알림 토스트가 관심물건·기일알림 임박 건수를 중복 없이 통합 연동하며, 관심 보관함 카드에도 `'알림중'` 배지를 표출합니다.
 
+### ✅ [11단계] 폴더블 폰 · 태블릿 반응형 인터페이스 전환 완료
+1. **반응형 앱 셸 및 내비게이션 레일 ([App.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/App.tsx), [AppBottomNav.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/components/layout/AppBottomNav.tsx), [AppHeader.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/components/layout/AppHeader.tsx), [Toast.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/components/common/Toast.tsx))**:
+   - `max-w-md` 단일 모바일 프레임을 `w-full md:max-w-5xl xl:max-w-6xl`로 확장해 폴더블 펼침(`sm`) 및 태블릿(`md+`)을 지원하고, `overflow-x-clip`으로 `sticky` 고정을 보장했습니다.
+   - `768px` 이상에서는 하단 탭 바 대신 좌측 사이드 내비게이션 레일(`md:w-20` / `lg:w-56`)로 자동 전환되며, 상단 헤더에 현재 화면 컨텍스트와 검색 버튼을 표출합니다.
+2. **전 화면 다중 컬럼 그리드 · 상세 2컬럼 분할 ([HomeScreen.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/pages/home/HomeScreen.tsx), [AuctionListScreen.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/pages/auction/AuctionListScreen.tsx), [WatchlistScreen.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/pages/watchlist/WatchlistScreen.tsx), [MyScreen.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/pages/my/MyScreen.tsx), [AuctionDetailScreen.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/pages/auction/AuctionDetailScreen.tsx), [Skeleton.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/components/common/Skeleton.tsx))**:
+   - 홈·공매목록·관심보관함 물건 리스트를 `1열(모바일) / 2열(폴더블 sm) / 3열(태블릿 lg~xl)` 반응형 그리드로 전환하고, 마이페이지는 `lg:grid-cols-12` 2컬럼 대시보드로 구성했습니다.
+   - 상세 화면은 태블릿(`md+`)에서 좌측 `sticky` 요약(사진 갤러리·제목·주소·지도 링크) / 우측 상세(가격·일정·제원·유의사항·감정·권리) 2컬럼 분할 및 하단 가격 요약 포함 액션 독으로 개편했습니다.
+
 ---
 
 ## 🚀 5. 앞으로 남은 작업 로드맵 (Upcoming Roadmap)

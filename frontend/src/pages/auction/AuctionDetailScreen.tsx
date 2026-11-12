@@ -445,7 +445,7 @@ export function AuctionDetailScreen({
   return (
     <div className="pb-28">
       {/* 1. 상단 고정 헤더 앱바 */}
-      <div className="sticky top-0 z-40 bg-[#f8f9ff]/90 backdrop-blur-md px-4 py-3 flex items-center justify-between border-b border-[#e5eeff]">
+      <div className="sticky top-0 z-40 bg-[#f8f9ff]/90 backdrop-blur-md px-4 md:px-6 py-3 flex items-center justify-between border-b border-[#e5eeff]">
         <button
           type="button"
           onClick={onBack}
@@ -454,7 +454,7 @@ export function AuctionDetailScreen({
         >
           <span className="material-symbols-outlined text-[24px]">arrow_back</span>
         </button>
-        <span className="text-sm font-bold text-[#002046] line-clamp-1 max-w-[200px]">
+        <span className="text-sm font-bold text-[#002046] line-clamp-1 max-w-[200px] sm:max-w-md md:max-w-lg">
           {item.title}
         </span>
         <div className="flex items-center space-x-1">
@@ -482,112 +482,120 @@ export function AuctionDetailScreen({
         </div>
       </div>
 
-      {/* 2. 대표 이미지 슬라이더 영역 */}
-      <div className="relative aspect-4/3 bg-slate-900 overflow-hidden">
-        <img
-          src={galleryImages[safeSelectedImg] || item.imageUrl || fallbackImg}
-          alt={item.title}
-          className="w-full h-full object-cover"
-          onError={(e) => {
-            e.currentTarget.src = fallbackImg
-          }}
-        />
-        {/* D-Day 및 공매 유형 뱃지 */}
-        <div className="absolute top-3 left-3 flex items-center gap-1.5">
-          <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-[#ba1a1a] text-white shadow-xs">
-            {item.dDay <= 0 ? '오늘 마감' : item.dDay > 365 ? '상시 매각' : `D-${item.dDay}`}
-          </span>
-          <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-black/60 text-white backdrop-blur-xs">
-            {item.auctionType}
-          </span>
-        </div>
-        {galleryImages.length > 1 && (
-          <div className="absolute bottom-3 right-3 bg-black/60 text-white text-[11px] font-medium px-2.5 py-0.5 rounded-full backdrop-blur-xs">
-            {safeSelectedImg + 1} / {galleryImages.length}
+      {/* 본문 반응형 컨테이너: 모바일/폴더블 1열 -> 태블릿(md+) 2컬럼 분할 (좌측 sticky 요약 / 우측 상세) */}
+      <div className="flex flex-col md:grid md:grid-cols-12 md:gap-6 md:p-6 md:items-start">
+        {/* 좌측 컬럼: 사진 갤러리 + 제목·주소·지도 링크 (태블릿 이상 상단 고정) */}
+        <div className="md:col-span-5 md:sticky md:top-[76px] flex flex-col">
+          {/* 2. 대표 이미지 슬라이더 영역 */}
+          <div className="relative aspect-4/3 bg-slate-900 overflow-hidden md:rounded-2xl md:border md:border-[#e5eeff] md:shadow-xs">
+            <img
+              src={galleryImages[safeSelectedImg] || item.imageUrl || fallbackImg}
+              alt={item.title}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                e.currentTarget.src = fallbackImg
+              }}
+            />
+            {/* D-Day 및 공매 유형 뱃지 */}
+            <div className="absolute top-3 left-3 flex items-center gap-1.5">
+              <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-[#ba1a1a] text-white shadow-xs">
+                {item.dDay <= 0 ? '오늘 마감' : item.dDay > 365 ? '상시 매각' : `D-${item.dDay}`}
+              </span>
+              <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-black/60 text-white backdrop-blur-xs">
+                {item.auctionType}
+              </span>
+            </div>
+            {galleryImages.length > 1 && (
+              <div className="absolute bottom-3 right-3 bg-black/60 text-white text-[11px] font-medium px-2.5 py-0.5 rounded-full backdrop-blur-xs">
+                {safeSelectedImg + 1} / {galleryImages.length}
+              </div>
+            )}
           </div>
-        )}
-      </div>
 
-      {/* 썸네일 리스트 */}
-      {galleryImages.length > 1 && (
-        <div className="flex gap-2 p-3 bg-white border-b border-[#e5eeff] overflow-x-auto no-scrollbar">
-          {galleryImages.map((img, idx) => (
-            <button
-              key={idx}
-              onClick={() => setSelectedImg(idx)}
-              className={`w-14 h-14 rounded-xl overflow-hidden border-2 shrink-0 transition-all cursor-pointer ${
-                safeSelectedImg === idx ? 'border-[#0051d5] scale-95' : 'border-transparent opacity-60'
-              }`}
-            >
-              <img
-                src={img}
-                alt=""
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  e.currentTarget.src = fallbackImg
-                }}
-              />
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* 3. 본문 상세 정보 영역 */}
-      <div className="p-4 flex flex-col gap-5">
-        {/* 제목 및 주소 */}
-        <div>
-          <div className="flex items-center flex-wrap gap-1.5 text-xs font-bold text-[#0051d5] mb-1">
-            <span>한국자산관리공사 온비드</span>
-            <span>·</span>
-            <span>{item.usageName || item.auctionType}</span>
-          </div>
-          <h2 className="text-xl font-headline font-bold text-[#002046] leading-snug">
-            {item.title}
-          </h2>
-          <p className="text-xs text-[#74777f] flex items-start mt-1.5">
-            <span className="material-symbols-outlined text-[16px] mr-1 text-[#74777f] shrink-0 mt-0.5">
-              location_on
-            </span>
-            <span>{displayAddress}</span>
-          </p>
-          {subJibunAddress && (
-            <p className="text-[11px] text-[#74777f] pl-5 mt-0.5">
-              지번: {subJibunAddress}
-            </p>
+          {/* 썸네일 리스트 */}
+          {galleryImages.length > 1 && (
+            <div className="flex gap-2 p-3 bg-white border-b border-[#e5eeff] md:border md:rounded-2xl md:mt-2.5 overflow-x-auto no-scrollbar">
+              {galleryImages.map((img, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setSelectedImg(idx)}
+                  className={`w-14 h-14 rounded-xl overflow-hidden border-2 shrink-0 transition-all cursor-pointer ${
+                    safeSelectedImg === idx
+                      ? 'border-[#0051d5] scale-95'
+                      : 'border-transparent opacity-60'
+                  }`}
+                >
+                  <img
+                    src={img}
+                    alt=""
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.src = fallbackImg
+                    }}
+                  />
+                </button>
+              ))}
+            </div>
           )}
 
-          {/* 주소 복사 및 지도 위치 바로보기 액션 바 */}
-          <div className="flex items-center flex-wrap gap-1.5 mt-2.5">
-            <button
-              type="button"
-              onClick={() => handleCopy(displayAddress, '주소')}
-              className="px-2.5 py-1 rounded-lg bg-white border border-[#dce9ff] hover:bg-[#eff4ff] text-[#002046] text-[11px] font-semibold inline-flex items-center gap-1 transition-colors cursor-pointer"
-            >
-              <span className="material-symbols-outlined text-[14px] text-[#0051d5]">
-                content_copy
+          {/* 제목 및 주소 */}
+          <div className="px-4 pt-4 md:px-1 md:pt-4">
+            <div className="flex items-center flex-wrap gap-1.5 text-xs font-bold text-[#0051d5] mb-1">
+              <span>한국자산관리공사 온비드</span>
+              <span>·</span>
+              <span>{item.usageName || item.auctionType}</span>
+            </div>
+            <h2 className="text-xl font-headline font-bold text-[#002046] leading-snug">
+              {item.title}
+            </h2>
+            <p className="text-xs text-[#74777f] flex items-start mt-1.5">
+              <span className="material-symbols-outlined text-[16px] mr-1 text-[#74777f] shrink-0 mt-0.5">
+                location_on
               </span>
-              <span>주소 복사</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleOpenMap('naver', displayAddress)}
-              className="px-2.5 py-1 rounded-lg bg-white border border-[#dce9ff] hover:bg-[#eff4ff] text-[#002046] text-[11px] font-semibold inline-flex items-center gap-1 transition-colors cursor-pointer"
-            >
-              <span className="material-symbols-outlined text-[14px] text-[#059669]">map</span>
-              <span>네이버 지도</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleOpenMap('kakao', displayAddress)}
-              className="px-2.5 py-1 rounded-lg bg-white border border-[#dce9ff] hover:bg-[#eff4ff] text-[#002046] text-[11px] font-semibold inline-flex items-center gap-1 transition-colors cursor-pointer"
-            >
-              <span className="material-symbols-outlined text-[14px] text-[#0051d5]">
-                explore
-              </span>
-              <span>카카오맵</span>
-            </button>
+              <span>{displayAddress}</span>
+            </p>
+            {subJibunAddress && (
+              <p className="text-[11px] text-[#74777f] pl-5 mt-0.5">
+                지번: {subJibunAddress}
+              </p>
+            )}
+
+            {/* 주소 복사 및 지도 위치 바로보기 액션 바 */}
+            <div className="flex items-center flex-wrap gap-1.5 mt-2.5">
+              <button
+                type="button"
+                onClick={() => handleCopy(displayAddress, '주소')}
+                className="px-2.5 py-1 rounded-lg bg-white border border-[#dce9ff] hover:bg-[#eff4ff] text-[#002046] text-[11px] font-semibold inline-flex items-center gap-1 transition-colors cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[14px] text-[#0051d5]">
+                  content_copy
+                </span>
+                <span>주소 복사</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleOpenMap('naver', displayAddress)}
+                className="px-2.5 py-1 rounded-lg bg-white border border-[#dce9ff] hover:bg-[#eff4ff] text-[#002046] text-[11px] font-semibold inline-flex items-center gap-1 transition-colors cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[14px] text-[#059669]">map</span>
+                <span>네이버 지도</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleOpenMap('kakao', displayAddress)}
+                className="px-2.5 py-1 rounded-lg bg-white border border-[#dce9ff] hover:bg-[#eff4ff] text-[#002046] text-[11px] font-semibold inline-flex items-center gap-1 transition-colors cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[14px] text-[#0051d5]">
+                  explore
+                </span>
+                <span>카카오맵</span>
+              </button>
+            </div>
           </div>
         </div>
+
+        {/* 우측 컬럼: 가격 요약 + 입찰일정 + 자산군별 제원 + 유의사항 + 감정/권리 내역 */}
+        <div className="p-4 md:p-0 md:col-span-7 flex flex-col gap-5">
 
         {/* 가격 정보 카드 */}
         <div className="bg-white border border-[#e5eeff] rounded-2xl p-4 shadow-2xs space-y-3">
@@ -845,15 +853,26 @@ export function AuctionDetailScreen({
             </div>
           )}
         </div>
+        </div>
       </div>
 
       {/* 4. 하단 고정 액션 바 */}
-      <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white/95 backdrop-blur-xl border-t border-[#e2e8f0] p-3 flex items-center gap-3 z-40 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-lg">
+      <div className="fixed bottom-0 left-0 right-0 md:max-w-5xl xl:max-w-6xl mx-auto bg-white/95 backdrop-blur-xl border-t border-[#e2e8f0] p-3 md:px-6 flex items-center gap-3 z-40 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-lg">
+        {/* 태블릿 이상 하단 요약 */}
+        <div className="hidden md:flex flex-col mr-auto">
+          <span className="text-[11px] text-[#74777f]">
+            최저입찰가 · 보증금(10%) {formatWon(deposit)}
+          </span>
+          <strong className="text-base font-extrabold text-[#002046]">
+            {formatWon(item.minimumPrice)}
+          </strong>
+        </div>
+
         <button
           type="button"
           onClick={() => onToggleAlert?.(item)}
           aria-pressed={isAlertEnabled}
-          className={`flex flex-col items-center justify-center px-3.5 py-2 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
+          className={`flex flex-col items-center justify-center px-3.5 py-2 rounded-xl border text-xs font-semibold transition-all cursor-pointer shrink-0 ${
             isAlertEnabled
               ? 'border-[#0051d5] bg-[#eff4ff] text-[#0051d5]'
               : 'border-[#c4c6cf]/60 text-[#44474e] hover:bg-slate-50'
@@ -872,7 +891,7 @@ export function AuctionDetailScreen({
         <button
           type="button"
           onClick={handleOpenOnbid}
-          className="flex-1 bg-[#0051d5] hover:bg-[#003ea8] active:scale-[0.99] text-white font-bold py-3.5 px-4 rounded-xl shadow-md text-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+          className="flex-1 md:flex-none md:min-w-[240px] bg-[#0051d5] hover:bg-[#003ea8] active:scale-[0.99] text-white font-bold py-3.5 px-5 rounded-xl shadow-md text-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
         >
           <span>온비드 입찰 참여하기</span>
           <span className="material-symbols-outlined text-[18px]">open_in_new</span>

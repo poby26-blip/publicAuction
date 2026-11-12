@@ -429,70 +429,9 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#f1f4f9] flex justify-center selection:bg-blue-200">
-      {/* 모바일 뷰포트 컨테이너 (최대 폭 max-w-md = 448px 모바일 프레임) */}
-      <div className="w-full max-w-md bg-[#f8f9ff] min-h-screen flex flex-col shadow-2xl relative border-x border-[#e2e8f0]/80 overflow-x-hidden">
-        {/* 앱 상단 고정 헤더 */}
-        <AppHeader
-          onSearchClick={() => navigateToListWithFilters()}
-          onAlarmClick={handleAlarmClick}
-          alarmCount={totalUrgentAlarmCount}
-        />
-
-        {/* 메인 탭 화면 본체 (탭 전환 시 마운트/언마운트) */}
-        <main className="flex-1">
-          {/* 1. 홈 탭 화면 */}
-          {activeTab === 'home' && (
-            <HomeScreen
-              items={items}
-              isLoading={isLoading}
-              watchlist={watchlist}
-              onToggleWatchlist={toggleWatchlist}
-              onSelectItem={(item) => setSelectedItem(item)}
-              onNavigateToList={navigateToListWithFilters}
-              onRegionChange={handleRegionChange}
-            />
-          )}
-
-          {/* 2. 공매 전체 목록 탭 화면 */}
-          {activeTab === 'list' && (
-            <AuctionListScreen
-              items={items}
-              watchlist={watchlist}
-              onToggleWatchlist={toggleWatchlist}
-              onSelectItem={(item) => setSelectedItem(item)}
-              initialCategory={listCategory}
-              initialRegion={listRegion}
-              initialKeyword={listKeyword}
-            />
-          )}
-
-          {/* 3. 관심 물건(찜) 탭 화면 */}
-          {activeTab === 'watchlist' && (
-            <WatchlistScreen
-              items={watchlistItems}
-              watchlist={watchlist}
-              alertIds={alertIds}
-              onToggleWatchlist={toggleWatchlist}
-              onRemoveSelectedWatchlist={removeWatchlistItems}
-              onClearWatchlist={clearWatchlist}
-              onSelectItem={(item) => setSelectedItem(item)}
-              onExplore={() => setActiveTab('list')}
-              onShowToast={showToast}
-            />
-          )}
-
-          {/* 4. 마이페이지 탭 화면 */}
-          {activeTab === 'my' && (
-            <MyScreen
-              isApiSyncing={isLoading}
-              syncedItemCount={items.length}
-              onRefreshApiData={() => handleRegionChange('전체', 'all')}
-              onShowToast={showToast}
-            />
-          )}
-        </main>
-
-        {/* 하단 고정 탭 네비게이션 바 */}
+      {/* 반응형 앱 프레임: 모바일·폴더블(<768px) 전체 폭 / 태블릿(>=768px) 사이드 레일+와이드 컨테이너 */}
+      <div className="w-full md:max-w-5xl xl:max-w-6xl bg-[#f8f9ff] min-h-screen flex flex-col md:flex-row shadow-2xl relative md:border-x md:border-[#e2e8f0]/80 overflow-x-clip">
+        {/* 태블릿(>=768px) 좌측 사이드 레일 / 모바일·폴더블(<768px) 하단 고정 탭 바 */}
         <AppBottomNav
           activeTab={activeTab}
           onTabChange={(tab) => {
@@ -501,6 +440,71 @@ export default function App() {
           }}
           watchlistCount={watchlist.length}
         />
+
+        {/* 우측 메인 콘텐츠 칼럼 */}
+        <div className="flex-1 flex flex-col min-w-0">
+          {/* 앱 상단 고정 헤더 */}
+          <AppHeader
+            activeTab={activeTab}
+            onSearchClick={() => navigateToListWithFilters()}
+            onAlarmClick={handleAlarmClick}
+            alarmCount={totalUrgentAlarmCount}
+          />
+
+          {/* 메인 탭 화면 본체 (탭 전환 시 마운트/언마운트) */}
+          <main className="flex-1 md:pb-8">
+            {/* 1. 홈 탭 화면 */}
+            {activeTab === 'home' && (
+              <HomeScreen
+                items={items}
+                isLoading={isLoading}
+                watchlist={watchlist}
+                onToggleWatchlist={toggleWatchlist}
+                onSelectItem={(item) => setSelectedItem(item)}
+                onNavigateToList={navigateToListWithFilters}
+                onRegionChange={handleRegionChange}
+              />
+            )}
+
+            {/* 2. 공매 전체 목록 탭 화면 */}
+            {activeTab === 'list' && (
+              <AuctionListScreen
+                items={items}
+                watchlist={watchlist}
+                onToggleWatchlist={toggleWatchlist}
+                onSelectItem={(item) => setSelectedItem(item)}
+                initialCategory={listCategory}
+                initialRegion={listRegion}
+                initialKeyword={listKeyword}
+              />
+            )}
+
+            {/* 3. 관심 물건(찜) 탭 화면 */}
+            {activeTab === 'watchlist' && (
+              <WatchlistScreen
+                items={watchlistItems}
+                watchlist={watchlist}
+                alertIds={alertIds}
+                onToggleWatchlist={toggleWatchlist}
+                onRemoveSelectedWatchlist={removeWatchlistItems}
+                onClearWatchlist={clearWatchlist}
+                onSelectItem={(item) => setSelectedItem(item)}
+                onExplore={() => setActiveTab('list')}
+                onShowToast={showToast}
+              />
+            )}
+
+            {/* 4. 마이페이지 탭 화면 */}
+            {activeTab === 'my' && (
+              <MyScreen
+                isApiSyncing={isLoading}
+                syncedItemCount={items.length}
+                onRefreshApiData={() => handleRegionChange('전체', 'all')}
+                onShowToast={showToast}
+              />
+            )}
+          </main>
+        </div>
 
         {/* 
           [물건 상세 화면 오버레이 레이어]
@@ -511,7 +515,7 @@ export default function App() {
         {selectedItem && (
           <div
             ref={detailOverlayRef}
-            className="fixed inset-0 max-w-md mx-auto z-50 bg-[#f8f9ff] overflow-y-auto overscroll-contain border-x border-[#e2e8f0]/80"
+            className="fixed inset-0 w-full md:max-w-5xl xl:max-w-6xl mx-auto z-50 bg-[#f8f9ff] overflow-y-auto overscroll-contain md:border-x md:border-[#e2e8f0]/80 md:shadow-2xl"
           >
             <AuctionDetailScreen
               key={selectedItem.id}

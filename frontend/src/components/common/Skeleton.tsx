@@ -27,7 +27,7 @@ export function CardSkeleton({ count = 1 }: SkeletonProps) {
       {items.map((_, idx) => (
         <div
           key={`card-skeleton-${idx}`}
-          className="w-68 flex-shrink-0 bg-white rounded-2xl border border-[#e5eeff] overflow-hidden shadow-xs animate-pulse flex flex-col justify-between"
+          className="w-68 lg:w-full flex-shrink-0 bg-white rounded-2xl border border-[#e5eeff] overflow-hidden shadow-xs animate-pulse flex flex-col justify-between"
           aria-hidden="true"
         >
           {/* 상단 썸네일 이미지 영역 (16:10 비율) */}

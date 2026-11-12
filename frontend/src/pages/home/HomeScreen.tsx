@@ -165,11 +165,11 @@ export function HomeScreen({
   // -------------------------------------------------------------------------
 
   return (
-    <div className="flex flex-col gap-6 pb-24">
+    <div className="flex flex-col gap-6 pb-24 md:pb-8">
       {/* =================================================================== */}
       {/* 1. 상단 통합 검색바 & 시/도 지역 칩 퀵 필터                         */}
       {/* =================================================================== */}
-      <section className="px-4 pt-2">
+      <section className="px-4 md:px-6 pt-2">
         {/* 통합 검색 입력창 */}
         <div className="relative flex items-center">
           <span className="material-symbols-outlined text-[20px] text-[#74777f] absolute left-3.5 pointer-events-none">
@@ -208,8 +208,8 @@ export function HomeScreen({
           </button>
         </div>
 
-        {/* 시/도 지역 칩 가로 스크롤 */}
-        <div className="flex gap-2 overflow-x-auto no-scrollbar pt-3 pb-1 -mx-4 px-4">
+        {/* 시/도 지역 칩 가로 스크롤 (태블릿 이상 줄바꿈 지원) */}
+        <div className="flex gap-2 overflow-x-auto no-scrollbar pt-3 pb-1 -mx-4 px-4 md:mx-0 md:px-0 md:flex-wrap">
           {GONG_REGIONS.map((region) => {
             const isSelected = selectedRegion === region
             return (
@@ -267,7 +267,7 @@ export function HomeScreen({
       {/* =================================================================== */}
       {/* 2. 3대 상품군(전체/부동산/동산/자동차) 탭 & 세부 카테고리 퀵 그리드  */}
       {/* =================================================================== */}
-      <section className="px-4 flex flex-col gap-3">
+      <section className="px-4 md:px-6 flex flex-col gap-3">
         {/* 1차 상품군 대분류 세그먼트 탭 (목록 화면과 통일된 3대 자산군 구조) */}
         <div className="grid grid-cols-4 gap-1.5 p-1 bg-[#eff4ff] rounded-2xl border border-[#dce9ff]">
           {GONG_ASSET_GROUPS.map((group) => {
@@ -292,7 +292,7 @@ export function HomeScreen({
 
         {/* 2차 선택 상품군별 세부 카테고리 퀵 내비게이션 */}
         {selectedAssetGroup === 'all' && (
-          <div className="grid grid-cols-4 gap-2.5">
+          <div className="grid grid-cols-4 md:grid-cols-8 gap-2.5">
             {GONG_CATEGORIES.map((cat) => (
               <button
                 key={cat.id}
@@ -426,7 +426,7 @@ export function HomeScreen({
       {/* =================================================================== */}
       {/* 3. 온비드 공매 초보 가이드 인사이트 배너                           */}
       {/* =================================================================== */}
-      <section className="px-4">
+      <section className="px-4 md:px-6">
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#002046] via-[#1b365d] to-[#0051d5] text-white p-5 shadow-sm">
           <div className="relative z-10">
             <span className="inline-block text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-white/20 text-white backdrop-blur-xs mb-2">
@@ -445,9 +445,9 @@ export function HomeScreen({
       </section>
 
       {/* =================================================================== */}
-      {/* 4. 마감 임박! 입찰 D-1 특가 (가로 스크롤 카드)                      */}
+      {/* 4. 마감 임박! 입찰 D-1 특가 (모바일 가로 스크롤 / 태블릿 3열 그리드) */}
       {/* =================================================================== */}
-      <section className="px-4">
+      <section className="px-4 md:px-6">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-1.5">
             <span className="material-symbols-outlined text-[20px] text-[#ba1a1a] fill-1">
@@ -471,14 +471,14 @@ export function HomeScreen({
           </button>
         </div>
 
-        {/* 가로 카드 스크롤 영역 */}
-        <div className="flex gap-3 overflow-x-auto no-scrollbar -mx-4 px-4 pb-2">
+        {/* 가로 카드 스크롤 (태블릿 lg 이상 3열 쇼케이스 그리드) */}
+        <div className="flex gap-3 overflow-x-auto no-scrollbar -mx-4 px-4 pb-2 lg:mx-0 lg:px-0 lg:pb-0 lg:grid lg:grid-cols-3 lg:overflow-visible">
           {isLoading ? (
             // 비동기 통신 로딩 중: 카드 스켈레톤 3개 표출
             <CardSkeleton count={3} />
           ) : urgentItems.length === 0 ? (
             // 해당 조건의 매물이 없는 경우: 빈 상태(Empty State) 안내
-            <div className="w-full py-8 text-center text-[#74777f] text-xs bg-white rounded-2xl border border-[#e5eeff] px-4">
+            <div className="w-full lg:col-span-full py-8 text-center text-[#74777f] text-xs bg-white rounded-2xl border border-[#e5eeff] px-4">
               {filterSummaryLabel
                 ? `'${filterSummaryLabel}' 조건에 해당하는 마감 임박 물건이 없습니다.`
                 : '현재 마감 임박 물건이 없습니다.'}
@@ -491,7 +491,7 @@ export function HomeScreen({
                 <div
                   key={item.id}
                   onClick={() => onSelectItem(item)}
-                  className="w-68 flex-shrink-0 bg-white rounded-2xl border border-[#e5eeff] overflow-hidden shadow-xs hover:shadow-md transition-all active:scale-[0.99] cursor-pointer flex flex-col justify-between group"
+                  className="w-68 lg:w-full flex-shrink-0 bg-white rounded-2xl border border-[#e5eeff] overflow-hidden shadow-xs hover:shadow-md transition-all active:scale-[0.99] cursor-pointer flex flex-col justify-between group"
                 >
                   {/* 상단 썸네일 이미지 및 마감 뱃지 영역 */}
                   <div className="relative aspect-16/10 bg-slate-100 overflow-hidden">
@@ -589,9 +589,9 @@ export function HomeScreen({
       </section>
 
       {/* =================================================================== */}
-      {/* 5. 이번 주 유찰 추천! 반값 물건 (세로 리스트)                       */}
+      {/* 5. 이번 주 유찰 추천! 반값 물건 (반응형 카드 그리드)                */}
       {/* =================================================================== */}
-      <section className="px-4">
+      <section className="px-4 md:px-6">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-1.5">
             <span className="material-symbols-outlined text-[20px] text-[#0051d5]">
@@ -606,13 +606,13 @@ export function HomeScreen({
           </span>
         </div>
 
-        {/* 세로 리스트 영역 */}
-        <div className="flex flex-col gap-3">
+        {/* 모바일 1열 / 폴더블 sm 2열 / 태블릿 xl 3열 그리드 */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3.5">
           {isLoading ? (
             // 로딩 중: 세로 리스트 스켈레톤 3개 표출
             <ListSkeleton count={3} />
           ) : halfPriceItems.length === 0 ? (
-            <div className="bg-white rounded-2xl border border-[#e5eeff] p-8 text-center text-[#74777f] text-xs">
+            <div className="col-span-full bg-white rounded-2xl border border-[#e5eeff] p-8 text-center text-[#74777f] text-xs">
               {filterSummaryLabel
                 ? `'${filterSummaryLabel}' 조건에 해당하는 유찰 추천 물건이 없습니다.`
                 : '현재 유찰 추천 물건이 없습니다.'}
@@ -711,7 +711,7 @@ export function HomeScreen({
       {/* =================================================================== */}
       {/* 6. 대한민국 공공데이터포털(KAMCO) 공식 연계 신뢰 배너             */}
       {/* =================================================================== */}
-      <section className="px-4">
+      <section className="px-4 md:px-6">
         <div className="bg-[#eff4ff] rounded-2xl p-4 flex flex-col gap-2 border border-[#dce9ff]">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-[#dce9ff] flex items-center justify-center text-[#002046]">
