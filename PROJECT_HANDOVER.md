@@ -1,6 +1,6 @@
 # 📋 [공매이지] 프로젝트 인수인계 및 에이전트 작업 지침서 (PROJECT_HANDOVER.md)
 
-> **문서 버전**: v1.0.0  
+> **문서 버전**: v1.1.0  
 > **최종 갱신일**: 2026년 11월 12일  
 > **프로젝트 경로**: `c:\dev\workspace\publicAuction`  
 > **프론트엔드 경로**: `c:\dev\workspace\publicAuction\frontend`  
@@ -31,7 +31,7 @@
   │   │   │   ├── auction/      # AuctionListScreen.tsx (목록), AuctionDetailScreen.tsx (상세)
   │   │   │   ├── watchlist/    # WatchlistScreen.tsx (관심물건 찜 목록)
   │   │   │   └── my/           # MyScreen.tsx (마이페이지)
-  │   │   ├── services/         # onbidService.ts (KAMCO 차세대 온비드 OpenAPI 연동 파이프라인)
+  │   │   ├── services/         # onbidService.ts (온비드 API), storageService.ts (RN 호환 로컬 스토리지 추상화)
   │   │   ├── types/            # TypeScript 인터페이스 정의
   │   │   ├── App.tsx           # 메인 네비게이션 및 상세 오버레이 상태 머신
   │   │   └── main.tsx
@@ -75,7 +75,7 @@
    - 제시한 계획에 대해 **사용자의 확인 및 승인을 받은 후에만** 다음 단계 작업을 진행합니다. 임의로 코드를 바로 수정하지 마십시오.
 2. **Git 커밋 및 푸시 절대 금지 (No Git Commit/Push)**
    - 에이전트는 절대 `git commit`이나 `git push` 명령어를 직접 실행해서는 안 됩니다.
-   - 작업 완료 후 **수정/생성된 파일 목록**과 **사용자가 직접 복사하여 실행할 수 있는 Git 명령어**를 안내하십시오.
+   - *(사용자 요청)* 작업 완료 보고 시 **Git 커밋/푸시 명령어 안내는 생략**하고 작업 내용 및 검증 결과만 깔끔하게 보고하십시오.
 3. **기본 언어는 한국어 유지 (Language & Communication)**
    - 모든 대화, 설명, 코드 주석은 **한국어(Korean)**를 기본으로 유지합니다.
    - 코드 블록이나 기술 고유명사는 영문을 병기하되, 친절하고 명확한 한국어로 소통합니다.
@@ -140,7 +140,18 @@
   - '전남광주' 선택 시 ➔ '전남광주통합특별시', '광주광역시', '전라남도'를 병렬 호출하여 통합 수집하고, 주소 매칭 시에도 모두 포괄하여 매칭.
 
 ### ✅ [5단계] 소스코드 전면 한국어 JSDoc 주석 보강
-- `App.tsx`, `HomeScreen.tsx`, `AuctionListScreen.tsx`, `AuctionDetailScreen.tsx`, `onbidService.ts`, `mockAuctionData.ts`, `Skeleton.tsx` 등 핵심 파일 전반에 상세한 한국어 JSDoc 주석 적용 완료.
+- `App.tsx`, `HomeScreen.tsx`, `AuctionListScreen.tsx`, `AuctionDetailScreen.tsx`, `onbidService.ts`, `mockAuctionData.ts`, `Skeleton.tsx`, `WatchlistScreen.tsx`, `AppHeader.tsx`, `storageService.ts` 등 핵심 파일 전반에 상세한 한국어 JSDoc 주석 적용 완료.
+
+### ✅ [6단계] 관심물건(찜) 기능 개발 및 React Native 전환 대비 스토리지 추상화 완료
+1. **React Native 대비 스토리지 추상화 레이어 구축 ([storageService.ts](file:///c:/dev/workspace/publicAuction/frontend/src/services/storageService.ts))**:
+   - 최종 목표인 순수 React Native 앱 전환 시 UI/상태 코드 수정 없이 `@react-native-async-storage/async-storage` 또는 `react-native-mmkv`로 즉시 교체 가능하도록 비동기(`Promise`) 기반 공통 `AppStorageAdapter` 인터페이스 및 `setStorageAdapter` 주입 구조를 설계했습니다.
+2. **객체 기반 영구 보관 및 경쟁 상태 방어 ([App.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/App.tsx))**:
+   - 가짜 Mock ID 초기값을 제거하고, 목록 2페이지 이후·차량·타 지역 검색 물건도 보관함에서 누락되지 않도록 `GongItem` 전체 객체를 영구 보관합니다.
+   - 비동기 초기 복원 완료 전에 초기 빈 배열(`[]`)이 기존 데이터를 덮어쓰는 Race Condition을 `isWatchlistInitialized` 플래그로 방어했습니다.
+3. **관심 공매 보관함 UI/UX 고도화 ([WatchlistScreen.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/pages/watchlist/WatchlistScreen.tsx))**:
+   - 최신등록순 / 마감임박순 정렬 토글, 전체 비우기(`window.confirm` 확인 후 일괄 삭제), 3일 이내 마감 임박 물건 주의 배너, 이미지 Fallback 및 D-Day('오늘 마감', '상시 매각') 방어 처리를 구현했습니다.
+4. **전 화면 실시간 동기화 및 실데이터 알림 연동 ([AppHeader.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/components/layout/AppHeader.tsx))**:
+   - 홈·목록·상세·보관함 어느 화면에서 하트를 누르든 하단 탭 뱃지(`watchlistCount`)와 상단 헤더의 3일 이내 마감 임박 관심물건 알림(`urgentWatchlistCount`)이 실시간 동기화됩니다.
 
 ---
 
@@ -148,22 +159,15 @@
 
 사용자와 합의된 다음 우선순위 작업 로드맵입니다. **에이전트는 작업 전 반드시 사전 계획을 사용자에게 제시하고 승인을 득한 후 진행**해야 합니다.
 
-### 🎯 [차기 작업 1순위] '관심물건(찜)' 기능 전용 개발
-1. **`localStorage` 연동 영구 보관**:
-   - 새로고침이나 브라우저 재시작 시에도 찜한 물건(`watchlist: string[]`)이 유지되도록 `localStorage` 동기화 훅 또는 이펙트 적용.
-2. **관심물건 탭 화면 ([WatchlistScreen.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/pages/watchlist/WatchlistScreen.tsx)) 실데이터 연동**:
-   - 현재 mock 기반으로 되어 있는 관심물건 탭을 실제 찜한 온비드 물건 실데이터 목록으로 렌더링.
-   - 찜한 물건이 0건일 때 '관심 등록한 공매 물건이 없습니다' 및 '공매 물건 보러가기' 버튼을 제공하는 빈 상태(Empty State) UI 완성.
-   - 관심물건 목록 내에서 하트 토글 시 즉시 목록에서 제거 및 상위 뱃지 카운트 실시간 갱신.
-3. **홈 / 목록 / 상세 화면 간 하트(관심물건) 실시간 상태 동기화 검증**:
-   - 어느 화면에서 하트를 누르든 헤더의 알림/찜 카운트와 하단 네비게이션 뱃지가 즉각 동기화되는지 확인.
+### 🎯 [차기 작업 1순위] 마이페이지 ([MyScreen.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/pages/my/MyScreen.tsx)) 개발
+- 사용자 프로필 영역, 관심 공매 요약 통계(저장 건수, 마감 임박 건수 연동), 최근 본 물건 이력(`storageService` 확장 활용), 온비드 공매 이용 안내 FAQ 등 화면 구성.
 
-### 🎯 [2순위] 마이페이지 ([MyScreen.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/pages/my/MyScreen.tsx)) 개발
-- 사용자 프로필 영역, 관심 공매 요약, 최근 본 물건 이력(선택적), 온비드 공매 이용 안내 FAQ 등 화면 구성.
-
-### 🎯 [3순위] 기일 알림 및 온비드 전자입찰 부가 기능 고도화
-- 상세 화면의 '기일 알림' 로컬 알림 상태 영구 저장.
+### 🎯 [2순위] 기일 알림 영구화 및 온비드 전자입찰 부가 기능 고도화
+- 상세 화면의 '기일 알림' 상태를 `storageService`와 연동하여 영구 저장.
 - '온비드 입찰 참여하기' 클릭 시 실제 캠코 온비드 해당 물건 상세 페이지 웹 링크(`www.onbid.co.kr`) 연결 지원.
+
+### 🎯 [3순위] React Native 네이티브 앱 전환
+- `storageService.ts` 어댑터를 `AsyncStorage` 또는 `MMKV`로 교체하고, UI 컴포넌트를 React Native 네이티브 컴포넌트(`<View>`, `<FlatList>` 등)로 이식.
 
 ---
 
@@ -222,5 +226,5 @@ git push origin main
 
 새로운 PC에서 작업을 이어갈 때, 사용자가 아래와 같이 에이전트에게 지시하면 즉시 작업을 이어갈 수 있습니다:
 
-> *"저장소 루트에 있는 `PROJECT_HANDOVER.md` 파일을 먼저 읽고, 프로젝트 전체 맥락과 에이전트 준수 규칙을 파악한 후 다음 우선순위 작업인 '관심물건(찜) 기능 전용 개발'의 작업 계획을 한국어로 제시해줘."*
+> *"저장소 루트에 있는 `PROJECT_HANDOVER.md` 파일을 먼저 읽고, 프로젝트 전체 맥락과 에이전트 준수 규칙을 파악한 후 다음 우선순위 작업인 '마이페이지(MyScreen.tsx) 개발'의 작업 계획을 한국어로 제시해줘."*
 

@@ -34,7 +34,7 @@ interface AuctionListScreenProps {
   watchlist: string[]
 
   /** 관심 등록 토글 콜백 */
-  onToggleWatchlist: (id: string) => void
+  onToggleWatchlist: (item: GongItem) => void
 
   /** 물건 카드 클릭 시 상세 화면으로 이동시키는 콜백 */
   onSelectItem: (item: GongItem) => void
@@ -521,7 +521,7 @@ export function AuctionListScreen({
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation()
-                      onToggleWatchlist(item.id)
+                      onToggleWatchlist(item)
                     }}
                     className="absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-white/80 backdrop-blur-xs flex items-center justify-center text-[#44474e] hover:text-[#ba1a1a] transition-colors"
                     aria-label="관심물건 등록 토글"

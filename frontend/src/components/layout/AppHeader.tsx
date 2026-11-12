@@ -1,10 +1,20 @@
+/**
+ * @file AppHeader.tsx
+ * @description '공매이지' 앱의 상단 고정 네비게이션 헤더 컴포넌트입니다.
+ */
+
 interface AppHeaderProps {
+  /** 우측 돋보기 검색 아이콘 클릭 콜백 */
   onSearchClick?: () => void
+
+  /** 우측 종 모양 알림 아이콘 클릭 콜백 */
   onAlarmClick?: () => void
+
+  /** 마감 임박 관심 물건 등의 미확인 알림 건수 (0이면 뱃지 숨김) */
   alarmCount?: number
 }
 
-export function AppHeader({ onSearchClick, onAlarmClick, alarmCount = 2 }: AppHeaderProps) {
+export function AppHeader({ onSearchClick, onAlarmClick, alarmCount = 0 }: AppHeaderProps) {
   return (
     <header className="sticky top-0 z-40 bg-[#f8f9ff]/90 backdrop-blur-md px-4 py-3 flex items-center justify-between border-b border-[#e5eeff]">
       <div className="flex items-center space-x-2">

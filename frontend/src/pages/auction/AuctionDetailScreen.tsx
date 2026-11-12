@@ -23,7 +23,7 @@ interface AuctionDetailScreenProps {
   isSaved: boolean
 
   /** 관심 등록 토글 콜백 */
-  onToggleWatchlist: (id: string) => void
+  onToggleWatchlist: (item: GongItem) => void
 
   /** 상세 화면 닫기 및 목록 복귀 콜백 */
   onBack: () => void
@@ -92,7 +92,7 @@ export function AuctionDetailScreen({
           </button>
           <button
             type="button"
-            onClick={() => onToggleWatchlist(item.id)}
+            onClick={() => onToggleWatchlist(item)}
             className="w-9 h-9 rounded-full flex items-center justify-center text-[#44474e] hover:bg-[#e5eeff] cursor-pointer"
             aria-label="관심등록"
           >

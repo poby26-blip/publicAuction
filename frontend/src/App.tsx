@@ -15,6 +15,11 @@ import { HomeScreen } from './pages/home/HomeScreen'
 import { MyScreen } from './pages/my/MyScreen'
 import { WatchlistScreen } from './pages/watchlist/WatchlistScreen'
 import { fetchOnbidRealEstateList } from './services/onbidService'
+import {
+  loadWatchlistItems,
+  saveWatchlistItems,
+  clearWatchlistItems,
+} from './services/storageService'
 
 export default function App() {
   // -------------------------------------------------------------------------
@@ -30,8 +35,24 @@ export default function App() {
   /** 온비드 OpenAPI 비동기 통신 로딩 상태 (true일 때 스켈레톤 UI 표출) */
   const [isLoading, setIsLoading] = useState<boolean>(true)
 
-  /** 사용자가 관심 등록(찜)한 물건의 ID 배열 */
-  const [watchlist, setWatchlist] = useState<string[]>(['gong-01', 'gong-04'])
+  /**
+   * 사용자가 관심 등록(찜)한 공매 물건 객체 배열
+   * - storageService 추상화 레이어를 통해 웹(localStorage) 또는 React Native(AsyncStorage/MMKV)에서 비동기 복원됩니다.
+   * - 목록 2페이지 이후, 차량 공매, 타 지역 검색에서 찜한 물건도 보존하기 위해 GongItem 전체를 보관합니다.
+   */
+  const [watchlistItems, setWatchlistItems] = useState<GongItem[]>([])
+
+  /**
+   * 스토리지 초기 비동기 복원 완료 여부 플래그
+   * - 초기 빈 배열 상태가 기존 영구 데이터를 덮어쓰는 경쟁 상태(Race Condition)를 방어합니다.
+   */
+  const [isWatchlistInitialized, setIsWatchlistInitialized] = useState<boolean>(false)
+
+  /** 하트 UI 활성화 여부 판정 및 뱃지 카운트용 관심물건 ID 파생 배열 */
+  const watchlist = watchlistItems.map((item) => item.id)
+
+  /** 입찰 마감이 3일 이내로 임박한 관심물건 수 (상단 헤더 알림 뱃지용) */
+  const urgentWatchlistCount = watchlistItems.filter((item) => item.dDay <= 3).length
 
   /** 현재 상세 화면에 열려 있는 공매 물건 (null이면 메인 탭 화면 표시) */
   const [selectedItem, setSelectedItem] = useState<GongItem | null>(null)
@@ -80,18 +101,60 @@ export default function App() {
     }
   }, [])
 
+  /**
+   * 앱 최초 마운트 시 스토리지 추상화 레이어(storageService)를 통해 관심물건 데이터를 비동기로 복원합니다.
+   */
+  useEffect(() => {
+    let isMounted = true
+
+    async function initWatchlist() {
+      const loaded = await loadWatchlistItems()
+      if (isMounted) {
+        setWatchlistItems(loaded)
+        setIsWatchlistInitialized(true)
+      }
+    }
+
+    initWatchlist()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  /**
+   * 관심물건(watchlistItems) 상태 변경 시 storageService에 비동기 영구 저장합니다.
+   * - 초기 비동기 복원이 완료된 이후(isWatchlistInitialized === true)에만 저장을 실행합니다.
+   */
+  useEffect(() => {
+    if (!isWatchlistInitialized) return
+    saveWatchlistItems(watchlistItems)
+  }, [watchlistItems, isWatchlistInitialized])
+
   // -------------------------------------------------------------------------
   // [이벤트 핸들러 (Event Handlers)]
   // -------------------------------------------------------------------------
 
   /**
-   * 특정 물건의 관심 등록(찜) 여부를 토글합니다.
-   * @param id - 토글할 물건의 고유 식별자 ID
+   * 특정 공매 물건의 관심 등록(찜) 여부를 토글합니다.
+   * - 이미 보관 중인 물건이면 목록에서 제거하고, 없으면 최신 항목(배열 맨 앞)으로 추가합니다.
+   * @param targetItem - 토글할 공매 물건(GongItem) 객체
    */
-  const toggleWatchlist = (id: string) => {
-    setWatchlist((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-    )
+  const toggleWatchlist = (targetItem: GongItem) => {
+    setWatchlistItems((prev) => {
+      const exists = prev.some((item) => item.id === targetItem.id)
+      return exists
+        ? prev.filter((item) => item.id !== targetItem.id)
+        : [targetItem, ...prev]
+    })
+  }
+
+  /**
+   * 보관함에 담긴 모든 관심물건을 일괄 삭제하고 스토리지를 초기화합니다.
+   */
+  const clearWatchlist = async () => {
+    setWatchlistItems([])
+    await clearWatchlistItems()
   }
 
   /**
@@ -134,6 +197,31 @@ export default function App() {
     setActiveTab('list') // 목록 탭 활성화
   }
 
+  /**
+   * 상단 헤더 종 모양 알림 버튼 클릭 핸들러
+   * - 마감 임박 관심물건이 있는 경우 관심 보관함으로 바로 안내합니다.
+   */
+  const handleAlarmClick = () => {
+    if (urgentWatchlistCount > 0) {
+      if (
+        window.confirm(
+          `입찰 마감이 3일 이내로 임박한 관심 물건이 ${urgentWatchlistCount}건 있습니다.\n관심 공매 보관함으로 이동할까요?`
+        )
+      ) {
+        setSelectedItem(null)
+        setActiveTab('watchlist')
+      }
+      return
+    }
+
+    const urgentMarketCount = items.filter((item) => item.dDay <= 3).length
+    alert(
+      urgentMarketCount > 0
+        ? `현재 관심 등록된 마감 임박 물건은 없습니다.\n(실시간 전체 공매 중 3일 이내 마감 예정 ${urgentMarketCount}건 등록 중)`
+        : '현재 등록된 긴급 마감 알림이 없습니다.'
+    )
+  }
+
   // -------------------------------------------------------------------------
   // [렌더링 (View Layout)]
   // -------------------------------------------------------------------------
@@ -145,10 +233,8 @@ export default function App() {
         {/* 앱 상단 고정 헤더 */}
         <AppHeader
           onSearchClick={() => navigateToListWithFilters()}
-          onAlarmClick={() =>
-            alert('최근 24시간 동안 마감 임박 물건 3건이 신규 등록되었습니다.')
-          }
-          alarmCount={watchlist.length}
+          onAlarmClick={handleAlarmClick}
+          alarmCount={urgentWatchlistCount}
         />
 
         {/* 메인 탭 화면 본체 (탭 전환 시 마운트/언마운트) */}
@@ -182,9 +268,10 @@ export default function App() {
           {/* 3. 관심 물건(찜) 탭 화면 */}
           {activeTab === 'watchlist' && (
             <WatchlistScreen
-              items={items}
+              items={watchlistItems}
               watchlist={watchlist}
               onToggleWatchlist={toggleWatchlist}
+              onClearWatchlist={clearWatchlist}
               onSelectItem={(item) => setSelectedItem(item)}
               onExplore={() => setActiveTab('list')}
             />
