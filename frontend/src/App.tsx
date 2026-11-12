@@ -63,6 +63,30 @@ export default function App() {
   /** 현재 상세 화면에 열려 있는 공매 물건 (null이면 메인 탭 화면 표시) */
   const [selectedItem, setSelectedItem] = useState<GongItem | null>(null)
 
+  /** 상세 화면 고정 오버레이 스크롤 컨테이너 Ref */
+  const detailOverlayRef = useRef<HTMLDivElement | null>(null)
+
+  /**
+   * 상세 화면 오버레이 진입 시:
+   * 1) 오버레이 자체 스크롤을 항상 최상단(scrollTop = 0)으로 초기화합니다.
+   * 2) 뒤쪽 목록/홈 화면의 window 스크롤이 움직이지 않도록 body 스크롤을 잠그고,
+   *    상세를 닫을 때 기존 overflow 스타일을 복원해 원래 목록 스크롤 위치를 그대로 보존합니다.
+   */
+  useEffect(() => {
+    if (!selectedItem) return
+
+    if (detailOverlayRef.current) {
+      detailOverlayRef.current.scrollTop = 0
+    }
+
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    return () => {
+      document.body.style.overflow = prevOverflow
+    }
+  }, [selectedItem])
+
   /** 공매 목록 화면(`AuctionListScreen`)으로 전달할 초기 카테고리 필터값 */
   const [listCategory, setListCategory] = useState<string | undefined>()
 
@@ -394,20 +418,23 @@ export default function App() {
 
         {/* 
           [물건 상세 화면 오버레이 레이어]
-          특정 물건이 선택된 경우 전체 화면을 덮는 오버레이로 표출하여,
-          뒤로가기 시 하위 목록 화면의 스크롤 위치와 누적 페이징 데이터를 손실 없이 온전히 보존합니다.
+          뷰포트 기준 fixed 독립 스크롤 오버레이로 표출하여:
+          1) 상세 화면 진입 시 항상 최상단(scrollTop = 0)부터 시작하고,
+          2) 뒤로가기 시 하위 목록 화면의 스크롤 위치와 누적 페이징 데이터를 손실 없이 온전히 보존합니다.
         */}
         {selectedItem && (
-          <div className="absolute inset-0 z-50 bg-[#f8f9ff] overflow-y-auto">
-            <div className="p-4">
-              <AuctionDetailScreen
-                item={selectedItem}
-                isSaved={watchlist.includes(selectedItem.id)}
-                onToggleWatchlist={toggleWatchlist}
-                onShowToast={showToast}
-                onBack={() => setSelectedItem(null)}
-              />
-            </div>
+          <div
+            ref={detailOverlayRef}
+            className="fixed inset-0 max-w-md mx-auto z-50 bg-[#f8f9ff] overflow-y-auto overscroll-contain border-x border-[#e2e8f0]/80"
+          >
+            <AuctionDetailScreen
+              key={selectedItem.id}
+              item={selectedItem}
+              isSaved={watchlist.includes(selectedItem.id)}
+              onToggleWatchlist={toggleWatchlist}
+              onShowToast={showToast}
+              onBack={() => setSelectedItem(null)}
+            />
           </div>
         )}
 

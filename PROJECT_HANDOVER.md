@@ -181,6 +181,8 @@
 2. **관심 공매 보관함 선택 삭제 ([WatchlistScreen.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/pages/watchlist/WatchlistScreen.tsx), [App.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/App.tsx))**:
    - 보관함 툴바에 `선택 삭제` 모드 전환 버튼을 추가하고, 선택 모드에서 `전체 선택 / 전체 해제`, 카드 체크박스 토글, 하단 플로팅 일괄 삭제 바(`선택한 N건 삭제`)를 구현했습니다.
    - 삭제 실행 시 `window.confirm` 확인창을 거쳐 `removeWatchlistItems`로 일괄 삭제하고 `storageService` 영구 반영 및 토스트 피드백을 제공합니다.
+3. **상세 화면 진입 스크롤 위치 버그 수정 ([App.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/App.tsx), [AuctionDetailScreen.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/pages/auction/AuctionDetailScreen.tsx))**:
+   - 상세 화면 오버레이를 `absolute inset-0`에서 뷰포트 기준 `fixed inset-0 max-w-md mx-auto overflow-y-auto overscroll-contain`으로 전환하고, 진입 시 `scrollTop = 0` 초기화 및 배경 `document.body.style.overflow = 'hidden'` 잠금을 적용하여 상세 화면은 항상 최상단에서 시작하고 뒤로가기 시 목록 스크롤은 보존되도록 수정했습니다.
 
 ---
 

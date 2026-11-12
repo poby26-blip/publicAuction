@@ -74,7 +74,7 @@ export function AuctionDetailScreen({
   }
 
   return (
-    <div className="pb-28 -mx-4 -mt-3">
+    <div className="pb-28">
       {/* 1. 상단 고정 헤더 앱바 */}
       <div className="sticky top-0 z-40 bg-[#f8f9ff]/90 backdrop-blur-md px-4 py-3 flex items-center justify-between border-b border-[#e5eeff]">
         <button
