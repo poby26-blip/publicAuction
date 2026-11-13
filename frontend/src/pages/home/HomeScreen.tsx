@@ -606,8 +606,8 @@ export function HomeScreen({
           </span>
         </div>
 
-        {/* 모바일 1열 / 폴더블 sm 2열 / 태블릿 xl 3열 그리드 */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3.5">
+        {/* 모바일 1열 / 폴더블 sm 2열 / 태블릿 lg 3열 그리드 (가로모드 전폭 최적화) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
           {isLoading ? (
             // 로딩 중: 세로 리스트 스켈레톤 3개 표출
             <ListSkeleton count={3} />
@@ -624,10 +624,10 @@ export function HomeScreen({
                 <article
                   key={item.id}
                   onClick={() => onSelectItem(item)}
-                  className="bg-white rounded-2xl border border-[#e5eeff] p-4 flex gap-3.5 shadow-2xs hover:shadow-xs hover:border-[#0051d5]/40 active:scale-[0.99] cursor-pointer transition-all group"
+                  className="bg-white rounded-2xl border border-[#e5eeff] p-3.5 sm:p-4 flex gap-3 shadow-2xs hover:shadow-xs hover:border-[#0051d5]/40 active:scale-[0.99] cursor-pointer transition-all group overflow-hidden"
                 >
                   {/* 좌측 정사각형 썸네일 */}
-                  <div className="w-24 h-24 rounded-xl overflow-hidden bg-slate-100 flex-shrink-0 relative">
+                  <div className="w-22 h-22 sm:w-24 sm:h-24 rounded-xl overflow-hidden bg-slate-100 flex-shrink-0 relative">
                     <img
                       src={item.imageUrl || getCategoryFallbackImage(item.category)}
                       alt={item.title}
@@ -648,15 +648,15 @@ export function HomeScreen({
                     ) : null}
                   </div>
 
-                  {/* 우측 물건 정보 */}
-                  <div className="flex-1 flex flex-col justify-between">
+                  {/* 우측 물건 정보 (min-w-0으로 카드 밖 밀려남 방어) */}
+                  <div className="flex-1 min-w-0 flex flex-col justify-between">
                     <div>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[10px] font-bold text-[#0051d5] bg-[#eff4ff] px-2 py-0.5 rounded-md">
+                      <div className="flex items-center justify-between gap-1">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="text-[10px] font-bold text-[#0051d5] bg-[#eff4ff] px-1.5 py-0.5 rounded-md shrink-0">
                             {item.auctionType}
                           </span>
-                          <span className="text-[10px] font-medium text-[#74777f] truncate max-w-[120px]">
+                          <span className="text-[10px] font-medium text-[#74777f] truncate">
                             {item.area}
                           </span>
                         </div>
@@ -666,7 +666,7 @@ export function HomeScreen({
                             e.stopPropagation()
                             onToggleWatchlist(item)
                           }}
-                          className="text-[#74777f] hover:text-[#ba1a1a] transition-colors p-1"
+                          className="text-[#74777f] hover:text-[#ba1a1a] transition-colors p-1 shrink-0"
                           aria-label="관심물건 등록 토글"
                         >
                           <span
@@ -678,15 +678,15 @@ export function HomeScreen({
                           </span>
                         </button>
                       </div>
-                      <h4 className="text-sm font-bold text-[#0b1c30] line-clamp-1 mt-1 group-hover:text-[#0051d5] transition-colors" title={item.title}>
+                      <h4 className="text-sm font-bold text-[#0b1c30] truncate mt-1 group-hover:text-[#0051d5] transition-colors" title={item.title}>
                         {item.title}
                       </h4>
-                      <p className="text-[11px] text-[#74777f] line-clamp-1 mt-0.5">{item.address}</p>
+                      <p className="text-[11px] text-[#74777f] truncate mt-0.5">{item.address}</p>
                     </div>
 
-                    {/* 가격 및 기일 */}
-                    <div className="pt-2 border-t border-[#f8f9ff] flex items-baseline justify-between">
-                      <div className="flex items-baseline gap-1.5">
+                    {/* 가격 및 기일 (flex-wrap 및 gap으로 텍스트 오버플로우 방어) */}
+                    <div className="pt-2 border-t border-[#f8f9ff] flex flex-wrap items-baseline justify-between gap-x-1.5 gap-y-0.5">
+                      <div className="flex items-baseline gap-1 shrink-0">
                         {item.discountRate > 0 && (
                           <span className="text-xs font-extrabold text-[#ba1a1a]">
                             -{item.discountRate}%
@@ -696,7 +696,7 @@ export function HomeScreen({
                           {formatWon(item.minimumPrice)}
                         </span>
                       </div>
-                      <span className="text-[10px] text-[#74777f]">
+                      <span className="text-[10px] text-[#74777f] shrink-0">
                         {item.auctionDate ? `기일 ${item.auctionDate.split(' ')[0]}` : '일정 확인중'}
                       </span>
                     </div>

@@ -428,9 +428,9 @@ export default function App() {
   // -------------------------------------------------------------------------
 
   return (
-    <div className="min-h-screen bg-[#f1f4f9] flex justify-center selection:bg-blue-200">
-      {/* 반응형 앱 프레임: 모바일·폴더블(<768px) 전체 폭 / 태블릿(>=768px) 사이드 레일+와이드 컨테이너 */}
-      <div className="w-full md:max-w-5xl xl:max-w-6xl bg-[#f8f9ff] min-h-screen flex flex-col md:flex-row shadow-2xl relative md:border-x md:border-[#e2e8f0]/80 overflow-x-clip">
+    <div className="min-h-screen bg-[#f8f9ff] selection:bg-blue-200">
+      {/* 반응형 앱 프레임: 태블릿(>=768px) 사이드 레일 + 전폭 메인 뷰포트 (좌우 공백 제거) */}
+      <div className="w-full bg-[#f8f9ff] min-h-screen flex flex-col md:flex-row relative overflow-x-clip">
         {/* 태블릿(>=768px) 좌측 사이드 레일 / 모바일·폴더블(<768px) 하단 고정 탭 바 */}
         <AppBottomNav
           activeTab={activeTab}
@@ -515,7 +515,7 @@ export default function App() {
         {selectedItem && (
           <div
             ref={detailOverlayRef}
-            className="fixed inset-0 w-full md:max-w-5xl xl:max-w-6xl mx-auto z-50 bg-[#f8f9ff] overflow-y-auto overscroll-contain md:border-x md:border-[#e2e8f0]/80 md:shadow-2xl"
+            className="fixed inset-0 w-full z-50 bg-[#f8f9ff] overflow-y-auto overscroll-contain"
           >
             <AuctionDetailScreen
               key={selectedItem.id}

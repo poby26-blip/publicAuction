@@ -1,7 +1,7 @@
 # 📋 [공매이지] 프로젝트 인수인계 및 에이전트 작업 지침서 (PROJECT_HANDOVER.md)
 
-> **문서 버전**: v1.3.0  
-> **최종 갱신일**: 2026년 11월 12일  
+> **문서 버전**: v1.3.1  
+> **최종 갱신일**: 2026년 11월 13일  
 > **프로젝트 경로**: `c:\dev\workspace\publicAuction`  
 > **프론트엔드 경로**: `c:\dev\workspace\publicAuction\frontend`  
 > **문서 목적**: 사무실, 자택 등 서로 다른 개발 환경의 **Antigravity 에이전트**가 프로젝트 컨텍스트를 즉시 100% 복원하여 끊김 없이 작업을 이어가도록 안내하며, **사용자**가 프로젝트 진행 상황과 아키텍처를 한눈에 확인할 수 있도록 지원합니다.
@@ -218,6 +218,15 @@
    - 타이핑·한글 조합 중에는 데이터 소모 없이 기존 `listItems` 내에서만 로컬 필터링하고, `Enter` 키(`!e.nativeEvent.isComposing` 가드) 또는 `검색` 버튼 클릭 시에만 `committedQuery`를 갱신해 OpenAPI 조회 및 `'더보기'` 페이징을 수행합니다.
 3. **공식 앱 아이콘 적용 ([index.html](file:///c:/dev/workspace/publicAuction/frontend/index.html), [manifest.webmanifest](file:///c:/dev/workspace/publicAuction/frontend/public/manifest.webmanifest), [AppHeader.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/components/layout/AppHeader.tsx), [AppBottomNav.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/components/layout/AppBottomNav.tsx))**:
    - `/public/gongmaeEasyIcon.png`를 HTML 파비콘, Apple 터치 아이콘, PWA 매니페스트 아이콘 및 상단·사이드 브랜드 로고 이미지로 일괄 적용했습니다.
+
+### ✅ [13단계] 태블릿 가로모드 전폭 확장 및 홈 화면 반값 물건 카드 오버플로우 개선
+1. **가로모드 좌우 공백 제거 및 전폭(`w-full`) 뷰포트 확장 ([App.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/App.tsx))**:
+   - `md:max-w-5xl xl:max-w-6xl` 중앙 박스 제한을 제거하고 부모 배경과 앱 프레임을 `w-full`로 확장하여 태블릿 가로모드 및 와이드 화면에서 좌우 공백 영역을 없애고 화면 전체를 꽉 차게 활용하도록 개선했습니다.
+   - 상세 화면 오버레이 역시 `fixed inset-0 w-full`로 정렬하여 가로모드 2컬럼 레이아웃의 몰입감을 극대화했습니다.
+2. **반값 물건 카드 flexbox 오버플로우 방어 및 3열 그리드 최적화 ([HomeScreen.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/pages/home/HomeScreen.tsx))**:
+   - 카드 우측 정보 칼럼에 `min-w-0`을 부여하여 flex 자식 요소의 텍스트가 카드 영역 밖으로 밀려나는 현상을 방어했습니다.
+   - 가격/기일 영역에 `flex-wrap items-baseline justify-between gap-x-1.5 gap-y-0.5`를 적용하여 좁은 카드 폭에서도 기일 텍스트가 카드 패딩 밖으로 튀어나가지 않고 유연하게 배치되도록 처리했습니다.
+   - 면적/제목/주소 텍스트의 유동적 말줄임(`truncate`)을 보강하고, 그리드 브레이크포인트를 `lg:grid-cols-3`로 최적화하여 4번 섹션(D-1 특가) 및 목록 화면과 3열 통일성을 확보했습니다.
 
 ---
 
