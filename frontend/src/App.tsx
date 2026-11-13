@@ -9,18 +9,12 @@ import { useEffect, useRef, useState } from 'react'
 import { type ShowToastFn, Toast, type ToastOptions } from './components/common/Toast'
 import { AppNavigation } from './components/layout/AppNavigation'
 import { AppHeader } from './components/layout/AppHeader'
-import { type AssetGroup, MOCK_GONG_ITEMS, type GongItem } from './data/mockAuctionData'
+import { type GongItem } from './data/mockAuctionData'
 import { AuctionDetailScreen } from './pages/auction/AuctionDetailScreen'
 import { AuctionListScreen } from './pages/auction/AuctionListScreen'
 import { HomeScreen } from './pages/home/HomeScreen'
 import { MyScreen } from './pages/my/MyScreen'
 import { WatchlistScreen } from './pages/watchlist/WatchlistScreen'
-import {
-  fetchOnbidAllAssetsList,
-  fetchOnbidCarList,
-  fetchOnbidMovableList,
-  fetchOnbidRealEstateList,
-} from './services/onbidService'
 import { useAuctionStore } from './store/useAuctionStore'
 
 export default function App() {
@@ -34,6 +28,9 @@ export default function App() {
     setSelectedItem,
     watchlistItems,
     alertItems,
+    homeItems,
+    isHomeLoading,
+    fetchHomeData,
     initStorage,
     toggleWatchlist: storeToggleWatchlist,
     toggleBidAlert: storeToggleBidAlert,
@@ -41,12 +38,6 @@ export default function App() {
     removeSelectedWatchlist: storeRemoveSelectedWatchlist,
     navigateToListWithFilters: storeNavigateToListWithFilters,
   } = useAuctionStore()
-
-  /** 현재 화면에 표출되는 온비드 공매 물건 목록 (초기값: MOCK_GONG_ITEMS -> 실데이터로 교체) */
-  const [items, setItems] = useState<GongItem[]>(MOCK_GONG_ITEMS)
-
-  /** 온비드 OpenAPI 비동기 통신 로딩 상태 (true일 때 스켈레톤 UI 표출) */
-  const [isLoading, setIsLoading] = useState<boolean>(true)
 
   /** 하트 UI 활성화 여부 판정 및 뱃지 카운트용 관심물건 ID 파생 배열 */
   const watchlist = watchlistItems.map((item) => item.id)
@@ -132,7 +123,7 @@ export default function App() {
   }
 
   // -------------------------------------------------------------------------
-  // [비동기 데이터 페칭 파이프라인 (Data Fetching Pipeline)]
+  // [초기 스토리지 복원 (Storage Initialization)]
   // -------------------------------------------------------------------------
 
   /**
@@ -141,37 +132,6 @@ export default function App() {
   useEffect(() => {
     initStorage()
   }, [initStorage])
-
-  /**
-   * 앱 최초 마운트 시 한국자산관리공사(KAMCO) 차세대 온비드 OpenAPI 실데이터를 비동기로 호출합니다.
-   * - 정상 수신: items 상태를 최신 실매물 데이터로 갱신
-   * - 장애/네트워크 에러: 서비스 중단을 방지하기 위해 로컬 Fallback 샘플 데이터를 안전하게 유지
-   */
-  useEffect(() => {
-    let isMounted = true
-
-    async function loadRealTimeOnbidData() {
-      setIsLoading(true)
-      try {
-        const onbidData = await fetchOnbidAllAssetsList(1, 20)
-        if (isMounted && onbidData && onbidData.length > 0) {
-          setItems(onbidData)
-        }
-      } catch (err) {
-        console.error('온비드 실데이터 로드 실패, Fallback 데이터 유지:', err)
-      } finally {
-        if (isMounted) {
-          setIsLoading(false)
-        }
-      }
-    }
-
-    loadRealTimeOnbidData()
-
-    return () => {
-      isMounted = false
-    }
-  }, [])
 
   // -------------------------------------------------------------------------
   // [이벤트 핸들러 (Event Handlers)]
@@ -233,50 +193,6 @@ export default function App() {
   }
 
   /**
-   * 홈 상단 지역 칩('서울', '경기' 등) 또는 3대 상품군 탭('전체', '부동산', '동산', '자동차') 클릭 시 호출됩니다.
-   * 선택된 지역 및 상품군에 알맞은 온비드 OpenAPI를 동적으로 호출하여 홈 화면 실데이터를 갱신합니다.
-   * @param region - 선택된 시/도 지역명 (예: '서울', '전남광주', '전체')
-   * @param assetGroup - 선택된 상품군 대분류 ('all' | 'real_estate' | 'movable' | 'car')
-   */
-  const handleRegionChange = async (
-    region: string,
-    assetGroup: AssetGroup = 'all'
-  ): Promise<number> => {
-    setIsLoading(true)
-    const targetRegion = region === '전체' ? undefined : region
-
-    try {
-      let onbidData: GongItem[] = []
-      if (assetGroup === 'real_estate') {
-        onbidData = await fetchOnbidRealEstateList({
-          region: targetRegion,
-          pageNo: 1,
-          numOfRows: 20,
-        })
-      } else if (assetGroup === 'movable') {
-        onbidData = await fetchOnbidMovableList(1, 20, targetRegion)
-      } else if (assetGroup === 'car') {
-        onbidData = await fetchOnbidCarList(1, 20, targetRegion)
-      } else {
-        onbidData = await fetchOnbidAllAssetsList(1, 20, targetRegion)
-      }
-
-      if (onbidData && onbidData.length > 0) {
-        setItems(onbidData)
-        return onbidData.length
-      } else {
-        setItems([])
-        return 0
-      }
-    } catch (err) {
-      console.error('홈 필터별 온비드 실데이터 로드 실패:', err)
-      return 0
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  /**
    * 홈 화면에서 카테고리 클릭, 검색창 엔터, '더보기' 클릭 시
    * 전역 스토어 필터를 갱신하고 공매 목록 화면(`AuctionListScreen`)으로 화면을 전환합니다.
    * @param cat - 선택된 카테고리 코드 (생략 시 기본 'all')
@@ -316,7 +232,7 @@ export default function App() {
       return
     }
 
-    const urgentMarketCount = items.filter((item) => item.dDay <= 3).length
+    const urgentMarketCount = homeItems.filter((item) => item.dDay <= 3).length
     if (alertItems.length > 0 && urgentMarketCount === 0) {
       showToast(
         `기일 알림 설정 ${alertItems.length}건 · 현재 3일 이내 마감 임박 물건은 없습니다.`,
@@ -363,23 +279,19 @@ export default function App() {
 
           {/* 메인 탭 화면 본체 (탭 전환 시 마운트/언마운트) */}
           <main className="flex-1 md:pb-8">
-            {/* 1. 홈 탭 화면 */}
+            {/* 1. 홈 탭 화면 (자체 스토어 바인딩) */}
             {activeTab === 'home' && (
               <HomeScreen
-                items={items}
-                isLoading={isLoading}
                 watchlist={watchlist}
                 onToggleWatchlist={toggleWatchlist}
                 onSelectItem={(item) => setSelectedItem(item)}
                 onNavigateToList={handleNavigateToList}
-                onRegionChange={handleRegionChange}
               />
             )}
 
-            {/* 2. 공매 전체 목록 탭 화면 */}
+            {/* 2. 공매 전체 목록 탭 화면 (자체 스토어 바인딩) */}
             {activeTab === 'list' && (
               <AuctionListScreen
-                items={items}
                 watchlist={watchlist}
                 onToggleWatchlist={toggleWatchlist}
                 onSelectItem={(item) => setSelectedItem(item)}
@@ -404,9 +316,9 @@ export default function App() {
             {/* 4. 마이페이지 탭 화면 */}
             {activeTab === 'my' && (
               <MyScreen
-                isApiSyncing={isLoading}
-                syncedItemCount={items.length}
-                onRefreshApiData={() => handleRegionChange('전체', 'all')}
+                isApiSyncing={isHomeLoading}
+                syncedItemCount={homeItems.length}
+                onRefreshApiData={() => fetchHomeData('전체', 'all')}
                 onShowToast={showToast}
               />
             )}

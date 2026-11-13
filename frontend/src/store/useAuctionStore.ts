@@ -17,8 +17,15 @@ import type { AppTab } from '../components/layout/AppNavigation'
 import {
   type AssetGroup,
   type GongItem,
+  MOCK_GONG_ITEMS,
   resolveAssetGroup,
 } from '../data/mockAuctionData'
+import {
+  fetchOnbidAllAssetsList,
+  fetchOnbidCarList,
+  fetchOnbidMovableList,
+  fetchOnbidRealEstateList,
+} from '../services/onbidService'
 import {
   loadWatchlistItems,
   saveWatchlistItems,
@@ -28,7 +35,24 @@ import {
 } from '../services/storageService'
 
 /**
- * 전역 필터 및 검색 파라미터 인터페이스
+ * 홈 화면 전용 독립 상태 인터페이스
+ * - 공매 목록 화면(AuctionListScreen)과 독립적으로 동작하여 상호 필터 간섭을 방지합니다.
+ */
+export interface HomeState {
+  /** 홈 화면에 표출되는 온비드 공매 물건 목록 */
+  homeItems: GongItem[]
+  /** 홈 화면 온비드 API 비동기 통신 로딩 상태 */
+  isHomeLoading: boolean
+  /** 홈 화면에서 선택된 시/도 지역 (기본값: '전체') */
+  homeRegion: string
+  /** 홈 화면에서 선택된 1차 상품군 (기본값: 'all') */
+  homeAssetGroup: AssetGroup
+  /** 홈 화면 상단 검색바 입력 키워드 */
+  homeSearchKeyword: string
+}
+
+/**
+ * 전역 필터 및 검색 파라미터 인터페이스 (공매 목록 화면 전용)
  */
 export interface FilterState {
   /** 1차 상품군 대분류 ('all' | 'real_estate' | 'movable' | 'car') */
@@ -76,8 +100,18 @@ export interface WatchlistAlertState {
 /**
  * 전체 스토어 상태 및 액션 인터페이스
  */
-export interface AuctionStore extends FilterState, NavigationState, WatchlistAlertState {
-  // --- [필터 및 검색 액션] ---
+export interface AuctionStore
+  extends HomeState,
+    FilterState,
+    NavigationState,
+    WatchlistAlertState {
+  // --- [홈 화면 전용 독립 액션] ---
+  setHomeRegion: (region: string) => void
+  setHomeAssetGroup: (group: AssetGroup) => void
+  setHomeSearchKeyword: (keyword: string) => void
+  fetchHomeData: (region?: string, assetGroup?: AssetGroup) => Promise<number>
+
+  // --- [공매 목록 화면 필터 및 검색 액션] ---
   setAssetGroup: (group: AssetGroup) => void
   setSubCategory: (sub: string) => void
   setSelectedRegion: (region: string) => void
@@ -116,6 +150,14 @@ export const useAuctionStore = create<AuctionStore>((set, get) => ({
   // ---------------------------------------------------------------------------
   // [초기 상태 정의 (Initial State)]
   // ---------------------------------------------------------------------------
+  // [1] 홈 화면 전용 독립 상태
+  homeItems: MOCK_GONG_ITEMS,
+  isHomeLoading: false,
+  homeRegion: '전체',
+  homeAssetGroup: 'all',
+  homeSearchKeyword: '',
+
+  // [2] 공매 목록 화면 전용 필터 상태
   assetGroup: 'all',
   subCategory: 'all',
   selectedRegion: '전체',
@@ -125,16 +167,69 @@ export const useAuctionStore = create<AuctionStore>((set, get) => ({
   committedQuery: '',
   searchNonce: 0,
 
+  // [3] 네비게이션 및 상세 오버레이 상태
   activeTab: 'home',
   selectedItem: null,
 
+  // [4] 관심물건 및 기일알림 상태
   watchlistItems: [],
   isWatchlistInitialized: false,
   alertItems: [],
   isAlertInitialized: false,
 
   // ---------------------------------------------------------------------------
-  // [필터 및 검색 액션 (Filter Actions)]
+  // [홈 화면 전용 독립 액션 (Home Actions)]
+  // ---------------------------------------------------------------------------
+  setHomeRegion: (homeRegion) => set({ homeRegion }),
+
+  setHomeAssetGroup: (homeAssetGroup) => set({ homeAssetGroup }),
+
+  setHomeSearchKeyword: (homeSearchKeyword) => set({ homeSearchKeyword }),
+
+  fetchHomeData: async (regionParam, assetGroupParam) => {
+    const region = regionParam ?? get().homeRegion
+    const assetGroup = assetGroupParam ?? get().homeAssetGroup
+
+    set({
+      homeRegion: region,
+      homeAssetGroup: assetGroup,
+      isHomeLoading: true,
+    })
+
+    const targetRegion = region === '전체' ? undefined : region
+
+    try {
+      let onbidData: GongItem[] = []
+      if (assetGroup === 'real_estate') {
+        onbidData = await fetchOnbidRealEstateList({
+          region: targetRegion,
+          pageNo: 1,
+          numOfRows: 20,
+        })
+      } else if (assetGroup === 'movable') {
+        onbidData = await fetchOnbidMovableList(1, 20, targetRegion)
+      } else if (assetGroup === 'car') {
+        onbidData = await fetchOnbidCarList(1, 20, targetRegion)
+      } else {
+        onbidData = await fetchOnbidAllAssetsList(1, 20, targetRegion)
+      }
+
+      if (onbidData && onbidData.length > 0) {
+        set({ homeItems: onbidData, isHomeLoading: false })
+        return onbidData.length
+      } else {
+        set({ homeItems: [], isHomeLoading: false })
+        return 0
+      }
+    } catch (err) {
+      console.error('[useAuctionStore] 홈 온비드 실데이터 로드 실패:', err)
+      set({ isHomeLoading: false })
+      return 0
+    }
+  },
+
+  // ---------------------------------------------------------------------------
+  // [공매 목록 화면 전용 필터 및 검색 액션 (List Filter Actions)]
   // ---------------------------------------------------------------------------
   setAssetGroup: (group) =>
     set({

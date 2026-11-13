@@ -11,13 +11,14 @@
  * 6. 대한민국 공공데이터포털(KAMCO 온비드) 공식 연계 신뢰 배너
  */
 
-import { useState } from 'react'
+import { useEffect } from 'react'
 import {
   type AssetGroup,
   GONG_ASSET_GROUPS,
   GONG_CATEGORIES,
   GONG_REGIONS,
   type GongItem,
+  MOCK_GONG_ITEMS,
   formatWon,
   getCategoryFallbackImage,
   isRegionMatch,
@@ -27,11 +28,9 @@ import { useAuctionStore } from '../../store/useAuctionStore'
 
 /**
  * HomeScreen 컴포넌트의 속성(Props) 인터페이스
+ * - 데이터 및 홈 필터 상태는 Zustand 전역 스토어(HomeState)에서 독립 관리됩니다.
  */
 interface HomeScreenProps {
-  /** 온비드 API로부터 수신한 공매 물건 목록 데이터 */
-  items: GongItem[]
-
   /** 사용자가 관심 등록(찜)한 물건 ID 배열 */
   watchlist?: string[]
 
@@ -43,26 +42,27 @@ interface HomeScreenProps {
 
   /** 카테고리, 지역, 검색어 필터를 적용하여 공매 목록 탭으로 이동하는 콜백 */
   onNavigateToList?: (category?: string, region?: string, keyword?: string) => void
-
-  /** 상단 시/도 지역 칩 또는 3대 상품군 탭 선택 시 온비드 OpenAPI 실데이터를 동적 조회하도록 요청하는 콜백 */
-  onRegionChange?: (region: string, assetGroup?: AssetGroup) => void
-
-  /** 온비드 OpenAPI 실데이터 로딩 상태 플래그 (true일 때 Shimmer 스켈레톤 표출) */
-  isLoading?: boolean
 }
 
 export function HomeScreen({
-  items,
   watchlist: propWatchlist,
   onToggleWatchlist: propOnToggleWatchlist,
   onSelectItem: propOnSelectItem,
   onNavigateToList,
-  onRegionChange,
-  isLoading = false,
 }: HomeScreenProps) {
   // -------------------------------------------------------------------------
   // [전역 스토어 연동 (Zustand State & Actions)]
   // -------------------------------------------------------------------------
+  // [1] 홈 화면 전용 독립 상태 및 액션
+  const homeItems = useAuctionStore((state) => state.homeItems)
+  const isHomeLoading = useAuctionStore((state) => state.isHomeLoading)
+  const homeRegion = useAuctionStore((state) => state.homeRegion)
+  const homeAssetGroup = useAuctionStore((state) => state.homeAssetGroup)
+  const homeSearchKeyword = useAuctionStore((state) => state.homeSearchKeyword)
+  const setHomeSearchKeyword = useAuctionStore((state) => state.setHomeSearchKeyword)
+  const fetchHomeData = useAuctionStore((state) => state.fetchHomeData)
+
+  // [2] 네비게이션 및 관심물건
   const navigateToListWithFilters = useAuctionStore((state) => state.navigateToListWithFilters)
   const storeSelectedItem = useAuctionStore((state) => state.setSelectedItem)
   const storeToggleWatchlist = useAuctionStore((state) => state.toggleWatchlist)
@@ -71,6 +71,16 @@ export function HomeScreen({
   const watchlist = propWatchlist ?? storeWatchlistItems.map((item) => item.id)
   const onSelectItem = propOnSelectItem ?? storeSelectedItem
   const onToggleWatchlist = propOnToggleWatchlist ?? storeToggleWatchlist
+
+  /**
+   * 앱 최초 마운트 시 온비드 OpenAPI 실데이터를 비동기로 호출합니다.
+   * - 이미 데이터가 로드된 상태로 다른 탭에 다녀왔다면 재호출 없이 기존 데이터를 즉시 0ms 표출합니다.
+   */
+  useEffect(() => {
+    if (homeItems.length === 0 || homeItems === MOCK_GONG_ITEMS) {
+      fetchHomeData()
+    }
+  }, [homeItems, fetchHomeData])
 
   /**
    * 목록 화면으로의 화면 전환 통합 핸들러
@@ -85,18 +95,6 @@ export function HomeScreen({
     navigateToListWithFilters(params)
     onNavigateToList?.(params.subCategory, params.region, params.keyword)
   }
-  // -------------------------------------------------------------------------
-  // [로컬 상태 (Local State)]
-  // -------------------------------------------------------------------------
-
-  /** 현재 선택된 시/도 지역 칩 ('전체', '서울', '경기', '전남광주' 등) */
-  const [selectedRegion, setSelectedRegion] = useState('전체')
-
-  /** 현재 선택된 1차 3대 자산 상품군 대분류 ('all' | 'real_estate' | 'movable' | 'car') */
-  const [selectedAssetGroup, setSelectedAssetGroup] = useState<AssetGroup>('all')
-
-  /** 홈 화면 상단 검색 인풋에 입력된 키워드 */
-  const [searchKeyword, setSearchKeyword] = useState('')
 
   // -------------------------------------------------------------------------
   // [이벤트 처리 및 데이터 필터링/정렬 로직]
@@ -104,35 +102,30 @@ export function HomeScreen({
 
   /**
    * 상단 시/도 지역 칩 클릭 핸들러
-   * 1. 로컬 selectedRegion 상태를 업데이트합니다.
-   * 2. 현재 선택된 상품군(selectedAssetGroup)과 함께 OpenAPI 동적 페칭을 요청합니다.
+   * - 스토어의 homeRegion을 갱신하고 선택된 상품군(homeAssetGroup)과 함께 OpenAPI를 동적 페칭합니다.
    */
   const handleRegionClick = (region: string) => {
-    setSelectedRegion(region)
-    onRegionChange?.(region, selectedAssetGroup)
+    fetchHomeData(region, homeAssetGroup)
   }
 
   /**
    * 3대 상품군 대분류 탭('전체' | '부동산' | '동산' | '자동차') 클릭 핸들러
-   * 1. 로컬 selectedAssetGroup 상태를 업데이트합니다.
-   * 2. 선택된 지역과 상품군에 맞춰 해당 OpenAPI 데이터를 실시간으로 재조회합니다.
+   * - 스토어의 homeAssetGroup을 갱신하고 현재 선택된 지역(homeRegion)과 함께 OpenAPI를 재조회합니다.
    */
   const handleAssetGroupClick = (group: AssetGroup) => {
-    setSelectedAssetGroup(group)
-    onRegionChange?.(selectedRegion, group)
+    fetchHomeData(homeRegion, group)
   }
 
   /**
    * [엄격한 지역 & 상품군 필터링 원칙]
-   * - 선택된 시/도 지역(isRegionMatch)과 1차 상품군(selectedAssetGroup)에 모두 부합하는 물건만 추립니다.
-   * - API 응답 수신 전이나 데이터가 0건일 때도 타 상품군/타 지역 데이터를 섞어 노출하지 않습니다.
+   * - 선택된 시/도 지역(isRegionMatch)과 1차 상품군(homeAssetGroup)에 모두 부합하는 물건만 추립니다.
    */
-  const activeItems = items.filter((item) => {
-    if (!isRegionMatch(item.address, selectedRegion)) return false
-    if (selectedAssetGroup === 'movable' && item.category !== 'goods') return false
-    if (selectedAssetGroup === 'car' && item.category !== 'car') return false
+  const activeItems = homeItems.filter((item) => {
+    if (!isRegionMatch(item.address, homeRegion)) return false
+    if (homeAssetGroup === 'movable' && item.category !== 'goods') return false
+    if (homeAssetGroup === 'car' && item.category !== 'car') return false
     if (
-      selectedAssetGroup === 'real_estate' &&
+      homeAssetGroup === 'real_estate' &&
       !['apt', 'commercial', 'land', 'factory'].includes(item.category)
     ) {
       return false
@@ -142,12 +135,12 @@ export function HomeScreen({
 
   /** 현재 선택된 상품군 라벨 ('전체' | '부동산' | '동산' | '자동차') */
   const activeGroupLabel =
-    GONG_ASSET_GROUPS.find((g) => g.id === selectedAssetGroup)?.label || '전체'
+    GONG_ASSET_GROUPS.find((g) => g.id === homeAssetGroup)?.label || '전체'
 
   /** 현재 활성 필터 안내 라벨 조합 (예: '서울 · 부동산', '동산') */
   const filterSummaryLabel = [
-    selectedRegion !== '전체' ? selectedRegion : null,
-    selectedAssetGroup !== 'all' ? activeGroupLabel : null,
+    homeRegion !== '전체' ? homeRegion : null,
+    homeAssetGroup !== 'all' ? activeGroupLabel : null,
   ]
     .filter(Boolean)
     .join(' · ')
@@ -200,16 +193,16 @@ export function HomeScreen({
           </span>
           <input
             type="text"
-            value={searchKeyword}
-            onChange={(e) => setSearchKeyword(e.target.value)}
+            value={homeSearchKeyword}
+            onChange={(e) => setHomeSearchKeyword(e.target.value)}
             onKeyDown={(e) => {
               // 엔터 키 입력 시(한글 조합 완료 후) 현재 선택된 상품군, 지역, 검색어를 함께 목록 화면으로 전달
               if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
                 handleNavigateToList({
-                  assetGroup: selectedAssetGroup,
+                  assetGroup: homeAssetGroup,
                   subCategory: 'all',
-                  region: selectedRegion === '전체' ? undefined : selectedRegion,
-                  keyword: searchKeyword.trim(),
+                  region: homeRegion === '전체' ? undefined : homeRegion,
+                  keyword: homeSearchKeyword.trim(),
                 })
               }
             }}
@@ -220,10 +213,10 @@ export function HomeScreen({
             type="button"
             onClick={() =>
               handleNavigateToList({
-                assetGroup: selectedAssetGroup,
+                assetGroup: homeAssetGroup,
                 subCategory: 'all',
-                region: selectedRegion === '전체' ? undefined : selectedRegion,
-                keyword: searchKeyword.trim(),
+                region: homeRegion === '전체' ? undefined : homeRegion,
+                keyword: homeSearchKeyword.trim(),
               })
             }
             className="absolute right-2 px-3 py-1.5 rounded-xl bg-[#0051d5] hover:bg-[#003ea8] text-white text-xs font-bold transition-colors cursor-pointer"
@@ -236,7 +229,7 @@ export function HomeScreen({
         {/* 시/도 지역 칩 가로 스크롤 (태블릿 이상 줄바꿈 지원) */}
         <div className="flex gap-2 overflow-x-auto no-scrollbar pt-3 pb-1 -mx-4 px-4 md:mx-0 md:px-0 md:flex-wrap">
           {GONG_REGIONS.map((region) => {
-            const isSelected = selectedRegion === region
+            const isSelected = homeRegion === region
             return (
               <button
                 key={region}
@@ -254,9 +247,9 @@ export function HomeScreen({
         </div>
 
         {/* 지역 및 상품군 필터링 매칭 상태 피드백 바 */}
-        {(selectedRegion !== '전체' || selectedAssetGroup !== 'all') && (
+        {(homeRegion !== '전체' || homeAssetGroup !== 'all') && (
           <div className="mt-2.5 flex items-center justify-between text-xs px-3.5 py-2 rounded-xl bg-white border border-[#e5eeff] shadow-2xs">
-            {isLoading ? (
+            {isHomeLoading ? (
               <span className="text-[#0051d5] font-semibold flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-[#0051d5] animate-ping"></span>
                 '{filterSummaryLabel}' 온비드 실시간 매물 조회 중...
@@ -276,9 +269,9 @@ export function HomeScreen({
               type="button"
               onClick={() =>
                 handleNavigateToList({
-                  assetGroup: selectedAssetGroup,
+                  assetGroup: homeAssetGroup,
                   subCategory: 'all',
-                  region: selectedRegion === '전체' ? undefined : selectedRegion,
+                  region: homeRegion === '전체' ? undefined : homeRegion,
                 })
               }
               className="text-[#002046] font-bold hover:text-[#0051d5] transition-colors flex items-center text-[11px] cursor-pointer shrink-0 ml-2"
@@ -296,7 +289,7 @@ export function HomeScreen({
         {/* 1차 상품군 대분류 세그먼트 탭 (목록 화면과 통일된 3대 자산군 구조) */}
         <div className="grid grid-cols-4 gap-1.5 p-1 bg-[#eff4ff] rounded-2xl border border-[#dce9ff]">
           {GONG_ASSET_GROUPS.map((group) => {
-            const isActive = selectedAssetGroup === group.id
+            const isActive = homeAssetGroup === group.id
             return (
               <button
                 key={group.id}
@@ -315,7 +308,7 @@ export function HomeScreen({
         </div>
 
         {/* 2차 선택 상품군별 세부 카테고리 퀵 내비게이션 */}
-        {selectedAssetGroup === 'all' && (
+        {homeAssetGroup === 'all' && (
           <div className="grid grid-cols-4 md:grid-cols-8 gap-2.5">
             {GONG_CATEGORIES.map((cat) => (
               <button
@@ -325,7 +318,7 @@ export function HomeScreen({
                   handleNavigateToList({
                     assetGroup: cat.assetGroup === 'theme' ? 'all' : cat.assetGroup,
                     subCategory: cat.id,
-                    region: selectedRegion === '전체' ? undefined : selectedRegion,
+                    region: homeRegion === '전체' ? undefined : homeRegion,
                   })
                 }
                 className="bg-white rounded-2xl p-2.5 flex flex-col items-center justify-center border border-[#e5eeff] shadow-2xs hover:border-[#0051d5] active:scale-95 transition-all group cursor-pointer"
@@ -341,7 +334,7 @@ export function HomeScreen({
           </div>
         )}
 
-        {selectedAssetGroup === 'real_estate' && (
+        {homeAssetGroup === 'real_estate' && (
           <div className="flex flex-col gap-2">
             <div className="grid grid-cols-4 gap-2.5">
               {realEstateSubCategories.map((cat) => (
@@ -352,7 +345,7 @@ export function HomeScreen({
                     handleNavigateToList({
                       assetGroup: 'real_estate',
                       subCategory: cat.id,
-                      region: selectedRegion === '전체' ? undefined : selectedRegion,
+                      region: homeRegion === '전체' ? undefined : homeRegion,
                     })
                   }
                   className="bg-white rounded-2xl p-2.5 flex flex-col items-center justify-center border border-[#e5eeff] shadow-2xs hover:border-[#0051d5] active:scale-95 transition-all group cursor-pointer"
@@ -373,7 +366,7 @@ export function HomeScreen({
                   handleNavigateToList({
                     assetGroup: 'real_estate',
                     subCategory: 'all',
-                    region: selectedRegion === '전체' ? undefined : selectedRegion,
+                    region: homeRegion === '전체' ? undefined : homeRegion,
                   })
                 }
                 className="bg-white rounded-xl py-2 px-3 border border-[#e5eeff] text-[11px] font-bold text-[#0051d5] hover:bg-[#eff4ff] transition-colors flex items-center justify-center gap-1 cursor-pointer"
@@ -389,7 +382,7 @@ export function HomeScreen({
                     handleNavigateToList({
                       assetGroup: 'real_estate',
                       subCategory: cat.id,
-                      region: selectedRegion === '전체' ? undefined : selectedRegion,
+                      region: homeRegion === '전체' ? undefined : homeRegion,
                     })
                   }
                   className="bg-white rounded-xl py-2 px-3 border border-[#e5eeff] text-[11px] font-semibold text-[#0b1c30] hover:border-[#0051d5] transition-colors flex items-center justify-center gap-1 cursor-pointer"
@@ -404,15 +397,15 @@ export function HomeScreen({
           </div>
         )}
 
-        {(selectedAssetGroup === 'movable' || selectedAssetGroup === 'car') && (
+        {(homeAssetGroup === 'movable' || homeAssetGroup === 'car') && (
           <div className="flex flex-col gap-2">
             <button
               type="button"
               onClick={() =>
                 handleNavigateToList({
-                  assetGroup: selectedAssetGroup,
+                  assetGroup: homeAssetGroup,
                   subCategory: 'all',
-                  region: selectedRegion === '전체' ? undefined : selectedRegion,
+                  region: homeRegion === '전체' ? undefined : homeRegion,
                 })
               }
               className="bg-white rounded-2xl p-3.5 border border-[#e5eeff] shadow-2xs hover:border-[#0051d5] active:scale-[0.99] transition-all flex items-center justify-between cursor-pointer group"
@@ -420,17 +413,17 @@ export function HomeScreen({
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-[#eff4ff] flex items-center justify-center text-[#0051d5] group-hover:bg-[#0051d5] group-hover:text-white transition-colors">
                   <span className="material-symbols-outlined text-[22px]">
-                    {selectedAssetGroup === 'movable' ? 'inventory_2' : 'directions_car'}
+                    {homeAssetGroup === 'movable' ? 'inventory_2' : 'directions_car'}
                   </span>
                 </div>
                 <div className="text-left">
                   <p className="text-xs font-bold text-[#002046]">
-                    {selectedAssetGroup === 'movable'
+                    {homeAssetGroup === 'movable'
                       ? '기계·임산물·물품 동산 공매 전체보기'
                       : '승용·화물·특수차량 공매 전체보기'}
                   </p>
                   <p className="text-[11px] text-[#74777f]">
-                    {selectedAssetGroup === 'movable'
+                    {homeAssetGroup === 'movable'
                       ? '온비드 동산 전용 OpenAPI 실시간 매물 전체 탐색'
                       : '온비드 차량 전용 OpenAPI 실시간 매물 전체 탐색'}
                   </p>
@@ -447,9 +440,9 @@ export function HomeScreen({
                   type="button"
                   onClick={() =>
                     handleNavigateToList({
-                      assetGroup: selectedAssetGroup,
+                      assetGroup: homeAssetGroup,
                       subCategory: cat.id,
-                      region: selectedRegion === '전체' ? undefined : selectedRegion,
+                      region: homeRegion === '전체' ? undefined : homeRegion,
                     })
                   }
                   className="bg-white rounded-xl py-2 px-3 border border-[#e5eeff] text-[11px] font-semibold text-[#0b1c30] hover:border-[#0051d5] transition-colors flex items-center justify-center gap-1 cursor-pointer"
@@ -503,9 +496,9 @@ export function HomeScreen({
             type="button"
             onClick={() =>
               handleNavigateToList({
-                assetGroup: selectedAssetGroup,
+                assetGroup: homeAssetGroup,
                 subCategory: 'all',
-                region: selectedRegion === '전체' ? undefined : selectedRegion,
+                region: homeRegion === '전체' ? undefined : homeRegion,
               })
             }
             className="text-xs text-[#0051d5] font-semibold hover:underline cursor-pointer"
@@ -516,7 +509,7 @@ export function HomeScreen({
 
         {/* 가로 카드 스크롤 (태블릿 lg 이상 3열 쇼케이스 그리드) */}
         <div className="flex gap-3 overflow-x-auto no-scrollbar -mx-4 px-4 pb-2 lg:mx-0 lg:px-0 lg:pb-0 lg:grid lg:grid-cols-3 lg:overflow-visible">
-          {isLoading ? (
+          {isHomeLoading ? (
             // 비동기 통신 로딩 중: 카드 스켈레톤 3개 표출
             <CardSkeleton count={3} />
           ) : urgentItems.length === 0 ? (
@@ -650,7 +643,7 @@ export function HomeScreen({
 
         {/* 모바일 1열 / 폴더블 sm 2열 / 태블릿 lg 3열 그리드 (가로모드 전폭 최적화) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-          {isLoading ? (
+          {isHomeLoading ? (
             // 로딩 중: 세로 리스트 스켈레톤 3개 표출
             <ListSkeleton count={3} />
           ) : halfPriceItems.length === 0 ? (

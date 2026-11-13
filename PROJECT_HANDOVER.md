@@ -1,6 +1,6 @@
 # 📋 [공매이지] 프로젝트 인수인계 및 에이전트 작업 지침서 (PROJECT_HANDOVER.md)
 
-> **문서 버전**: v1.4.0  
+> **문서 버전**: v1.4.1  
 > **최종 갱신일**: 2026년 11월 13일  
 > **프로젝트 경로**: `c:\dev\workspace\publicAuction`  
 > **프론트엔드 경로**: `c:\dev\workspace\publicAuction\frontend`  
@@ -238,6 +238,17 @@
    - `HomeScreen.tsx`: 2차 카테고리 칩 및 검색 실행 시 현재 선택된 1차 상품군(`selectedAssetGroup`)과 2차 세부 카테고리(`cat.id`)를 `navigateToListWithFilters` 액션에 함께 전달하도록 개편했습니다.
    - `AuctionListScreen.tsx`: 기존 `parseInitialCategoryFilter`의 하드코딩을 제거하고 스토어의 `assetGroup`과 `subCategory`를 직접 구독하도록 하여 1차 상품군('부동산')과 2차 테마('신규등록' / '반값공매')가 유실 없이 완벽하게 유지되도록 조치했습니다.
    - `App.tsx`: 최상위 컴포넌트의 중복 로컬 상태(`useState`) 및 수동 비동기 스토리지 호출 이펙트를 스토어 액션으로 이관하여 구조를 대폭 단순화했습니다.
+
+### ✅ [15단계] 화면별 독립 상태 분리 및 App.tsx의 순수 화면 Flow 전담화 완료
+1. **홈 화면 전용 독립 상태 슬라이스 구축 ([useAuctionStore.ts](file:///d:/workspace/publicAuction/frontend/src/store/useAuctionStore.ts))**:
+   - `useAuctionStore.ts`에 홈 화면 전용 상태(`homeItems`, `isHomeLoading`, `homeRegion`, `homeAssetGroup`, `homeSearchKeyword`) 및 비동기 조회 액션(`fetchHomeData`)을 구축하여 공매 목록 화면(`FilterState`)과 상태를 명확히 격리했습니다.
+   - 홈 화면에서 지역/상품군을 변경해도 목록 화면의 필터에 영향을 주지 않고, 반대로 목록 화면 필터를 변경해도 홈 화면 상태가 오염되지 않습니다.
+2. **홈 화면 UI와 데이터의 100% 일치 및 0ms 즉시 복원 ([HomeScreen.tsx](file:///d:/workspace/publicAuction/frontend/src/pages/home/HomeScreen.tsx))**:
+   - `HomeScreen.tsx`가 스토어의 홈 전용 상태를 직접 구독하도록 연동하여, 다른 탭(목록, 관심, 마이페이지)에 다녀와도 이전에 선택한 지역 칩과 상품군 탭 및 데이터가 그대로 유지됩니다.
+   - 기존 데이터를 스토어 메모리에서 즉시 렌더링하므로 불필요한 OpenAPI 재호출과 스켈레톤 깜빡임 없이 0ms 즉시 복원됩니다.
+3. **App.tsx 화면 Flow 전담화 및 AuctionListScreen 자체 완결화 ([App.tsx](file:///d:/workspace/publicAuction/frontend/src/App.tsx), [AuctionListScreen.tsx](file:///d:/workspace/publicAuction/frontend/src/pages/auction/AuctionListScreen.tsx))**:
+   - `App.tsx`에서 거대한 OpenAPI 데이터 페칭 로직(`loadRealTimeOnbidData`, `handleRegionChange` 등)을 완전히 제거하고, 순수 탭 네비게이션과 상세 화면 오버레이 등 화면 흐름(Flow) 제어만 전담하도록 대폭 슬림화했습니다.
+   - `AuctionListScreen.tsx`의 `items` prop 의존성을 선택적(optional)으로 전환하여 각 화면이 자체적으로 데이터를 관리할 수 있도록 독립성을 완성했습니다.
 
 ---
 

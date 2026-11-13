@@ -36,8 +36,8 @@ import { useAuctionStore } from '../../store/useAuctionStore'
  * AuctionListScreen 컴포넌트의 속성(Props) 인터페이스
  */
 interface AuctionListScreenProps {
-  /** 상위 App으로부터 전달받은 기본 온비드 공매 물건 목록 */
-  items: GongItem[]
+  /** 상위 App으로부터 전달받은 기본 온비드 공매 물건 목록 (선택 사항) */
+  items?: GongItem[]
 
   /** 관심 등록(찜)한 물건 ID 배열 */
   watchlist?: string[]
@@ -63,7 +63,7 @@ export function AuctionListScreen({
   watchlist: propWatchlist,
   onToggleWatchlist: propOnToggleWatchlist,
   onSelectItem: propOnSelectItem,
-}: AuctionListScreenProps) {
+}: AuctionListScreenProps = {}) {
   // -------------------------------------------------------------------------
   // [전역 스토어 상태 및 액션 연동 (Zustand Store)]
   // -------------------------------------------------------------------------
@@ -111,7 +111,7 @@ export function AuctionListScreen({
   // -------------------------------------------------------------------------
 
   /** 온비드 API로부터 동적으로 수신된 물건 목록 상태 */
-  const [listItems, setListItems] = useState<GongItem[]>(items)
+  const [listItems, setListItems] = useState<GongItem[]>(items ?? [])
 
   /** 목록 화면 자체의 비동기 OpenAPI 초기/필터 로딩 상태 */
   const [isLoading, setIsLoading] = useState<boolean>(false)
@@ -222,7 +222,7 @@ export function AuctionListScreen({
     return () => {
       isMounted = false
     }
-  }, [assetGroup, selectedRegion, committedQuery, searchNonce])
+  }, [, selectedRegion, committedQuery, searchNonce])
 
   /**
    * 하단 '공매 물건 더보기' 클릭 시 다음 페이지(pageNo + 1) 데이터를 누적 결합합니다.
@@ -410,9 +410,8 @@ export function AuctionListScreen({
                 }
               }}
               placeholder="공매 물건, 지역, 관리번호 입력 후 Enter"
-              className={`w-full h-11 bg-white rounded-2xl pl-10 text-xs text-[#0b1c30] placeholder-[#74777f] border border-[#c4c6cf]/60 focus:outline-none focus:ring-2 focus:ring-[#0051d5] shadow-xs ${
-                keyword ? 'pr-24' : 'pr-16'
-              }`}
+              className={`w-full h-11 bg-white rounded-2xl pl-10 text-xs text-[#0b1c30] placeholder-[#74777f] border border-[#c4c6cf]/60 focus:outline-none focus:ring-2 focus:ring-[#0051d5] shadow-xs ${keyword ? 'pr-24' : 'pr-16'
+                }`}
             />
             <div className="absolute right-1.5 flex items-center gap-1">
               {keyword && (
@@ -451,11 +450,10 @@ export function AuctionListScreen({
                 key={group.id}
                 type="button"
                 onClick={() => handleSelectAssetGroup(group.id)}
-                className={`py-2 px-1 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer ${
-                  isActive
+                className={`py-2 px-1 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer ${isActive
                     ? 'bg-[#002046] text-white shadow-xs'
                     : 'text-[#44474e] hover:text-[#002046] hover:bg-white/60'
-                }`}
+                  }`}
               >
                 <span className="material-symbols-outlined text-[15px]">{group.icon}</span>
                 <span>{group.label}</span>
@@ -470,11 +468,10 @@ export function AuctionListScreen({
         <button
           type="button"
           onClick={() => setSubCategory('all')}
-          className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-            subCategory === 'all'
+          className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${subCategory === 'all'
               ? 'bg-[#0051d5] text-white shadow-xs'
               : 'bg-white border border-[#c4c6cf]/50 text-[#44474e] hover:bg-[#e5eeff]'
-          }`}
+            }`}
         >
           {assetGroup === 'all'
             ? '전체 보기'
@@ -491,11 +488,10 @@ export function AuctionListScreen({
               key={cat.id}
               type="button"
               onClick={() => handleSelectSubCategory(cat.id)}
-              className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-                isSelected
+              className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${isSelected
                   ? 'bg-[#0051d5] text-white shadow-xs'
                   : 'bg-white border border-[#c4c6cf]/50 text-[#44474e] hover:bg-[#e5eeff]'
-              }`}
+                }`}
             >
               {cat.label}
             </button>
@@ -524,11 +520,10 @@ export function AuctionListScreen({
             <button
               key={t}
               onClick={() => setSelectedType(t)}
-              className={`px-2 py-0.5 rounded-md text-[11px] font-semibold whitespace-nowrap transition-all cursor-pointer ${
-                selectedType === t
+              className={`px-2 py-0.5 rounded-md text-[11px] font-semibold whitespace-nowrap transition-all cursor-pointer ${selectedType === t
                   ? 'bg-[#002046] text-white shadow-2xs'
                   : 'text-[#74777f] hover:text-[#0b1c30] hover:bg-[#e5eeff]/50'
-              }`}
+                }`}
             >
               {t === 'all' ? '구분전체' : t}
             </button>
@@ -630,116 +625,114 @@ export function AuctionListScreen({
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {sorted.map((item, idx) => {
-            const isSaved = watchlist.includes(item.id)
-            const fallbackImg = getCategoryFallbackImage(item.category)
-            const dDayLabel =
-              item.dDay <= 0
-                ? '오늘 마감'
-                : item.dDay > 365
-                  ? '상시 매각'
-                  : `D-${item.dDay}`
+              const isSaved = watchlist.includes(item.id)
+              const fallbackImg = getCategoryFallbackImage(item.category)
+              const dDayLabel =
+                item.dDay <= 0
+                  ? '오늘 마감'
+                  : item.dDay > 365
+                    ? '상시 매각'
+                    : `D-${item.dDay}`
 
-            return (
-              <article
-                key={`${item.id}-${idx}`}
-                onClick={() => onSelectItem(item)}
-                className="bg-white rounded-2xl border border-[#e5eeff] overflow-hidden shadow-2xs hover:shadow-sm hover:border-[#0051d5]/40 transition-all active:scale-[0.99] cursor-pointer flex flex-col group"
-              >
-                {/* 썸네일 영역 */}
-                <div className="relative aspect-16/9 bg-slate-100 overflow-hidden">
-                  <img
-                    src={item.imageUrl || fallbackImg}
-                    alt={item.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    loading="lazy"
-                    onError={(e) => {
-                      e.currentTarget.src = fallbackImg
-                    }}
-                  />
-                  {/* D-Day 및 공매 유형 뱃지 */}
-                  <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
-                    <span
-                      className={`px-2 py-0.5 rounded-full text-xs font-bold text-white shadow-xs ${
-                        item.dDay <= 3 ? 'bg-[#ba1a1a]' : 'bg-[#002046]/85'
-                      }`}
+              return (
+                <article
+                  key={`${item.id}-${idx}`}
+                  onClick={() => onSelectItem(item)}
+                  className="bg-white rounded-2xl border border-[#e5eeff] overflow-hidden shadow-2xs hover:shadow-sm hover:border-[#0051d5]/40 transition-all active:scale-[0.99] cursor-pointer flex flex-col group"
+                >
+                  {/* 썸네일 영역 */}
+                  <div className="relative aspect-16/9 bg-slate-100 overflow-hidden">
+                    <img
+                      src={item.imageUrl || fallbackImg}
+                      alt={item.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      loading="lazy"
+                      onError={(e) => {
+                        e.currentTarget.src = fallbackImg
+                      }}
+                    />
+                    {/* D-Day 및 공매 유형 뱃지 */}
+                    <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-xs font-bold text-white shadow-xs ${item.dDay <= 3 ? 'bg-[#ba1a1a]' : 'bg-[#002046]/85'
+                          }`}
+                      >
+                        {dDayLabel}
+                      </span>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-black/60 text-white backdrop-blur-xs">
+                        {item.auctionType}
+                      </span>
+                    </div>
+                    {/* 관심등록(하트) 버튼 */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onToggleWatchlist(item)
+                      }}
+                      className="absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-white/80 backdrop-blur-xs flex items-center justify-center text-[#44474e] hover:text-[#ba1a1a] transition-colors"
+                      aria-label="관심물건 등록 토글"
                     >
-                      {dDayLabel}
-                    </span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-black/60 text-white backdrop-blur-xs">
-                      {item.auctionType}
-                    </span>
-                  </div>
-                  {/* 관심등록(하트) 버튼 */}
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      onToggleWatchlist(item)
-                    }}
-                    className="absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-white/80 backdrop-blur-xs flex items-center justify-center text-[#44474e] hover:text-[#ba1a1a] transition-colors"
-                    aria-label="관심물건 등록 토글"
-                  >
-                    <span
-                      className={`material-symbols-outlined text-[18px] ${
-                        isSaved ? 'text-[#ba1a1a] fill-1' : ''
-                      }`}
-                    >
-                      favorite
-                    </span>
-                  </button>
-                  {/* 면적/제원 정보 태그 */}
-                  <div className="absolute bottom-2 left-2.5">
-                    <span className="text-[10px] font-semibold bg-white/90 text-[#0b1c30] px-2 py-0.5 rounded-md backdrop-blur-xs">
-                      {item.area}
-                    </span>
-                  </div>
-                </div>
-
-                {/* 상세 텍스트 및 가격 영역 */}
-                <div className="p-4 flex flex-col justify-between">
-                  <div>
-                    <h4 className="text-base font-bold text-[#0b1c30] line-clamp-1 group-hover:text-[#0051d5] transition-colors">
-                      {item.title}
-                    </h4>
-                    <p className="text-xs text-[#74777f] line-clamp-1 mt-0.5">{item.address}</p>
+                      <span
+                        className={`material-symbols-outlined text-[18px] ${isSaved ? 'text-[#ba1a1a] fill-1' : ''
+                          }`}
+                      >
+                        favorite
+                      </span>
+                    </button>
+                    {/* 면적/제원 정보 태그 */}
+                    <div className="absolute bottom-2 left-2.5">
+                      <span className="text-[10px] font-semibold bg-white/90 text-[#0b1c30] px-2 py-0.5 rounded-md backdrop-blur-xs">
+                        {item.area}
+                      </span>
+                    </div>
                   </div>
 
-                  <div className="pt-3 mt-3 border-t border-[#f8f9ff] flex items-baseline justify-between">
+                  {/* 상세 텍스트 및 가격 영역 */}
+                  <div className="p-4 flex flex-col justify-between">
                     <div>
-                      <div className="flex items-baseline gap-1.5">
-                        {item.discountRate > 0 && (
-                          <span className="text-sm font-extrabold text-[#059669]">
-                            {item.discountRate}% 할인
+                      <h4 className="text-base font-bold text-[#0b1c30] line-clamp-1 group-hover:text-[#0051d5] transition-colors">
+                        {item.title}
+                      </h4>
+                      <p className="text-xs text-[#74777f] line-clamp-1 mt-0.5">{item.address}</p>
+                    </div>
+
+                    <div className="pt-3 mt-3 border-t border-[#f8f9ff] flex items-baseline justify-between">
+                      <div>
+                        <div className="flex items-baseline gap-1.5">
+                          {item.discountRate > 0 && (
+                            <span className="text-sm font-extrabold text-[#059669]">
+                              {item.discountRate}% 할인
+                            </span>
+                          )}
+                          <span className="text-lg font-black text-[#002046]">
+                            {formatWon(item.minimumPrice)}
+                          </span>
+                        </div>
+                        {item.appraisalPrice > item.minimumPrice ? (
+                          <span className="text-[11px] text-[#74777f] line-through">
+                            감정가 {formatWon(item.appraisalPrice)}
+                          </span>
+                        ) : (
+                          <span className="text-[11px] text-[#74777f]">
+                            최저입찰가 (감정가 동일/미산정)
                           </span>
                         )}
-                        <span className="text-lg font-black text-[#002046]">
-                          {formatWon(item.minimumPrice)}
+                      </div>
+
+                      <div className="text-right">
+                        <span className="text-[10px] text-[#74777f] block">
+                          {item.failCount > 0 ? `${item.failCount}회 유찰` : '신규공매'}
+                        </span>
+                        <span className="text-xs font-semibold text-[#0051d5]">
+                          입찰기일 {item.auctionDate ? item.auctionDate.split(' ')[0] : '일정 확인중'}
                         </span>
                       </div>
-                      {item.appraisalPrice > item.minimumPrice ? (
-                        <span className="text-[11px] text-[#74777f] line-through">
-                          감정가 {formatWon(item.appraisalPrice)}
-                        </span>
-                      ) : (
-                        <span className="text-[11px] text-[#74777f]">
-                          최저입찰가 (감정가 동일/미산정)
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="text-right">
-                      <span className="text-[10px] text-[#74777f] block">
-                        {item.failCount > 0 ? `${item.failCount}회 유찰` : '신규공매'}
-                      </span>
-                      <span className="text-xs font-semibold text-[#0051d5]">
-                        입찰기일 {item.auctionDate ? item.auctionDate.split(' ')[0] : '일정 확인중'}
-                      </span>
                     </div>
                   </div>
-                </div>
-              </article>
-            )
-          })}
+                </article>
+              )
+            })}
           </div>
 
           {/* 6. 하단 더보기 버튼 및 로딩 / 전체 로드 완료 피드백 (그리드 전체 폭) */}
