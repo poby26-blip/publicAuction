@@ -3,7 +3,7 @@
  * @description '공매이지' 앱의 상단 고정 네비게이션 헤더 컴포넌트입니다.
  */
 
-import { type AppTab } from './AppBottomNav'
+import { type AppTab } from './AppNavigation'
 
 interface AppHeaderProps {
   /** 현재 활성화된 탭 (태블릿 사이드 레일 노출 시 현재 화면 제목 표출용) */

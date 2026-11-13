@@ -1,6 +1,6 @@
 # 📋 [공매이지] 프로젝트 인수인계 및 에이전트 작업 지침서 (PROJECT_HANDOVER.md)
 
-> **문서 버전**: v1.3.1  
+> **문서 버전**: v1.4.0  
 > **최종 갱신일**: 2026년 11월 13일  
 > **프로젝트 경로**: `c:\dev\workspace\publicAuction`  
 > **프론트엔드 경로**: `c:\dev\workspace\publicAuction\frontend`  
@@ -24,7 +24,7 @@
   │   ├── src/
   │   │   ├── components/
   │   │   │   ├── common/       # Skeleton.tsx, AuctionCard.tsx, Toast.tsx, PhotoGalleryModal.tsx 등 공통 컴포넌트
-  │   │   │   └── layout/       # AppHeader.tsx, AppBottomNav.tsx 등 레이아웃
+  │   │   │   └── layout/       # AppHeader.tsx, AppNavigation.tsx 등 레이아웃
   │   │   ├── data/             # mockAuctionData.ts (표준 17개 시도 메타데이터 및 타입 정의)
   │   │   ├── pages/
   │   │   │   ├── home/         # HomeScreen.tsx (홈 화면)
@@ -32,6 +32,7 @@
   │   │   │   ├── watchlist/    # WatchlistScreen.tsx (관심물건 찜 목록)
   │   │   │   └── my/           # MyScreen.tsx (마이페이지)
   │   │   ├── services/         # onbidService.ts (온비드 API), storageService.ts (RN 호환 로컬 스토리지 추상화)
+  │   │   ├── store/            # useAuctionStore.ts (Zustand 기반 통합 전역 상태 관리)
   │   │   ├── types/            # TypeScript 인터페이스 정의
   │   │   ├── App.tsx           # 메인 네비게이션 및 상세 오버레이 상태 머신
   │   │   └── main.tsx
@@ -200,7 +201,7 @@
    - 상단 헤더 알림 배지(`totalUrgentAlarmCount`) 및 알림 토스트가 관심물건·기일알림 임박 건수를 중복 없이 통합 연동하며, 관심 보관함 카드에도 `'알림중'` 배지를 표출합니다.
 
 ### ✅ [11단계] 폴더블 폰 · 태블릿 반응형 인터페이스 전환 완료
-1. **반응형 앱 셸 및 내비게이션 레일 ([App.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/App.tsx), [AppBottomNav.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/components/layout/AppBottomNav.tsx), [AppHeader.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/components/layout/AppHeader.tsx), [Toast.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/components/common/Toast.tsx))**:
+1. **반응형 앱 셸 및 내비게이션 레일 ([App.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/App.tsx), [AppNavigation.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/components/layout/AppNavigation.tsx), [AppHeader.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/components/layout/AppHeader.tsx), [Toast.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/components/common/Toast.tsx))**:
    - `max-w-md` 단일 모바일 프레임을 `w-full md:max-w-5xl xl:max-w-6xl`로 확장해 폴더블 펼침(`sm`) 및 태블릿(`md+`)을 지원하고, `overflow-x-clip`으로 `sticky` 고정을 보장했습니다.
    - `768px` 이상에서는 하단 탭 바 대신 좌측 사이드 내비게이션 레일(`md:w-20` / `lg:w-56`)로 자동 전환되며, 상단 헤더에 현재 화면 컨텍스트와 검색 버튼을 표출합니다.
 2. **전 화면 다중 컬럼 그리드 · 상세 2컬럼 분할 ([HomeScreen.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/pages/home/HomeScreen.tsx), [AuctionListScreen.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/pages/auction/AuctionListScreen.tsx), [WatchlistScreen.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/pages/watchlist/WatchlistScreen.tsx), [MyScreen.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/pages/my/MyScreen.tsx), [AuctionDetailScreen.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/pages/auction/AuctionDetailScreen.tsx), [Skeleton.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/components/common/Skeleton.tsx))**:
@@ -216,7 +217,7 @@
    - 물건관리번호(`YYYY-XXXX-XXX`) 입력 시 `fetchOnbidItemsByManagementNo`로 3대 상세 API를 병렬 조회해 해당 물건을 즉시 반환합니다.
 2. **입력 중 로컬 필터 / 확정 시 OpenAPI 조회 분리 ([AuctionListScreen.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/pages/auction/AuctionListScreen.tsx), [HomeScreen.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/pages/home/HomeScreen.tsx))**:
    - 타이핑·한글 조합 중에는 데이터 소모 없이 기존 `listItems` 내에서만 로컬 필터링하고, `Enter` 키(`!e.nativeEvent.isComposing` 가드) 또는 `검색` 버튼 클릭 시에만 `committedQuery`를 갱신해 OpenAPI 조회 및 `'더보기'` 페이징을 수행합니다.
-3. **공식 앱 아이콘 적용 ([index.html](file:///c:/dev/workspace/publicAuction/frontend/index.html), [manifest.webmanifest](file:///c:/dev/workspace/publicAuction/frontend/public/manifest.webmanifest), [AppHeader.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/components/layout/AppHeader.tsx), [AppBottomNav.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/components/layout/AppBottomNav.tsx))**:
+3. **공식 앱 아이콘 적용 ([index.html](file:///c:/dev/workspace/publicAuction/frontend/index.html), [manifest.webmanifest](file:///c:/dev/workspace/publicAuction/frontend/public/manifest.webmanifest), [AppHeader.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/components/layout/AppHeader.tsx), [AppNavigation.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/components/layout/AppNavigation.tsx))**:
    - `/public/gongmaeEasyIcon.png`를 HTML 파비콘, Apple 터치 아이콘, PWA 매니페스트 아이콘 및 상단·사이드 브랜드 로고 이미지로 일괄 적용했습니다.
 
 ### ✅ [13단계] 태블릿 가로모드 전폭 확장 및 홈 화면 반값 물건 카드 오버플로우 개선
@@ -227,6 +228,16 @@
    - 카드 우측 정보 칼럼에 `min-w-0`을 부여하여 flex 자식 요소의 텍스트가 카드 영역 밖으로 밀려나는 현상을 방어했습니다.
    - 가격/기일 영역에 `flex-wrap items-baseline justify-between gap-x-1.5 gap-y-0.5`를 적용하여 좁은 카드 폭에서도 기일 텍스트가 카드 패딩 밖으로 튀어나가지 않고 유연하게 배치되도록 처리했습니다.
    - 면적/제목/주소 텍스트의 유동적 말줄임(`truncate`)을 보강하고, 그리드 브레이크포인트를 `lg:grid-cols-3`로 최적화하여 4번 섹션(D-1 특가) 및 목록 화면과 3열 통일성을 확보했습니다.
+
+### ✅ [14단계] Zustand 기반 전역 상태관리 도입 및 카테고리 누락 버그 해결
+1. **버그 원인 규명 및 전역 스토어 구축 ([useAuctionStore.ts](file:///d:/workspace/publicAuction/frontend/src/store/useAuctionStore.ts))**:
+   - 홈 화면에서 '부동산' 등 1차 상품군을 선택한 뒤 2차 테마 카테고리('신규등록', '반값공매')를 클릭했을 때 단일 파라미터(`cat.id`)만 전달되어 1차 상품군이 '전체'로 초기화되던 상태 누락 버그를 분석·해결했습니다.
+   - 단일 진실 공급원(Single Source of Truth) 원칙에 따라 경량 상태관리 모듈 `zustand`를 도입하고 통합 스토어(`useAuctionStore.ts`)를 구축하여 1차 상품군(`assetGroup`), 2차 세부카테고리(`subCategory`), 시/도 지역, 검색어, 활성 탭, 상세 오버레이 및 관심물건/기일알림을 중앙에서 일관 관리합니다.
+   - Zustand는 DOM 비의존 순수 TypeScript 클로저 기반이므로, 향후 React Native 전환 시 스토어 코드를 100% 그대로 재사용할 수 있습니다.
+2. **화면 간 2단 카테고리 상태 보존 및 스토어 연동 ([HomeScreen.tsx](file:///d:/workspace/publicAuction/frontend/src/pages/home/HomeScreen.tsx), [AuctionListScreen.tsx](file:///d:/workspace/publicAuction/frontend/src/pages/auction/AuctionListScreen.tsx), [App.tsx](file:///d:/workspace/publicAuction/frontend/src/App.tsx))**:
+   - `HomeScreen.tsx`: 2차 카테고리 칩 및 검색 실행 시 현재 선택된 1차 상품군(`selectedAssetGroup`)과 2차 세부 카테고리(`cat.id`)를 `navigateToListWithFilters` 액션에 함께 전달하도록 개편했습니다.
+   - `AuctionListScreen.tsx`: 기존 `parseInitialCategoryFilter`의 하드코딩을 제거하고 스토어의 `assetGroup`과 `subCategory`를 직접 구독하도록 하여 1차 상품군('부동산')과 2차 테마('신규등록' / '반값공매')가 유실 없이 완벽하게 유지되도록 조치했습니다.
+   - `App.tsx`: 최상위 컴포넌트의 중복 로컬 상태(`useState`) 및 수동 비동기 스토리지 호출 이펙트를 스토어 액션으로 이관하여 구조를 대폭 단순화했습니다.
 
 ---
 

@@ -20,7 +20,6 @@ import {
   formatWon,
   getCategoryFallbackImage,
   isRegionMatch,
-  resolveAssetGroup,
 } from '../../data/mockAuctionData'
 import { ListSkeleton } from '../../components/common/Skeleton'
 import {
@@ -31,6 +30,7 @@ import {
   fetchOnbidRealEstateList,
   isManagementNumberQuery,
 } from '../../services/onbidService'
+import { useAuctionStore } from '../../store/useAuctionStore'
 
 /**
  * AuctionListScreen 컴포넌트의 속성(Props) 인터페이스
@@ -40,13 +40,13 @@ interface AuctionListScreenProps {
   items: GongItem[]
 
   /** 관심 등록(찜)한 물건 ID 배열 */
-  watchlist: string[]
+  watchlist?: string[]
 
   /** 관심 등록 토글 콜백 */
-  onToggleWatchlist: (item: GongItem) => void
+  onToggleWatchlist?: (item: GongItem) => void
 
   /** 물건 카드 클릭 시 상세 화면으로 이동시키는 콜백 */
-  onSelectItem: (item: GongItem) => void
+  onSelectItem?: (item: GongItem) => void
 
   /** 홈 화면 등에서 전달받은 초기 카테고리 ID (예: 'apt', 'goods', 'car', 'all') */
   initialCategory?: string
@@ -58,61 +58,57 @@ interface AuctionListScreenProps {
   initialKeyword?: string
 }
 
-/**
- * 전달받은 초기 카테고리 값으로부터 1차 상품군(AssetGroup)과 2차 세부 필터를 분리합니다.
- */
-function parseInitialCategoryFilter(cat?: string): {
-  group: AssetGroup
-  sub: string
-} {
-  if (!cat || cat === 'all') return { group: 'all', sub: 'all' }
-  if (cat === 'new' || cat === 'half') return { group: 'all', sub: cat }
-  if (cat === 'real_estate') return { group: 'real_estate', sub: 'all' }
-  if (cat === 'movable' || cat === 'goods') return { group: 'movable', sub: 'all' }
-  if (cat === 'car') return { group: 'car', sub: 'all' }
-
-  const group = resolveAssetGroup(cat)
-  return { group, sub: cat }
-}
-
 export function AuctionListScreen({
   items,
-  watchlist,
-  onToggleWatchlist,
-  onSelectItem,
-  initialCategory,
-  initialRegion = '전체',
-  initialKeyword = '',
+  watchlist: propWatchlist,
+  onToggleWatchlist: propOnToggleWatchlist,
+  onSelectItem: propOnSelectItem,
 }: AuctionListScreenProps) {
-  const initialParsed = parseInitialCategoryFilter(initialCategory)
-
   // -------------------------------------------------------------------------
-  // [필터 및 정렬 로컬 상태 (Local State)]
+  // [전역 스토어 상태 및 액션 연동 (Zustand Store)]
   // -------------------------------------------------------------------------
 
   /** 1차 상품군 대분류 ('all' | 'real_estate' | 'movable' | 'car') */
-  const [assetGroup, setAssetGroup] = useState<AssetGroup>(initialParsed.group)
+  const assetGroup = useAuctionStore((state) => state.assetGroup)
+  const setAssetGroup = useAuctionStore((state) => state.setAssetGroup)
 
   /** 2차 세부 카테고리 ('all', 'apt', 'commercial', 'land', 'factory', 'new', 'half') */
-  const [subCategory, setSubCategory] = useState<string>(initialParsed.sub)
+  const subCategory = useAuctionStore((state) => state.subCategory)
+  const setSubCategory = useAuctionStore((state) => state.setSubCategory)
 
   /** 선택된 시/도 지역 ('전체', '서울', '경기', '전남광주' 등) */
-  const [selectedRegion, setSelectedRegion] = useState<string>(initialRegion || '전체')
+  const selectedRegion = useAuctionStore((state) => state.selectedRegion)
+  const setSelectedRegion = useAuctionStore((state) => state.setSelectedRegion)
 
   /** 선택된 공매 재산구분 유형 ('all', '신탁공매', '압류재산', '국유재산') */
-  const [selectedType, setSelectedType] = useState<string>('all')
+  const selectedType = useAuctionStore((state) => state.selectedType)
+  const setSelectedType = useAuctionStore((state) => state.setSelectedType)
 
   /** 정렬 기준 ('dDay': 마감임박순, 'discount': 할인율순, 'price': 최저가순, 'views': 인기순) */
-  const [sortBy, setSortBy] = useState<'dDay' | 'discount' | 'price' | 'views'>('dDay')
+  const sortBy = useAuctionStore((state) => state.sortBy)
+  const setSortBy = useAuctionStore((state) => state.setSortBy)
 
-  /** 실시간 입력 중인 검색 키워드 (타이핑·한글 조합 중에는 현재 목록 내에서만 로컬 필터링) */
-  const [keyword, setKeyword] = useState<string>(initialKeyword || '')
+  /** 실시간 입력 중인 검색 키워드 */
+  const keyword = useAuctionStore((state) => state.keyword)
+  const setKeyword = useAuctionStore((state) => state.setKeyword)
 
   /** Enter 또는 '검색' 버튼으로 확정된 OpenAPI 검색 키워드 */
-  const [committedQuery, setCommittedQuery] = useState<string>((initialKeyword || '').trim())
+  const committedQuery = useAuctionStore((state) => state.committedQuery)
+  const searchNonce = useAuctionStore((state) => state.searchNonce)
+  const submitSearch = useAuctionStore((state) => state.submitSearch)
+  const clearSearch = useAuctionStore((state) => state.clearSearch)
 
-  /** 동일 검색어로 다시 Enter/검색 버튼을 눌렀을 때 재조회를 트리거하는 카운터 */
-  const [searchNonce, setSearchNonce] = useState<number>(0)
+  const storeSelectedItem = useAuctionStore((state) => state.setSelectedItem)
+  const storeToggleWatchlist = useAuctionStore((state) => state.toggleWatchlist)
+  const storeWatchlistItems = useAuctionStore((state) => state.watchlistItems)
+
+  const watchlist = propWatchlist ?? storeWatchlistItems.map((item) => item.id)
+  const onSelectItem = propOnSelectItem ?? storeSelectedItem
+  const onToggleWatchlist = propOnToggleWatchlist ?? storeToggleWatchlist
+
+  // -------------------------------------------------------------------------
+  // [페이징 및 비동기 통신 로컬 상태 (Local State)]
+  // -------------------------------------------------------------------------
 
   /** 온비드 API로부터 동적으로 수신된 물건 목록 상태 */
   const [listItems, setListItems] = useState<GongItem[]>(items)
@@ -128,34 +124,6 @@ export function AuctionListScreen({
 
   /** '더보기' 버튼을 통한 다음 페이지 비동기 추가 로딩 상태 */
   const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false)
-
-  // -------------------------------------------------------------------------
-  // [상위 Props 변경 감지 및 동기화 (Render-time Prop Sync)]
-  // -------------------------------------------------------------------------
-
-  const [prevInitialProps, setPrevInitialProps] = useState({
-    initialCategory,
-    initialRegion,
-    initialKeyword,
-  })
-
-  if (
-    prevInitialProps.initialCategory !== initialCategory ||
-    prevInitialProps.initialRegion !== initialRegion ||
-    prevInitialProps.initialKeyword !== initialKeyword
-  ) {
-    setPrevInitialProps({ initialCategory, initialRegion, initialKeyword })
-    if (initialCategory !== undefined) {
-      const parsed = parseInitialCategoryFilter(initialCategory)
-      setAssetGroup(parsed.group)
-      setSubCategory(parsed.sub)
-    }
-    if (initialRegion !== undefined) setSelectedRegion(initialRegion)
-    if (initialKeyword !== undefined) {
-      setKeyword(initialKeyword)
-      setCommittedQuery(initialKeyword.trim())
-    }
-  }
 
   // -------------------------------------------------------------------------
   // [3대 상품군 OpenAPI 실데이터 동적 페칭 및 페이징 파이프라인]
@@ -199,19 +167,14 @@ export function AuctionListScreen({
    * 검색어 확정 실행 (Enter 키 또는 검색 버튼 클릭 시에만 OpenAPI 조회)
    */
   const handleSubmitSearch = () => {
-    setCommittedQuery(keyword.trim())
-    setSearchNonce((n) => n + 1)
+    submitSearch()
   }
 
   /**
    * 검색어 초기화 (입력값과 확정된 OpenAPI 검색어 모두 비우고 기본 목록 복원)
    */
   const handleClearSearch = () => {
-    setKeyword('')
-    if (committedQuery !== '') {
-      setCommittedQuery('')
-      setSearchNonce((n) => n + 1)
-    }
+    clearSearch()
   }
 
   /**
@@ -843,15 +806,7 @@ export function AuctionListScreen({
             <button
               type="button"
               onClick={() => {
-                setAssetGroup('all')
-                setSubCategory('all')
-                setSelectedRegion('전체')
-                setSelectedType('all')
-                setKeyword('')
-                if (committedQuery !== '') {
-                  setCommittedQuery('')
-                  setSearchNonce((n) => n + 1)
-                }
+                useAuctionStore.getState().resetFilters()
               }}
               className="px-4 py-2 rounded-xl bg-[#eff4ff] text-[#0051d5] text-xs font-bold hover:bg-[#dce9ff] transition-colors cursor-pointer flex items-center gap-1.5"
             >

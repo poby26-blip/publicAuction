@@ -1,6 +1,6 @@
 export type AppTab = 'home' | 'list' | 'watchlist' | 'my'
 
-interface AppBottomNavProps {
+interface AppNavigationProps {
   activeTab: AppTab
   onTabChange: (tab: AppTab) => void
   watchlistCount?: number
@@ -11,7 +11,7 @@ interface AppBottomNavProps {
  * - 모바일/폴더블 세로(< 768px): 하단 고정 탭 네비게이션 바 (전체 폭 유동 대응)
  * - 태블릿/대화면(>= 768px): 좌측 고정 사이드 내비게이션 레일(md: 아이콘 레일 / lg: 아이콘+라벨)
  */
-export function AppBottomNav({ activeTab, onTabChange, watchlistCount = 0 }: AppBottomNavProps) {
+export function AppNavigation({ activeTab, onTabChange, watchlistCount = 0 }: AppNavigationProps) {
   const tabs = [
     { id: 'home' as AppTab, label: '홈', icon: 'home' },
     { id: 'list' as AppTab, label: '공매목록', icon: 'view_list' },
@@ -35,15 +35,13 @@ export function AppBottomNav({ activeTab, onTabChange, watchlistCount = 0 }: App
                 key={tab.id}
                 type="button"
                 onClick={() => onTabChange(tab.id)}
-                className={`flex-1 flex flex-col items-center justify-center h-12 gap-0.5 transition-all active:scale-95 cursor-pointer ${
-                  isActive ? 'text-[#0051d5] font-bold' : 'text-[#74777f] hover:text-[#0b1c30]'
-                }`}
+                className={`flex-1 flex flex-col items-center justify-center h-12 gap-0.5 transition-all active:scale-95 cursor-pointer ${isActive ? 'text-[#0051d5] font-bold' : 'text-[#74777f] hover:text-[#0b1c30]'
+                  }`}
               >
                 <div className="relative">
                   <span
-                    className={`material-symbols-outlined text-[24px] ${
-                      isActive ? 'fill-1 text-[#0051d5]' : ''
-                    }`}
+                    className={`material-symbols-outlined text-[24px] ${isActive ? 'fill-1 text-[#0051d5]' : ''
+                      }`}
                   >
                     {tab.icon}
                   </span>
@@ -99,18 +97,16 @@ export function AppBottomNav({ activeTab, onTabChange, watchlistCount = 0 }: App
                   type="button"
                   onClick={() => onTabChange(tab.id)}
                   title={tab.label}
-                  className={`w-full flex flex-col lg:flex-row items-center justify-center lg:justify-between gap-1 lg:gap-2.5 px-2 lg:px-3.5 py-2.5 rounded-xl transition-all active:scale-[0.98] cursor-pointer ${
-                    isActive
+                  className={`w-full flex flex-col lg:flex-row items-center justify-center lg:justify-between gap-1 lg:gap-2.5 px-2 lg:px-3.5 py-2.5 rounded-xl transition-all active:scale-[0.98] cursor-pointer ${isActive
                       ? 'bg-[#eff4ff] text-[#0051d5] font-bold shadow-2xs'
                       : 'text-[#44474e] hover:bg-[#f8f9ff] hover:text-[#002046] font-medium'
-                  }`}
+                    }`}
                 >
                   <div className="flex flex-col lg:flex-row items-center gap-0.5 lg:gap-2.5">
                     <div className="relative">
                       <span
-                        className={`material-symbols-outlined text-[22px] ${
-                          isActive ? 'fill-1 text-[#0051d5]' : ''
-                        }`}
+                        className={`material-symbols-outlined text-[22px] ${isActive ? 'fill-1 text-[#0051d5]' : ''
+                          }`}
                       >
                         {tab.icon}
                       </span>

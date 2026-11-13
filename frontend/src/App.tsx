@@ -7,7 +7,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { type ShowToastFn, Toast, type ToastOptions } from './components/common/Toast'
-import { AppBottomNav, type AppTab } from './components/layout/AppBottomNav'
+import { AppNavigation } from './components/layout/AppNavigation'
 import { AppHeader } from './components/layout/AppHeader'
 import { type AssetGroup, MOCK_GONG_ITEMS, type GongItem } from './data/mockAuctionData'
 import { AuctionDetailScreen } from './pages/auction/AuctionDetailScreen'
@@ -21,21 +21,26 @@ import {
   fetchOnbidMovableList,
   fetchOnbidRealEstateList,
 } from './services/onbidService'
-import {
-  loadWatchlistItems,
-  saveWatchlistItems,
-  clearWatchlistItems,
-  loadBidAlertItems,
-  saveBidAlertItems,
-} from './services/storageService'
+import { useAuctionStore } from './store/useAuctionStore'
 
 export default function App() {
   // -------------------------------------------------------------------------
-  // [전역 상태 관리 (Global State)]
+  // [전역 상태 관리 (Zustand Store 연동)]
   // -------------------------------------------------------------------------
-
-  /** 현재 활성화된 하단 네비게이션 탭 ('home' | 'list' | 'watchlist' | 'my') */
-  const [activeTab, setActiveTab] = useState<AppTab>('home')
+  const {
+    activeTab,
+    setActiveTab,
+    selectedItem,
+    setSelectedItem,
+    watchlistItems,
+    alertItems,
+    initStorage,
+    toggleWatchlist: storeToggleWatchlist,
+    toggleBidAlert: storeToggleBidAlert,
+    clearWatchlist: storeClearWatchlist,
+    removeSelectedWatchlist: storeRemoveSelectedWatchlist,
+    navigateToListWithFilters: storeNavigateToListWithFilters,
+  } = useAuctionStore()
 
   /** 현재 화면에 표출되는 온비드 공매 물건 목록 (초기값: MOCK_GONG_ITEMS -> 실데이터로 교체) */
   const [items, setItems] = useState<GongItem[]>(MOCK_GONG_ITEMS)
@@ -43,31 +48,11 @@ export default function App() {
   /** 온비드 OpenAPI 비동기 통신 로딩 상태 (true일 때 스켈레톤 UI 표출) */
   const [isLoading, setIsLoading] = useState<boolean>(true)
 
-  /**
-   * 사용자가 관심 등록(찜)한 공매 물건 객체 배열
-   * - storageService 추상화 레이어를 통해 웹(localStorage) 또는 React Native(AsyncStorage/MMKV)에서 비동기 복원됩니다.
-   * - 목록 2페이지 이후, 차량 공매, 타 지역 검색에서 찜한 물건도 보존하기 위해 GongItem 전체를 보관합니다.
-   */
-  const [watchlistItems, setWatchlistItems] = useState<GongItem[]>([])
-
-  /**
-   * 스토리지 초기 비동기 복원 완료 여부 플래그
-   * - 초기 빈 배열 상태가 기존 영구 데이터를 덮어쓰는 경쟁 상태(Race Condition)를 방어합니다.
-   */
-  const [isWatchlistInitialized, setIsWatchlistInitialized] = useState<boolean>(false)
-
   /** 하트 UI 활성화 여부 판정 및 뱃지 카운트용 관심물건 ID 파생 배열 */
   const watchlist = watchlistItems.map((item) => item.id)
 
   /** 입찰 마감이 3일 이내로 임박한 관심물건 수 */
   const urgentWatchlistCount = watchlistItems.filter((item) => item.dDay <= 3).length
-
-  /**
-   * 사용자가 상세 화면에서 '기일알림'을 설정한 공매 물건 객체 배열
-   * - storageService를 통해 영구 보관되며, 앱 재실행 후에도 알림 상태와 임박 건수를 유지합니다.
-   */
-  const [alertItems, setAlertItems] = useState<GongItem[]>([])
-  const [isAlertInitialized, setIsAlertInitialized] = useState<boolean>(false)
 
   /** 기일알림 활성화 여부 판정용 ID 배열 */
   const alertIds = alertItems.map((item) => item.id)
@@ -84,9 +69,6 @@ export default function App() {
     return Array.from(map.values())
   })()
   const totalUrgentAlarmCount = urgentAlarmItems.length
-
-  /** 현재 상세 화면에 열려 있는 공매 물건 (null이면 메인 탭 화면 표시) */
-  const [selectedItem, setSelectedItem] = useState<GongItem | null>(null)
 
   /** 상세 화면 고정 오버레이 스크롤 컨테이너 Ref */
   const detailOverlayRef = useRef<HTMLDivElement | null>(null)
@@ -111,15 +93,6 @@ export default function App() {
       document.body.style.overflow = prevOverflow
     }
   }, [selectedItem])
-
-  /** 공매 목록 화면(`AuctionListScreen`)으로 전달할 초기 카테고리 필터값 */
-  const [listCategory, setListCategory] = useState<string | undefined>()
-
-  /** 공매 목록 화면(`AuctionListScreen`)으로 전달할 초기 시/도 지역 필터값 */
-  const [listRegion, setListRegion] = useState<string | undefined>()
-
-  /** 공매 목록 화면(`AuctionListScreen`)으로 전달할 초기 검색 키워드 */
-  const [listKeyword, setListKeyword] = useState<string | undefined>()
 
   /** 앱 전역 플로팅 토스트 팝업 상태 */
   const [toast, setToast] = useState<{
@@ -163,6 +136,13 @@ export default function App() {
   // -------------------------------------------------------------------------
 
   /**
+   * 앱 마운트 시 영구 스토리지에서 관심물건 및 기일알림 데이터를 비동기로 복원합니다.
+   */
+  useEffect(() => {
+    initStorage()
+  }, [initStorage])
+
+  /**
    * 앱 최초 마운트 시 한국자산관리공사(KAMCO) 차세대 온비드 OpenAPI 실데이터를 비동기로 호출합니다.
    * - 정상 수신: items 상태를 최신 실매물 데이터로 갱신
    * - 장애/네트워크 에러: 서비스 중단을 방지하기 위해 로컬 Fallback 샘플 데이터를 안전하게 유지
@@ -193,65 +173,6 @@ export default function App() {
     }
   }, [])
 
-  /**
-   * 앱 최초 마운트 시 스토리지 추상화 레이어(storageService)를 통해 관심물건 데이터를 비동기로 복원합니다.
-   */
-  useEffect(() => {
-    let isMounted = true
-
-    async function initWatchlist() {
-      const loaded = await loadWatchlistItems()
-      if (isMounted) {
-        setWatchlistItems(loaded)
-        setIsWatchlistInitialized(true)
-      }
-    }
-
-    initWatchlist()
-
-    return () => {
-      isMounted = false
-    }
-  }, [])
-
-  /**
-   * 관심물건(watchlistItems) 상태 변경 시 storageService에 비동기 영구 저장합니다.
-   * - 초기 비동기 복원이 완료된 이후(isWatchlistInitialized === true)에만 저장을 실행합니다.
-   */
-  useEffect(() => {
-    if (!isWatchlistInitialized) return
-    saveWatchlistItems(watchlistItems)
-  }, [watchlistItems, isWatchlistInitialized])
-
-  /**
-   * 앱 최초 마운트 시 스토리지 추상화 레이어(storageService)를 통해 기일 알림 물건 데이터를 복원합니다.
-   */
-  useEffect(() => {
-    let isMounted = true
-
-    async function initBidAlerts() {
-      const loaded = await loadBidAlertItems()
-      if (isMounted) {
-        setAlertItems(loaded)
-        setIsAlertInitialized(true)
-      }
-    }
-
-    initBidAlerts()
-
-    return () => {
-      isMounted = false
-    }
-  }, [])
-
-  /**
-   * 기일 알림(alertItems) 상태 변경 시 storageService에 비동기 영구 저장합니다.
-   */
-  useEffect(() => {
-    if (!isAlertInitialized) return
-    saveBidAlertItems(alertItems)
-  }, [alertItems, isAlertInitialized])
-
   // -------------------------------------------------------------------------
   // [이벤트 핸들러 (Event Handlers)]
   // -------------------------------------------------------------------------
@@ -261,13 +182,9 @@ export default function App() {
    * - 이미 보관 중인 물건이면 목록에서 제거하고, 없으면 최신 항목(배열 맨 앞)으로 추가합니다.
    * @param targetItem - 토글할 공매 물건(GongItem) 객체
    */
-  const toggleWatchlist = (targetItem: GongItem) => {
+  const toggleWatchlist = async (targetItem: GongItem) => {
     const exists = watchlistItems.some((item) => item.id === targetItem.id)
-    setWatchlistItems((prev) =>
-      exists
-        ? prev.filter((item) => item.id !== targetItem.id)
-        : [targetItem, ...prev]
-    )
+    await storeToggleWatchlist(targetItem)
     showToast(
       exists
         ? '관심 공매 보관함에서 해제되었습니다.'
@@ -280,18 +197,13 @@ export default function App() {
    * 특정 공매 물건의 기일 알림 설정 여부를 토글하고 스토리지에 영구 저장합니다.
    * @param targetItem - 기일 알림을 토글할 공매 물건(GongItem) 객체
    */
-  const toggleBidAlert = (targetItem: GongItem) => {
-    const exists = alertItems.some((item) => item.id === targetItem.id)
-    setAlertItems((prev) =>
-      exists
-        ? prev.filter((item) => item.id !== targetItem.id)
-        : [targetItem, ...prev]
-    )
+  const toggleBidAlert = async (targetItem: GongItem) => {
+    const isAdded = await storeToggleBidAlert(targetItem)
     showToast(
-      exists
-        ? '입찰 마감일 알림이 해제되었습니다.'
-        : '입찰 마감일 알림이 설정되었습니다.',
-      { type: exists ? 'info' : 'success', duration: 2200 }
+      isAdded
+        ? '입찰 마감일 알림이 설정되었습니다.'
+        : '입찰 마감일 알림이 해제되었습니다.',
+      { type: isAdded ? 'success' : 'info', duration: 2200 }
     )
   }
 
@@ -299,23 +211,21 @@ export default function App() {
    * 보관함에 담긴 모든 관심물건을 일괄 삭제하고 스토리지를 초기화합니다.
    */
   const clearWatchlist = async () => {
-    setWatchlistItems([])
-    await clearWatchlistItems()
+    await storeClearWatchlist()
     showToast('관심 공매 보관함이 모두 비워졌습니다.', { type: 'info' })
   }
 
   /**
    * 보관함에서 사용자가 선택한 여러 건의 관심물건을 일괄 삭제합니다.
-   * - 상태 변경 후 useEffect를 통해 storageService에도 자동 영구 반영됩니다.
    * @param targetIds - 삭제할 공매 물건 ID 배열
    */
-  const removeWatchlistItems = (targetIds: string[]) => {
+  const removeWatchlistItems = async (targetIds: string[]) => {
     if (targetIds.length === 0) return
     const idSet = new Set(targetIds)
     const removedCount = watchlistItems.filter((item) => idSet.has(item.id)).length
     if (removedCount === 0) return
 
-    setWatchlistItems((prev) => prev.filter((item) => !idSet.has(item.id)))
+    await storeRemoveSelectedWatchlist(targetIds)
     showToast(`선택한 ${removedCount}건의 관심 물건이 삭제되었습니다.`, {
       type: 'info',
       duration: 2200,
@@ -368,17 +278,17 @@ export default function App() {
 
   /**
    * 홈 화면에서 카테고리 클릭, 검색창 엔터, '더보기' 클릭 시
-   * 필터 파라미터를 설정하고 공매 목록 화면(`AuctionListScreen`)으로 화면을 전환합니다.
+   * 전역 스토어 필터를 갱신하고 공매 목록 화면(`AuctionListScreen`)으로 화면을 전환합니다.
    * @param cat - 선택된 카테고리 코드 (생략 시 기본 'all')
    * @param reg - 선택된 시/도 지역명 (생략 시 기본 '전체')
    * @param kw - 입력된 검색 키워드 (생략 시 기본 '')
    */
-  const navigateToListWithFilters = (cat?: string, reg?: string, kw?: string) => {
-    setListCategory(cat || 'all')
-    setListRegion(reg || '전체')
-    setListKeyword(kw || '')
-    setSelectedItem(null) // 상세 화면이 열려있었다면 닫기
-    setActiveTab('list') // 목록 탭 활성화
+  const handleNavigateToList = (cat?: string, reg?: string, kw?: string) => {
+    storeNavigateToListWithFilters({
+      subCategory: cat,
+      region: reg,
+      keyword: kw,
+    })
   }
 
   /**
@@ -432,7 +342,7 @@ export default function App() {
       {/* 반응형 앱 프레임: 태블릿(>=768px) 사이드 레일 + 전폭 메인 뷰포트 (좌우 공백 제거) */}
       <div className="w-full bg-[#f8f9ff] min-h-screen flex flex-col md:flex-row relative overflow-x-clip">
         {/* 태블릿(>=768px) 좌측 사이드 레일 / 모바일·폴더블(<768px) 하단 고정 탭 바 */}
-        <AppBottomNav
+        <AppNavigation
           activeTab={activeTab}
           onTabChange={(tab) => {
             setSelectedItem(null)
@@ -446,7 +356,7 @@ export default function App() {
           {/* 앱 상단 고정 헤더 */}
           <AppHeader
             activeTab={activeTab}
-            onSearchClick={() => navigateToListWithFilters()}
+            onSearchClick={() => handleNavigateToList()}
             onAlarmClick={handleAlarmClick}
             alarmCount={totalUrgentAlarmCount}
           />
@@ -461,7 +371,7 @@ export default function App() {
                 watchlist={watchlist}
                 onToggleWatchlist={toggleWatchlist}
                 onSelectItem={(item) => setSelectedItem(item)}
-                onNavigateToList={navigateToListWithFilters}
+                onNavigateToList={handleNavigateToList}
                 onRegionChange={handleRegionChange}
               />
             )}
@@ -473,9 +383,6 @@ export default function App() {
                 watchlist={watchlist}
                 onToggleWatchlist={toggleWatchlist}
                 onSelectItem={(item) => setSelectedItem(item)}
-                initialCategory={listCategory}
-                initialRegion={listRegion}
-                initialKeyword={listKeyword}
               />
             )}
 

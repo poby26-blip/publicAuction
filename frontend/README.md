@@ -23,7 +23,7 @@ frontend/
 │   ├── components/                 # 공통 컴포넌트
 │   │   ├── layout/                 # 앱 레이아웃 관련 컴포넌트
 │   │   │   ├── AppHeader.tsx       # 상단 글로벌 헤더 (브랜드 로고, 검색, 알림 벨)
-│   │   │   └── AppBottomNav.tsx    # 모바일 하단 탭바 (홈, 목록, 관심, 마이페이지)
+│   │   │   └── AppNavigation.tsx   # 모바일 하단 탭바 (홈, 목록, 관심, 마이페이지)
 │   │   └── common/                 # 공통 재사용 컴포넌트
 │   │       └── AuctionCard.tsx     # 물건 카드 컴포넌트 (D-Day 배지, 감정가/최저가 등)
 │   │
