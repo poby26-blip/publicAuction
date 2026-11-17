@@ -410,7 +410,7 @@ export function AuctionListScreen({
                 }
               }}
               placeholder="공매 물건, 지역, 관리번호 입력 후 Enter"
-              className={`w-full h-11 bg-white rounded-2xl pl-10 text-xs text-[#0b1c30] placeholder-[#74777f] border border-[#c4c6cf]/60 focus:outline-none focus:ring-2 focus:ring-[#0051d5] shadow-xs ${keyword ? 'pr-24' : 'pr-16'
+              className={`w-full h-11 bg-white rounded-2xl pl-10 text-sm sm:text-base text-[#0b1c30] placeholder-[#74777f] border border-[#c4c6cf]/60 focus:outline-none focus:ring-2 focus:ring-[#0051d5] shadow-xs ${keyword ? 'pr-24' : 'pr-16'
                 }`}
             />
             <div className="absolute right-1.5 flex items-center gap-1">
@@ -427,7 +427,7 @@ export function AuctionListScreen({
               <button
                 type="button"
                 onClick={handleSubmitSearch}
-                className="h-8 px-3 rounded-xl bg-[#0051d5] hover:bg-[#003ea8] active:scale-95 text-white text-[11px] font-bold transition-all cursor-pointer shrink-0"
+                className="h-8.5 px-3.5 rounded-xl bg-[#0051d5] hover:bg-[#003ea8] active:scale-95 text-white text-xs sm:text-sm font-bold transition-all cursor-pointer shrink-0"
               >
                 검색
               </button>
@@ -435,14 +435,14 @@ export function AuctionListScreen({
           </div>
 
           {keyword.trim() !== committedQuery && (
-            <p className="text-[10px] text-[#0051d5] font-medium px-1.5">
+            <p className="text-xs text-[#0051d5] font-medium px-1.5">
               현재 목록 필터링 중 · Enter 또는 &apos;검색&apos; 버튼으로 온비드 전체 조회
             </p>
           )}
         </div>
 
         {/* 1차 상품군 대분류 세그먼트 탭 (전체 | 부동산 | 동산 | 자동차) */}
-        <div className="grid grid-cols-4 gap-1.5 p-1 bg-[#eff4ff] rounded-2xl border border-[#dce9ff] md:col-span-6">
+        <div className="grid grid-cols-4 gap-1.5 p-1.5 bg-[#eff4ff] rounded-2xl border border-[#dce9ff] md:col-span-6">
           {GONG_ASSET_GROUPS.map((group) => {
             const isActive = assetGroup === group.id
             return (
@@ -450,12 +450,12 @@ export function AuctionListScreen({
                 key={group.id}
                 type="button"
                 onClick={() => handleSelectAssetGroup(group.id)}
-                className={`py-2 px-1 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer ${isActive
-                    ? 'bg-[#002046] text-white shadow-xs'
-                    : 'text-[#44474e] hover:text-[#002046] hover:bg-white/60'
+                className={`py-2.5 px-1 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${isActive
+                    ? 'bg-[#002046] text-white shadow-xs font-extrabold'
+                    : 'text-[#44474e] hover:text-[#002046] hover:bg-white/60 font-semibold'
                   }`}
               >
-                <span className="material-symbols-outlined text-[15px]">{group.icon}</span>
+                <span className="material-symbols-outlined text-[18px]">{group.icon}</span>
                 <span>{group.label}</span>
               </button>
             )
@@ -468,8 +468,8 @@ export function AuctionListScreen({
         <button
           type="button"
           onClick={() => setSubCategory('all')}
-          className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${subCategory === 'all'
-              ? 'bg-[#0051d5] text-white shadow-xs'
+          className={`flex-shrink-0 px-3.5 py-2 rounded-full text-[13px] font-semibold transition-all cursor-pointer ${subCategory === 'all'
+              ? 'bg-[#0051d5] text-white shadow-xs font-bold'
               : 'bg-white border border-[#c4c6cf]/50 text-[#44474e] hover:bg-[#e5eeff]'
             }`}
         >
@@ -488,8 +488,8 @@ export function AuctionListScreen({
               key={cat.id}
               type="button"
               onClick={() => handleSelectSubCategory(cat.id)}
-              className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${isSelected
-                  ? 'bg-[#0051d5] text-white shadow-xs'
+              className={`flex-shrink-0 px-3.5 py-2 rounded-full text-[13px] font-semibold transition-all cursor-pointer ${isSelected
+                  ? 'bg-[#0051d5] text-white shadow-xs font-bold'
                   : 'bg-white border border-[#c4c6cf]/50 text-[#44474e] hover:bg-[#e5eeff]'
                 }`}
             >
@@ -500,13 +500,13 @@ export function AuctionListScreen({
       </div>
 
       {/* 3. 지역 드롭다운, 공매 구분 칩 및 정렬 바 */}
-      <div className="flex items-center justify-between py-2 border-y border-[#e5eeff] text-xs gap-2">
+      <div className="flex items-center justify-between py-2.5 border-y border-[#e5eeff] text-xs gap-2">
         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
           {/* 시/도 지역 선택 셀렉트박스 (정식 명칭 표출: 전국, 서울특별시, 전남광주통합특별시 등) */}
           <select
             value={selectedRegion}
             onChange={(e) => setSelectedRegion(e.target.value)}
-            className="bg-[#eff4ff] text-[#0051d5] font-bold text-[11px] px-2 py-1 rounded-md border-none focus:outline-none cursor-pointer"
+            className="bg-[#eff4ff] text-[#0051d5] font-bold text-xs px-2.5 py-1.5 rounded-lg border-none focus:outline-none cursor-pointer"
           >
             {GONG_REGION_METAS.map((r) => (
               <option key={r.label} value={r.label}>
@@ -520,8 +520,8 @@ export function AuctionListScreen({
             <button
               key={t}
               onClick={() => setSelectedType(t)}
-              className={`px-2 py-0.5 rounded-md text-[11px] font-semibold whitespace-nowrap transition-all cursor-pointer ${selectedType === t
-                  ? 'bg-[#002046] text-white shadow-2xs'
+              className={`px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${selectedType === t
+                  ? 'bg-[#002046] text-white shadow-2xs font-bold'
                   : 'text-[#74777f] hover:text-[#0b1c30] hover:bg-[#e5eeff]/50'
                 }`}
             >
@@ -534,7 +534,7 @@ export function AuctionListScreen({
         <select
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value as 'dDay' | 'discount' | 'price' | 'views')}
-          className="bg-transparent text-[11px] font-semibold text-[#002046] border-none focus:outline-none cursor-pointer shrink-0"
+          className="bg-transparent text-xs font-bold text-[#002046] border-none focus:outline-none cursor-pointer shrink-0"
         >
           <option value="dDay">마감임박순</option>
           <option value="discount">할인율높은순</option>
@@ -544,13 +544,13 @@ export function AuctionListScreen({
       </div>
 
       {/* 4. 조회 결과 건수 및 활성 필터/실시간 API 연동 상태 안내 */}
-      <div className="flex flex-wrap items-center justify-between text-xs text-[#74777f] px-1 gap-1">
+      <div className="flex flex-wrap items-center justify-between text-sm text-[#74777f] px-1 gap-1">
         <div className="flex items-center gap-1.5 flex-wrap">
           <span>
-            총 <strong className="text-[#002046]">{sorted.length}</strong>개의 공매 물건
+            총 <strong className="text-[#002046] font-extrabold">{sorted.length}</strong>개의 공매 물건
           </span>
           {listItems.length > 0 && sorted.length !== listItems.length && (
-            <span className="text-[10px] text-[#74777f]">
+            <span className="text-xs text-[#74777f]">
               (전체 {listItems.length}건 중 필터됨)
             </span>
           )}

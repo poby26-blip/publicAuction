@@ -207,16 +207,16 @@ export function MyScreen({
         {/* 1. 공매 및 입찰 알림 설정 섹션 (Stitch Section 3) */}
         <section className="flex flex-col gap-2.5 lg:col-span-7">
         <div className="flex items-center justify-between px-1">
-          <div className="flex items-center gap-1.5">
-            <span className="material-symbols-outlined text-[#0051d5] text-[20px]">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-[#0051d5] text-[22px]">
               notifications
             </span>
-            <h2 className="text-base font-headline font-bold text-[#002046]">
+            <h2 className="text-lg font-headline font-extrabold text-[#002046] tracking-tight">
               공매 및 입찰 알림 설정
             </h2>
           </div>
           <span
-            className={`text-[11px] font-semibold ${
+            className={`text-xs font-bold ${
               isPushActive ? 'text-[#0051d5]' : 'text-[#74777f]'
             }`}
           >
@@ -276,9 +276,9 @@ export function MyScreen({
       <div className="flex flex-col gap-5 lg:col-span-5">
       {/* 2. 공공데이터 OpenAPI 연동 관리 카드 */}
       <section className="flex flex-col gap-2.5">
-        <div className="flex items-center gap-1.5 px-1">
-          <span className="material-symbols-outlined text-[#0051d5] text-[20px]">sync</span>
-          <h2 className="text-base font-headline font-bold text-[#002046]">
+        <div className="flex items-center gap-2 px-1">
+          <span className="material-symbols-outlined text-[#0051d5] text-[22px]">sync</span>
+          <h2 className="text-lg font-headline font-extrabold text-[#002046] tracking-tight">
             공공데이터 OpenAPI 연동
           </h2>
         </div>
@@ -293,7 +293,7 @@ export function MyScreen({
                 <span className="text-sm font-semibold text-[#002046]">
                   차세대 온비드 API (B010003)
                 </span>
-                <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-[#059669] text-[10px] font-bold">
+                <span className="px-2 py-0.5 rounded bg-emerald-50 text-[#059669] text-xs font-bold">
                   정상 연동
                 </span>
               </div>
@@ -307,7 +307,7 @@ export function MyScreen({
             type="button"
             onClick={handleRefreshApi}
             disabled={isRefreshing || isApiSyncing}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-[#eff4ff] text-[#0051d5] text-xs font-bold hover:bg-[#dce9ff] transition-colors shrink-0 disabled:opacity-60 cursor-pointer"
+            className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[#eff4ff] text-[#0051d5] text-xs sm:text-sm font-bold hover:bg-[#dce9ff] transition-colors shrink-0 disabled:opacity-60 cursor-pointer"
           >
             <span
               className={`material-symbols-outlined text-[16px] ${
@@ -323,9 +323,9 @@ export function MyScreen({
 
       {/* 3. 앱 기본 설정 & 고객지원 섹션 (Stitch Section 5) */}
       <section className="flex flex-col gap-2.5">
-        <div className="flex items-center gap-1.5 px-1">
-          <span className="material-symbols-outlined text-[#0051d5] text-[20px]">tune</span>
-          <h2 className="text-base font-headline font-bold text-[#002046]">
+        <div className="flex items-center gap-2 px-1">
+          <span className="material-symbols-outlined text-[#0051d5] text-[22px]">tune</span>
+          <h2 className="text-lg font-headline font-extrabold text-[#002046] tracking-tight">
             앱 기본 설정 &amp; 고객지원
           </h2>
         </div>

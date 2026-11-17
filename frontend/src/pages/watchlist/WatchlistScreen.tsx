@@ -84,13 +84,13 @@ export function WatchlistScreen({
     sortBy === 'recent'
       ? savedItems
       : [...savedItems].sort((a, b) => {
-          const aIsPerpetual = a.dDay > 365
-          const bIsPerpetual = b.dDay > 365
-          if (aIsPerpetual && !bIsPerpetual) return 1
-          if (!aIsPerpetual && bIsPerpetual) return -1
-          if (a.dDay !== b.dDay) return a.dDay - b.dDay
-          return (a.auctionDate || '').localeCompare(b.auctionDate || '')
-        })
+        const aIsPerpetual = a.dDay > 365
+        const bIsPerpetual = b.dDay > 365
+        if (aIsPerpetual && !bIsPerpetual) return 1
+        if (!aIsPerpetual && bIsPerpetual) return -1
+        if (a.dDay !== b.dDay) return a.dDay - b.dDay
+        return (a.auctionDate || '').localeCompare(b.auctionDate || '')
+      })
 
   const isAllSelected =
     sortedItems.length > 0 && activeSelectedIds.length === sortedItems.length
@@ -164,17 +164,18 @@ export function WatchlistScreen({
 
   return (
     <div
-      className={`flex flex-col gap-4 px-4 md:px-6 pt-2 ${
-        isSelectionMode && sortedItems.length > 0 ? 'pb-40 md:pb-16' : 'pb-24 md:pb-8'
-      }`}
+      className={`flex flex-col gap-4 px-4 md:px-6 pt-2 ${isSelectionMode && sortedItems.length > 0 ? 'pb-40 md:pb-16' : 'pb-24 md:pb-8'
+        }`}
     >
       {/* 1. 상단 타이틀 및 보관 건수 헤더 */}
-      <div className="flex items-center justify-between pb-2 border-b border-[#e5eeff]">
+      <div className="flex items-center justify-between pb-3 border-b border-[#e5eeff]">
         <div>
-          <h2 className="text-lg font-headline font-bold text-[#002046]">관심 공매 보관함</h2>
-          <p className="text-xs text-[#74777f]">찜해둔 공매 물건의 기일 추적 및 상태 관리</p>
+          <h2 className="text-xl font-headline font-extrabold text-[#002046] tracking-tight">
+            관심 공매
+          </h2>
+          <p className="text-sm text-[#74777f] mt-0.5">찜해둔 공매 물건의 기일 추적 및 상태 관리</p>
         </div>
-        <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-[#eff4ff] text-[#0051d5]">
+        <span className="text-sm font-extrabold px-3 py-1 rounded-full bg-[#eff4ff] text-[#0051d5]">
           {savedItems.length}건 보관
         </span>
       </div>
@@ -184,8 +185,8 @@ export function WatchlistScreen({
         <>
           {/* 마감 임박(3일 이내) 물건 존재 시 주의 안내 배너 */}
           {urgentCount > 0 && (
-            <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-rose-50 border border-rose-200/70 text-xs text-[#ba1a1a]">
-              <span className="material-symbols-outlined text-[18px] shrink-0">
+            <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-rose-50 border border-rose-200/70 text-sm text-[#ba1a1a]">
+              <span className="material-symbols-outlined text-[20px] shrink-0">
                 notifications_active
               </span>
               <span className="font-semibold">
@@ -203,9 +204,8 @@ export function WatchlistScreen({
                 className="flex items-center gap-1.5 font-bold text-[#002046] hover:text-[#0051d5] transition-colors cursor-pointer"
               >
                 <span
-                  className={`material-symbols-outlined text-[19px] ${
-                    activeSelectedIds.length > 0 ? 'text-[#0051d5]' : 'text-[#74777f]'
-                  }`}
+                  className={`material-symbols-outlined text-[19px] ${activeSelectedIds.length > 0 ? 'text-[#0051d5]' : 'text-[#74777f]'
+                    }`}
                 >
                   {isAllSelected
                     ? 'check_box'
@@ -233,22 +233,20 @@ export function WatchlistScreen({
                 <button
                   type="button"
                   onClick={() => setSortBy('recent')}
-                  className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
-                    sortBy === 'recent'
+                  className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer ${sortBy === 'recent'
                       ? 'bg-[#002046] text-white shadow-2xs'
                       : 'bg-white border border-[#e5eeff] text-[#74777f] hover:text-[#0b1c30]'
-                  }`}
+                    }`}
                 >
                   최신등록순
                 </button>
                 <button
                   type="button"
                   onClick={() => setSortBy('dDay')}
-                  className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
-                    sortBy === 'dDay'
+                  className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer ${sortBy === 'dDay'
                       ? 'bg-[#002046] text-white shadow-2xs'
                       : 'bg-white border border-[#e5eeff] text-[#74777f] hover:text-[#0b1c30]'
-                  }`}
+                    }`}
                 >
                   마감임박순
                 </button>
@@ -302,21 +300,19 @@ export function WatchlistScreen({
                   onClick={() =>
                     isSelectionMode ? handleToggleSelectItem(item.id) : onSelectItem(item)
                   }
-                  className={`rounded-2xl border p-3.5 flex gap-3 shadow-2xs active:scale-[0.99] cursor-pointer transition-all group ${
-                    isSelectionMode && isSelected
+                  className={`rounded-2xl border p-3.5 flex gap-3 shadow-2xs active:scale-[0.99] cursor-pointer transition-all group ${isSelectionMode && isSelected
                       ? 'bg-[#eff4ff]/50 border-[#0051d5] ring-1 ring-[#0051d5]/25'
                       : 'bg-white border-[#e5eeff] hover:shadow-xs hover:border-[#0051d5]/40'
-                  }`}
+                    }`}
                 >
                   {/* 선택 모드 체크박스 */}
                   {isSelectionMode && (
                     <div className="flex items-center shrink-0" aria-hidden="true">
                       <span
-                        className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${
-                          isSelected
+                        className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${isSelected
                             ? 'bg-[#0051d5] border-[#0051d5] text-white'
                             : 'bg-white border-[#c3c7cf] text-transparent'
-                        }`}
+                          }`}
                       >
                         <span className="material-symbols-outlined text-[14px] font-bold">
                           check
@@ -337,9 +333,8 @@ export function WatchlistScreen({
                       }}
                     />
                     <span
-                      className={`absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-md text-white text-[9px] font-bold shadow-2xs ${
-                        isUrgent ? 'bg-[#ba1a1a]' : 'bg-[#002046]/85'
-                      }`}
+                      className={`absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-md text-white text-[9px] font-bold shadow-2xs ${isUrgent ? 'bg-[#ba1a1a]' : 'bg-[#002046]/85'
+                        }`}
                     >
                       {dDayLabel}
                     </span>
@@ -424,11 +419,10 @@ export function WatchlistScreen({
                 <button
                   type="button"
                   onClick={handleDeleteSelected}
-                  className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                    activeSelectedIds.length > 0
+                  className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${activeSelectedIds.length > 0
                       ? 'bg-[#ba1a1a] hover:bg-[#93000a] text-white shadow-xs active:scale-[0.98]'
                       : 'bg-slate-200 text-slate-500'
-                  }`}
+                    }`}
                 >
                   <span className="material-symbols-outlined text-[16px]">delete</span>
                   <span>

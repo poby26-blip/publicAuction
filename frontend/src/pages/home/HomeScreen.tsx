@@ -207,7 +207,7 @@ export function HomeScreen({
               }
             }}
             placeholder="지역, 물건번호, 자산명 입력 후 Enter (예: 잠실, 제네시스, 기계)"
-            className="w-full h-12 bg-white rounded-2xl pl-10 pr-18 text-sm text-[#0b1c30] placeholder-[#74777f] border border-[#c4c6cf]/60 shadow-xs focus:outline-none focus:ring-2 focus:ring-[#0051d5] focus:border-transparent transition-all"
+            className="w-full h-12 bg-white rounded-2xl pl-10 pr-20 text-sm sm:text-base text-[#0b1c30] placeholder-[#74777f] border border-[#c4c6cf]/60 shadow-xs focus:outline-none focus:ring-2 focus:ring-[#0051d5] focus:border-transparent transition-all"
           />
           <button
             type="button"
@@ -219,7 +219,7 @@ export function HomeScreen({
                 keyword: homeSearchKeyword.trim(),
               })
             }
-            className="absolute right-2 px-3 py-1.5 rounded-xl bg-[#0051d5] hover:bg-[#003ea8] text-white text-xs font-bold transition-colors cursor-pointer"
+            className="absolute right-2 px-3.5 py-1.5 rounded-xl bg-[#0051d5] hover:bg-[#003ea8] text-white text-sm font-bold transition-colors cursor-pointer"
             aria-label="온비드 전체 검색 실행"
           >
             검색
@@ -235,8 +235,8 @@ export function HomeScreen({
                 key={region}
                 type="button"
                 onClick={() => handleRegionClick(region)}
-                className={`flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all active:scale-95 cursor-pointer ${isSelected
-                    ? 'bg-[#0051d5] text-white shadow-xs'
+                className={`flex-shrink-0 px-3.5 py-2 rounded-full text-[13px] font-semibold transition-all active:scale-95 cursor-pointer ${isSelected
+                    ? 'bg-[#0051d5] text-white shadow-xs font-bold'
                     : 'bg-white border border-[#c4c6cf]/50 text-[#44474e] hover:bg-[#e5eeff]'
                   }`}
               >
@@ -248,7 +248,7 @@ export function HomeScreen({
 
         {/* 지역 및 상품군 필터링 매칭 상태 피드백 바 */}
         {(homeRegion !== '전체' || homeAssetGroup !== 'all') && (
-          <div className="mt-2.5 flex items-center justify-between text-xs px-3.5 py-2 rounded-xl bg-white border border-[#e5eeff] shadow-2xs">
+          <div className="mt-2.5 flex items-center justify-between text-[13px] px-3.5 py-2.5 rounded-xl bg-white border border-[#e5eeff] shadow-2xs">
             {isHomeLoading ? (
               <span className="text-[#0051d5] font-semibold flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-[#0051d5] animate-ping"></span>
@@ -261,7 +261,7 @@ export function HomeScreen({
               </span>
             ) : (
               <span className="text-[#ba1a1a] font-medium flex items-center gap-1">
-                <span className="material-symbols-outlined text-[16px]">info</span>
+                <span className="material-symbols-outlined text-[17px]">info</span>
                 '{filterSummaryLabel}' 실시간 매물이 없습니다.
               </span>
             )}
@@ -274,7 +274,7 @@ export function HomeScreen({
                   region: homeRegion === '전체' ? undefined : homeRegion,
                 })
               }
-              className="text-[#002046] font-bold hover:text-[#0051d5] transition-colors flex items-center text-[11px] cursor-pointer shrink-0 ml-2"
+              className="text-[#002046] font-extrabold hover:text-[#0051d5] transition-colors flex items-center text-xs cursor-pointer shrink-0 ml-2"
             >
               전체보기 &gt;
             </button>
@@ -287,7 +287,7 @@ export function HomeScreen({
       {/* =================================================================== */}
       <section className="px-4 md:px-6 flex flex-col gap-3">
         {/* 1차 상품군 대분류 세그먼트 탭 (목록 화면과 통일된 3대 자산군 구조) */}
-        <div className="grid grid-cols-4 gap-1.5 p-1 bg-[#eff4ff] rounded-2xl border border-[#dce9ff]">
+        <div className="grid grid-cols-4 gap-1.5 p-1.5 bg-[#eff4ff] rounded-2xl border border-[#dce9ff]">
           {GONG_ASSET_GROUPS.map((group) => {
             const isActive = homeAssetGroup === group.id
             return (
@@ -295,12 +295,12 @@ export function HomeScreen({
                 key={group.id}
                 type="button"
                 onClick={() => handleAssetGroupClick(group.id)}
-                className={`py-2 px-1 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer ${isActive
-                    ? 'bg-[#002046] text-white shadow-xs'
-                    : 'text-[#44474e] hover:text-[#002046] hover:bg-white/60'
+                className={`py-2.5 px-1 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${isActive
+                    ? 'bg-[#002046] text-white shadow-xs font-extrabold'
+                    : 'text-[#44474e] hover:text-[#002046] hover:bg-white/60 font-semibold'
                   }`}
               >
-                <span className="material-symbols-outlined text-[15px]">{group.icon}</span>
+                <span className="material-symbols-outlined text-[18px]">{group.icon}</span>
                 <span>{group.label}</span>
               </button>
             )
@@ -321,12 +321,12 @@ export function HomeScreen({
                     region: homeRegion === '전체' ? undefined : homeRegion,
                   })
                 }
-                className="bg-white rounded-2xl p-2.5 flex flex-col items-center justify-center border border-[#e5eeff] shadow-2xs hover:border-[#0051d5] active:scale-95 transition-all group cursor-pointer"
+                className="bg-white rounded-2xl p-3 flex flex-col items-center justify-center border border-[#e5eeff] shadow-2xs hover:border-[#0051d5] active:scale-95 transition-all group cursor-pointer"
               >
-                <div className="w-10 h-10 rounded-xl bg-[#eff4ff] flex items-center justify-center text-[#002046] group-hover:bg-[#0051d5] group-hover:text-white transition-colors mb-1.5">
-                  <span className="material-symbols-outlined text-[22px]">{cat.icon}</span>
+                <div className="w-11 h-11 rounded-xl bg-[#eff4ff] flex items-center justify-center text-[#002046] group-hover:bg-[#0051d5] group-hover:text-white transition-colors mb-1.5">
+                  <span className="material-symbols-outlined text-[24px]">{cat.icon}</span>
                 </div>
-                <span className="text-[11px] font-semibold text-[#0b1c30] tracking-tight text-center line-clamp-1">
+                <span className="text-xs font-bold text-[#0b1c30] tracking-tight text-center line-clamp-1">
                   {cat.label}
                 </span>
               </button>
@@ -348,12 +348,12 @@ export function HomeScreen({
                       region: homeRegion === '전체' ? undefined : homeRegion,
                     })
                   }
-                  className="bg-white rounded-2xl p-2.5 flex flex-col items-center justify-center border border-[#e5eeff] shadow-2xs hover:border-[#0051d5] active:scale-95 transition-all group cursor-pointer"
+                  className="bg-white rounded-2xl p-3 flex flex-col items-center justify-center border border-[#e5eeff] shadow-2xs hover:border-[#0051d5] active:scale-95 transition-all group cursor-pointer"
                 >
-                  <div className="w-10 h-10 rounded-xl bg-[#eff4ff] flex items-center justify-center text-[#002046] group-hover:bg-[#0051d5] group-hover:text-white transition-colors mb-1.5">
-                    <span className="material-symbols-outlined text-[22px]">{cat.icon}</span>
+                  <div className="w-11 h-11 rounded-xl bg-[#eff4ff] flex items-center justify-center text-[#002046] group-hover:bg-[#0051d5] group-hover:text-white transition-colors mb-1.5">
+                    <span className="material-symbols-outlined text-[24px]">{cat.icon}</span>
                   </div>
-                  <span className="text-[11px] font-semibold text-[#0b1c30] tracking-tight text-center line-clamp-1">
+                  <span className="text-xs font-bold text-[#0b1c30] tracking-tight text-center line-clamp-1">
                     {cat.label}
                   </span>
                 </button>
@@ -369,9 +369,9 @@ export function HomeScreen({
                     region: homeRegion === '전체' ? undefined : homeRegion,
                   })
                 }
-                className="bg-white rounded-xl py-2 px-3 border border-[#e5eeff] text-[11px] font-bold text-[#0051d5] hover:bg-[#eff4ff] transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                className="bg-white rounded-xl py-2.5 px-3 border border-[#e5eeff] text-xs font-bold text-[#0051d5] hover:bg-[#eff4ff] transition-colors flex items-center justify-center gap-1 cursor-pointer"
               >
-                <span className="material-symbols-outlined text-[15px]">domain</span>
+                <span className="material-symbols-outlined text-[16px]">domain</span>
                 <span>부동산 전체</span>
               </button>
               {themeSubCategories.map((cat) => (
@@ -385,9 +385,9 @@ export function HomeScreen({
                       region: homeRegion === '전체' ? undefined : homeRegion,
                     })
                   }
-                  className="bg-white rounded-xl py-2 px-3 border border-[#e5eeff] text-[11px] font-semibold text-[#0b1c30] hover:border-[#0051d5] transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                  className="bg-white rounded-xl py-2.5 px-3 border border-[#e5eeff] text-xs font-bold text-[#0b1c30] hover:border-[#0051d5] transition-colors flex items-center justify-center gap-1 cursor-pointer"
                 >
-                  <span className="material-symbols-outlined text-[15px] text-[#0051d5]">
+                  <span className="material-symbols-outlined text-[16px] text-[#0051d5]">
                     {cat.icon}
                   </span>
                   <span>{cat.label}</span>
@@ -417,12 +417,12 @@ export function HomeScreen({
                   </span>
                 </div>
                 <div className="text-left">
-                  <p className="text-xs font-bold text-[#002046]">
+                  <p className="text-sm font-extrabold text-[#002046]">
                     {homeAssetGroup === 'movable'
                       ? '기계·임산물·물품 동산 공매 전체보기'
                       : '승용·화물·특수차량 공매 전체보기'}
                   </p>
-                  <p className="text-[11px] text-[#74777f]">
+                  <p className="text-xs text-[#74777f] mt-0.5">
                     {homeAssetGroup === 'movable'
                       ? '온비드 동산 전용 OpenAPI 실시간 매물 전체 탐색'
                       : '온비드 차량 전용 OpenAPI 실시간 매물 전체 탐색'}
@@ -445,9 +445,9 @@ export function HomeScreen({
                       region: homeRegion === '전체' ? undefined : homeRegion,
                     })
                   }
-                  className="bg-white rounded-xl py-2 px-3 border border-[#e5eeff] text-[11px] font-semibold text-[#0b1c30] hover:border-[#0051d5] transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                  className="bg-white rounded-xl py-2.5 px-3 border border-[#e5eeff] text-xs font-bold text-[#0b1c30] hover:border-[#0051d5] transition-colors flex items-center justify-center gap-1 cursor-pointer"
                 >
-                  <span className="material-symbols-outlined text-[15px] text-[#0051d5]">
+                  <span className="material-symbols-outlined text-[16px] text-[#0051d5]">
                     {cat.icon}
                   </span>
                   <span>{cat.label}</span>
@@ -484,11 +484,11 @@ export function HomeScreen({
       {/* =================================================================== */}
       <section className="px-4 md:px-6">
         <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-1.5">
-            <span className="material-symbols-outlined text-[20px] text-[#ba1a1a] fill-1">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-[24px] text-[#ba1a1a] fill-1">
               local_fire_department
             </span>
-            <h3 className="text-base font-headline font-bold text-[#002046]">
+            <h3 className="text-lg sm:text-xl font-headline font-extrabold text-[#002046] tracking-tight">
               마감 임박! 입찰 D-1 특가
             </h3>
           </div>
@@ -501,7 +501,7 @@ export function HomeScreen({
                 region: homeRegion === '전체' ? undefined : homeRegion,
               })
             }
-            className="text-xs text-[#0051d5] font-semibold hover:underline cursor-pointer"
+            className="text-sm text-[#0051d5] font-bold hover:underline cursor-pointer"
           >
             더보기 &gt;
           </button>
@@ -628,15 +628,15 @@ export function HomeScreen({
       {/* =================================================================== */}
       <section className="px-4 md:px-6">
         <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-1.5">
-            <span className="material-symbols-outlined text-[20px] text-[#0051d5]">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-[24px] text-[#0051d5]">
               insights
             </span>
-            <h3 className="text-base font-headline font-bold text-[#002046]">
+            <h3 className="text-lg sm:text-xl font-headline font-extrabold text-[#002046] tracking-tight">
               이번 주 유찰 추천! 반값 물건
             </h3>
           </div>
-          <span className="text-xs font-semibold text-[#ba1a1a]">
+          <span className="text-sm font-bold text-[#ba1a1a]">
             {maxDiscountRate > 0 ? `최대 ${maxDiscountRate}% 할인` : '유찰 특가'}
           </span>
         </div>

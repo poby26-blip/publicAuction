@@ -35,10 +35,10 @@ export function AppHeader({
   const tabMeta = TAB_HEADER_TITLES[activeTab]
 
   return (
-    <header className="sticky top-0 z-40 bg-[#f8f9ff]/90 backdrop-blur-md px-4 md:px-6 py-3 flex items-center justify-between border-b border-[#e5eeff]">
+    <header className="sticky top-0 z-40 bg-[#f8f9ff]/90 backdrop-blur-md px-4 md:px-6 py-3.5 flex items-center justify-between border-b border-[#e5eeff]">
       {/* 모바일/폴더블(< 768px): 브랜드 로고 헤더 */}
-      <div className="flex md:hidden items-center space-x-2">
-        <div className="w-8 h-8 rounded-xl bg-white border border-[#dce9ff] p-0.5 flex items-center justify-center shadow-xs overflow-hidden shrink-0">
+      <div className="flex md:hidden items-center space-x-2.5">
+        <div className="w-9 h-9 rounded-xl bg-white border border-[#dce9ff] p-0.5 flex items-center justify-center shadow-xs overflow-hidden shrink-0">
           <img
             src="/gongmaeEasyIcon.png"
             alt="공매이지 앱 아이콘"
@@ -46,24 +46,24 @@ export function AppHeader({
           />
         </div>
         <div>
-          <div className="flex items-center space-x-1.5">
-            <h1 className="text-base font-headline font-extrabold text-[#002046] tracking-tight">
+          <div className="flex items-center space-x-2">
+            <h1 className="text-xl font-headline font-extrabold text-[#002046] tracking-tight leading-none">
               공매이지
             </h1>
-            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[#e5eeff] text-[#0051d5]">
+            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-[#e5eeff] text-[#0051d5]">
               온비드
             </span>
           </div>
-          <p className="text-[10px] text-[#74777f]">공공데이터 기반 실시간 공매</p>
+          <p className="text-xs text-[#74777f] mt-0.5">공공데이터 기반 실시간 공매</p>
         </div>
       </div>
 
       {/* 태블릿(>= 768px): 좌측 사이드 레일이 브랜드를 담당하므로 상단에는 현재 화면 컨텍스트 표출 */}
       <div className="hidden md:block">
-        <h1 className="text-base font-headline font-extrabold text-[#002046] tracking-tight">
+        <h1 className="text-xl font-headline font-extrabold text-[#002046] tracking-tight leading-snug">
           {tabMeta.title}
         </h1>
-        <p className="text-[11px] text-[#74777f]">{tabMeta.subtitle}</p>
+        <p className="text-xs text-[#74777f] mt-0.5">{tabMeta.subtitle}</p>
       </div>
 
       <div className="flex items-center space-x-1.5">

@@ -458,7 +458,7 @@ export function AuctionDetailScreen({
         >
           <span className="material-symbols-outlined text-[24px]">arrow_back</span>
         </button>
-        <span className="text-sm font-bold text-[#002046] line-clamp-1 max-w-[200px] sm:max-w-md md:max-w-lg">
+        <span className="text-base font-extrabold text-[#002046] line-clamp-1 max-w-[200px] sm:max-w-md md:max-w-lg">
           {item.title}
         </span>
         <div className="flex items-center space-x-1">
@@ -563,16 +563,16 @@ export function AuctionDetailScreen({
 
           {/* 제목 및 주소 */}
           <div className="px-4 pt-4 md:px-1 md:pt-4">
-            <div className="flex items-center flex-wrap gap-1.5 text-xs font-bold text-[#0051d5] mb-1">
+            <div className="flex items-center flex-wrap gap-1.5 text-sm font-bold text-[#0051d5] mb-1">
               <span>한국자산관리공사 온비드</span>
               <span>·</span>
               <span>{item.usageName || item.auctionType}</span>
             </div>
-            <h2 className="text-xl font-headline font-bold text-[#002046] leading-snug">
+            <h2 className="text-2xl font-headline font-extrabold text-[#002046] leading-snug">
               {item.title}
             </h2>
-            <p className="text-xs text-[#74777f] flex items-start mt-1.5">
-              <span className="material-symbols-outlined text-[16px] mr-1 text-[#74777f] shrink-0 mt-0.5">
+            <p className="text-sm text-[#74777f] flex items-start mt-1.5">
+              <span className="material-symbols-outlined text-[18px] mr-1 text-[#74777f] shrink-0 mt-0.5">
                 location_on
               </span>
               <span>{displayAddress}</span>

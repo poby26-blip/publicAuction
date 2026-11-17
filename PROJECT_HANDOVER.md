@@ -1,7 +1,7 @@
 # 📋 [공매이지] 프로젝트 인수인계 및 에이전트 작업 지침서 (PROJECT_HANDOVER.md)
 
-> **문서 버전**: v1.4.1  
-> **최종 갱신일**: 2026년 11월 13일  
+> **문서 버전**: v1.4.3  
+> **최종 갱신일**: 2026년 11월 17일  
 > **프로젝트 경로**: `c:\dev\workspace\publicAuction`  
 > **프론트엔드 경로**: `c:\dev\workspace\publicAuction\frontend`  
 > **문서 목적**: 사무실, 자택 등 서로 다른 개발 환경의 **Antigravity 에이전트**가 프로젝트 컨텍스트를 즉시 100% 복원하여 끊김 없이 작업을 이어가도록 안내하며, **사용자**가 프로젝트 진행 상황과 아키텍처를 한눈에 확인할 수 있도록 지원합니다.
@@ -249,6 +249,28 @@
 3. **App.tsx 화면 Flow 전담화 및 AuctionListScreen 자체 완결화 ([App.tsx](file:///d:/workspace/publicAuction/frontend/src/App.tsx), [AuctionListScreen.tsx](file:///d:/workspace/publicAuction/frontend/src/pages/auction/AuctionListScreen.tsx))**:
    - `App.tsx`에서 거대한 OpenAPI 데이터 페칭 로직(`loadRealTimeOnbidData`, `handleRegionChange` 등)을 완전히 제거하고, 순수 탭 네비게이션과 상세 화면 오버레이 등 화면 흐름(Flow) 제어만 전담하도록 대폭 슬림화했습니다.
    - `AuctionListScreen.tsx`의 `items` prop 의존성을 선택적(optional)으로 전환하여 각 화면이 자체적으로 데이터를 관리할 수 있도록 독립성을 완성했습니다.
+
+### ✅ [16단계] 모바일 환경 가독성 개선을 위한 타이틀 및 메뉴 폰트 확대 및 레이아웃 최적화 완료
+1. **상단 헤더 및 하단 네비게이션 가독성 극대화 ([AppHeader.tsx](file:///d:/workspace/publicAuction/frontend/src/components/layout/AppHeader.tsx), [AppNavigation.tsx](file:///d:/workspace/publicAuction/frontend/src/components/layout/AppNavigation.tsx))**:
+   - 모바일 상단 로고 컨테이너를 `w-9 h-9`로 확대하고 앱 타이틀을 `text-base`에서 `text-xl`(20px), 서브타이틀 및 온비드 뱃지를 `text-xs`(12px)로 키워 브랜드 시인성을 강화했습니다.
+   - 모바일 하단 탭 바 높이를 `h-16`(64px)에서 `h-[68px]`로 확장하고, 아이콘 크기를 `text-[26px]`, 탭 라벨을 `text-xs font-semibold`(활성 시 `font-extrabold text-[#0051d5]`), 카운트 뱃지를 `text-[11px]`로 일괄 확대하여 터치 타겟과 텍스트 시인성을 개선했습니다. 태블릿 사이드 레일의 타이틀 및 메뉴 폰트도 비례하여 확대했습니다.
+2. **홈 화면 전 영역 타이틀/메뉴/칩 폰트 스케일업 ([HomeScreen.tsx](file:///d:/workspace/publicAuction/frontend/src/pages/home/HomeScreen.tsx))**:
+   - 상단 검색창 인풋을 `text-sm sm:text-base`로 키우고 검색 버튼을 `text-sm font-bold`로 최적화했습니다.
+   - 시/도 지역 칩 폰트를 `text-xs`에서 `text-[13px] px-3.5 py-2`로 확대하고, 매물 상태 피드백 바 텍스트를 `text-[13px]`로 조정했습니다.
+   - 1차 상품군 세그먼트 탭(`text-sm font-bold/font-extrabold py-2.5`, 아이콘 `text-[18px]`), 2차 테마 카테고리 퀵 그리드(`text-xs font-bold`, 아이콘 `text-[24px]`, 패딩 `p-3`), 부동산 테마 버튼(`text-xs font-bold py-2.5`), 동산/차량 배너 타이틀(`text-sm font-extrabold`)의 폰트를 확대했습니다.
+   - 섹션 4(입찰 D-1 특가) 및 섹션 5(유찰 추천 반값 물건) 섹션 제목을 `text-base`에서 `text-lg sm:text-xl font-extrabold`로 키우고 아이콘을 `text-[24px]`로 확장했습니다.
+3. **공매 목록, 관심 보관함, 마이페이지 및 상세 화면 폰트/레이아웃 동기화 ([AuctionListScreen.tsx](file:///d:/workspace/publicAuction/frontend/src/pages/auction/AuctionListScreen.tsx), [WatchlistScreen.tsx](file:///d:/workspace/publicAuction/frontend/src/pages/watchlist/WatchlistScreen.tsx), [MyScreen.tsx](file:///d:/workspace/publicAuction/frontend/src/pages/my/MyScreen.tsx), [AuctionDetailScreen.tsx](file:///d:/workspace/publicAuction/frontend/src/pages/auction/AuctionDetailScreen.tsx))**:
+   - `AuctionListScreen.tsx`: 검색바 폰트(`text-sm sm:text-base`), 1차 상품군 탭(`text-sm font-bold`), 2차 카테고리 알약(`text-[13px] font-semibold py-2 px-3.5`), 필터 드롭다운 및 결과 건수 텍스트(`text-sm`)를 스케일업했습니다.
+   - `WatchlistScreen.tsx`: 헤더 타이틀을 `text-lg`에서 `text-xl font-extrabold`로, 서브텍스트 및 마감 임박 알림 배너를 `text-sm`으로 확대했습니다.
+   - `MyScreen.tsx`: 3대 카드 섹션 헤더 타이틀을 `text-base`에서 `text-lg font-extrabold`로 키우고 아이콘(`text-[22px]`) 및 부가 뱃지 패딩을 조정했습니다.
+   - `AuctionDetailScreen.tsx`: 상단 앱바 타이틀(`text-base font-extrabold`)과 물건 본문 제목(`text-xl` ➔ `text-2xl font-extrabold`), 카테고리 태그 및 주소(`text-sm`)를 모바일 화면에서 한눈에 들어오도록 확대했습니다.
+
+### ✅ [17단계] 모바일 폴더블 모드 사이드 내비게이션 너비 확장 및 메뉴명 줄바꿈 방어 완료
+1. **사이드 내비게이션 레일 너비 확장 ([AppNavigation.tsx](file:///d:/workspace/publicAuction/frontend/src/components/layout/AppNavigation.tsx))**:
+   - 갤럭시 Z 폴드 펼침 모드 등 소형 태블릿/폴더블 뷰포트(`md`: 768px ~ 1023px)에서 사이드 내비게이션 레일(`<aside>`)의 너비를 기존 `md:w-20`(80px)에서 `md:w-28`(112px)로 확장하여 내부 가로 공간을 충분히 확보했습니다.
+2. **메뉴 라벨 개행 방어 및 시각적 정렬 보강 ([AppNavigation.tsx](file:///d:/workspace/publicAuction/frontend/src/components/layout/AppNavigation.tsx))**:
+   - 아이콘 하단의 메뉴 라벨에 `whitespace-nowrap break-keep text-center` 클래스를 적용하여 '공매목록', '관심공매', '마이페이지' 등 4~5글자의 한글 메뉴명이 줄바꿈(개행)되지 않고 한 줄로 균형 있게 표시되도록 개선했습니다.
+   - 모바일 하단 탭 바(< 768px)의 메뉴 라벨에도 `whitespace-nowrap break-keep`를 적용하여 폴더블 접힘 모드 등 좁은 폭 기기에서도 줄바꿈이 발생하지 않도록 방어했습니다.
 
 ---
 
