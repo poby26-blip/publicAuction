@@ -18,11 +18,10 @@ import {
   GONG_CATEGORIES,
   GONG_REGIONS,
   type GongItem,
-  MOCK_GONG_ITEMS,
   formatWon,
   getCategoryFallbackImage,
   isRegionMatch,
-} from '../../data/mockAuctionData'
+} from '../../data/AuctionData'
 import { CardSkeleton, ListSkeleton } from '../../components/common/Skeleton'
 import { useAuctionStore } from '../../store/useAuctionStore'
 
@@ -56,6 +55,8 @@ export function HomeScreen({
   // [1] 홈 화면 전용 독립 상태 및 액션
   const homeItems = useAuctionStore((state) => state.homeItems)
   const isHomeLoading = useAuctionStore((state) => state.isHomeLoading)
+  const homeError = useAuctionStore((state) => state.homeError)
+  const hasHomeFetched = useAuctionStore((state) => state.hasHomeFetched)
   const homeRegion = useAuctionStore((state) => state.homeRegion)
   const homeAssetGroup = useAuctionStore((state) => state.homeAssetGroup)
   const homeSearchKeyword = useAuctionStore((state) => state.homeSearchKeyword)
@@ -74,13 +75,13 @@ export function HomeScreen({
 
   /**
    * 앱 최초 마운트 시 온비드 OpenAPI 실데이터를 비동기로 호출합니다.
-   * - 이미 데이터가 로드된 상태로 다른 탭에 다녀왔다면 재호출 없이 기존 데이터를 즉시 0ms 표출합니다.
+   * - 이미 조회를 완료한 상태로 다른 탭에 다녀왔다면 재호출 없이 기존 상태를 즉시 0ms 표출합니다.
    */
   useEffect(() => {
-    if (homeItems.length === 0 || homeItems === MOCK_GONG_ITEMS) {
+    if (!hasHomeFetched && !isHomeLoading) {
       fetchHomeData()
     }
-  }, [homeItems, fetchHomeData])
+  }, [hasHomeFetched, isHomeLoading, fetchHomeData])
 
   /**
    * 목록 화면으로의 화면 전환 통합 핸들러
@@ -247,12 +248,17 @@ export function HomeScreen({
         </div>
 
         {/* 지역 및 상품군 필터링 매칭 상태 피드백 바 */}
-        {(homeRegion !== '전체' || homeAssetGroup !== 'all') && (
+        {(homeError || homeRegion !== '전체' || homeAssetGroup !== 'all') && (
           <div className="mt-2.5 flex items-center justify-between text-[13px] px-3.5 py-2.5 rounded-xl bg-white border border-[#e5eeff] shadow-2xs">
             {isHomeLoading ? (
               <span className="text-[#0051d5] font-semibold flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-[#0051d5] animate-ping"></span>
-                '{filterSummaryLabel}' 온비드 실시간 매물 조회 중...
+                '{filterSummaryLabel || '전체'}' 온비드 실시간 매물 조회 중...
+              </span>
+            ) : homeError ? (
+              <span className="text-[#ba1a1a] font-semibold flex items-center gap-1.5 min-w-0">
+                <span className="material-symbols-outlined text-[18px] shrink-0">error</span>
+                <span className="truncate">데이터를 조회하는 데 오류가 발생했습니다.</span>
               </span>
             ) : activeItems.length > 0 ? (
               <span className="text-[#0051d5] font-semibold flex items-center gap-1.5">
@@ -265,19 +271,30 @@ export function HomeScreen({
                 '{filterSummaryLabel}' 실시간 매물이 없습니다.
               </span>
             )}
-            <button
-              type="button"
-              onClick={() =>
-                handleNavigateToList({
-                  assetGroup: homeAssetGroup,
-                  subCategory: 'all',
-                  region: homeRegion === '전체' ? undefined : homeRegion,
-                })
-              }
-              className="text-[#002046] font-extrabold hover:text-[#0051d5] transition-colors flex items-center text-xs cursor-pointer shrink-0 ml-2"
-            >
-              전체보기 &gt;
-            </button>
+            {homeError ? (
+              <button
+                type="button"
+                onClick={() => fetchHomeData(homeRegion, homeAssetGroup)}
+                className="text-[#0051d5] font-extrabold hover:underline transition-colors flex items-center gap-1 text-xs cursor-pointer shrink-0 ml-2"
+              >
+                <span className="material-symbols-outlined text-[15px]">refresh</span>
+                다시 시도
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() =>
+                  handleNavigateToList({
+                    assetGroup: homeAssetGroup,
+                    subCategory: 'all',
+                    region: homeRegion === '전체' ? undefined : homeRegion,
+                  })
+                }
+                className="text-[#002046] font-extrabold hover:text-[#0051d5] transition-colors flex items-center text-xs cursor-pointer shrink-0 ml-2"
+              >
+                전체보기 &gt;
+              </button>
+            )}
           </div>
         )}
       </section>
@@ -512,6 +529,25 @@ export function HomeScreen({
           {isHomeLoading ? (
             // 비동기 통신 로딩 중: 카드 스켈레톤 3개 표출
             <CardSkeleton count={3} />
+          ) : homeError ? (
+            // 온비드 API 조회 실패: 오류 안내 및 다시 시도 UI 표출
+            <div className="w-full lg:col-span-full py-8 px-4 text-center bg-white rounded-2xl border border-[#ffd6d6] flex flex-col items-center gap-2">
+              <span className="material-symbols-outlined text-[32px] text-[#ba1a1a]">
+                cloud_off
+              </span>
+              <p className="text-sm font-bold text-[#0b1c30]">
+                데이터를 조회하는 데 오류가 발생했습니다.
+              </p>
+              <p className="text-xs text-[#74777f] max-w-sm">{homeError}</p>
+              <button
+                type="button"
+                onClick={() => fetchHomeData(homeRegion, homeAssetGroup)}
+                className="mt-1 px-4 py-2 rounded-xl bg-[#eff4ff] text-[#0051d5] text-xs font-bold hover:bg-[#dce9ff] transition-colors cursor-pointer flex items-center gap-1.5"
+              >
+                <span className="material-symbols-outlined text-[16px]">refresh</span>
+                <span>다시 시도</span>
+              </button>
+            </div>
           ) : urgentItems.length === 0 ? (
             // 해당 조건의 매물이 없는 경우: 빈 상태(Empty State) 안내
             <div className="w-full lg:col-span-full py-8 text-center text-[#74777f] text-xs bg-white rounded-2xl border border-[#e5eeff] px-4">
@@ -646,6 +682,24 @@ export function HomeScreen({
           {isHomeLoading ? (
             // 로딩 중: 세로 리스트 스켈레톤 3개 표출
             <ListSkeleton count={3} />
+          ) : homeError ? (
+            <div className="col-span-full bg-white rounded-2xl border border-[#ffd6d6] p-8 text-center flex flex-col items-center gap-2">
+              <span className="material-symbols-outlined text-[32px] text-[#ba1a1a]">
+                cloud_off
+              </span>
+              <p className="text-sm font-bold text-[#0b1c30]">
+                데이터를 조회하는 데 오류가 발생했습니다.
+              </p>
+              <p className="text-xs text-[#74777f] max-w-sm">{homeError}</p>
+              <button
+                type="button"
+                onClick={() => fetchHomeData(homeRegion, homeAssetGroup)}
+                className="mt-1 px-4 py-2 rounded-xl bg-[#eff4ff] text-[#0051d5] text-xs font-bold hover:bg-[#dce9ff] transition-colors cursor-pointer flex items-center gap-1.5"
+              >
+                <span className="material-symbols-outlined text-[16px]">refresh</span>
+                <span>다시 시도</span>
+              </button>
+            </div>
           ) : halfPriceItems.length === 0 ? (
             <div className="col-span-full bg-white rounded-2xl border border-[#e5eeff] p-8 text-center text-[#74777f] text-xs">
               {filterSummaryLabel

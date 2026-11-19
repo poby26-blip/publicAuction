@@ -17,7 +17,7 @@ import {
   type GongItem,
   formatWon,
   getCategoryFallbackImage,
-} from '../../data/mockAuctionData'
+} from '../../data/AuctionData'
 import { fetchOnbidItemDetail } from '../../services/onbidService'
 
 /**
@@ -164,16 +164,31 @@ export function AuctionDetailScreen({
   /** 상세 API 추가 조회 진행 여부 */
   const [isDetailLoading, setIsDetailLoading] = useState<boolean>(false)
 
+  /** 상세 API 조회 오류 메시지 */
+  const [detailError, setDetailError] = useState<string | null>(null)
+
+  /** 상세 API 재시도 트리거 */
+  const [detailRetryNonce, setDetailRetryNonce] = useState<number>(0)
+
   /** 상세 화면 진입 시 온비드 물건상세 API 비동기 연동 */
   useEffect(() => {
     let isCancelled = false
 
     async function loadDetail() {
       setIsDetailLoading(true)
+      setDetailError(null)
       try {
         const fetched = await fetchOnbidItemDetail(item)
         if (!isCancelled) {
           setDetail(fetched)
+        }
+      } catch (err) {
+        if (!isCancelled) {
+          setDetailError(
+            err instanceof Error && err.message
+              ? err.message
+              : '상세 데이터를 조회하는 데 오류가 발생했습니다.'
+          )
         }
       } finally {
         if (!isCancelled) {
@@ -187,7 +202,7 @@ export function AuctionDetailScreen({
     return () => {
       isCancelled = true
     }
-  }, [item])
+  }, [item, detailRetryNonce])
 
   /** 법정 입찰보증금 (최저입찰가의 10%) 자동 계산 */
   const deposit = Math.floor(item.minimumPrice * 0.1)
@@ -679,6 +694,25 @@ export function AuctionDetailScreen({
               </span>
             )}
           </div>
+          {detailError && (
+            <div className="p-3 rounded-xl bg-[#fff5f5] border border-[#ffd6d6] flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="material-symbols-outlined text-[18px] text-[#ba1a1a] shrink-0">
+                  error
+                </span>
+                <p className="text-xs font-medium text-[#ba1a1a] truncate">
+                  상세 데이터를 조회하는 데 오류가 발생했습니다. ({detailError})
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDetailRetryNonce((n) => n + 1)}
+                className="text-xs font-bold text-[#0051d5] hover:underline shrink-0 cursor-pointer"
+              >
+                다시 시도
+              </button>
+            </div>
+          )}
           <DetailRowList rows={scheduleRows} onCopy={handleCopy} />
 
           {/* 부동산 세부 면적·지분 내역 */}

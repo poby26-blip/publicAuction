@@ -9,7 +9,7 @@
  *   비즈니스 로직 수정 없이 어댑터(storageAdapter) 구현체만 교체하면 즉시 동작합니다.
  */
 
-import { type GongItem } from '../data/mockAuctionData'
+import { type GongItem } from '../data/AuctionData'
 
 /**
  * 앱 전역 로컬 저장소 키 상수 관리 객체

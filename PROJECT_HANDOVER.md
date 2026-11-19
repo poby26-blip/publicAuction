@@ -1,7 +1,7 @@
 # 📋 [공매이지] 프로젝트 인수인계 및 에이전트 작업 지침서 (PROJECT_HANDOVER.md)
 
-> **문서 버전**: v1.4.3  
-> **최종 갱신일**: 2026년 11월 17일  
+> **문서 버전**: v1.4.5  
+> **최종 갱신일**: 2026년 11월 18일  
 > **프로젝트 경로**: `c:\dev\workspace\publicAuction`  
 > **프론트엔드 경로**: `c:\dev\workspace\publicAuction\frontend`  
 > **문서 목적**: 사무실, 자택 등 서로 다른 개발 환경의 **Antigravity 에이전트**가 프로젝트 컨텍스트를 즉시 100% 복원하여 끊김 없이 작업을 이어가도록 안내하며, **사용자**가 프로젝트 진행 상황과 아키텍처를 한눈에 확인할 수 있도록 지원합니다.
@@ -25,7 +25,7 @@
   │   │   ├── components/
   │   │   │   ├── common/       # Skeleton.tsx, AuctionCard.tsx, Toast.tsx, PhotoGalleryModal.tsx 등 공통 컴포넌트
   │   │   │   └── layout/       # AppHeader.tsx, AppNavigation.tsx 등 레이아웃
-  │   │   ├── data/             # mockAuctionData.ts (표준 17개 시도 메타데이터 및 타입 정의)
+  │   │   ├── data/             # AuctionData.ts (표준 17개 시도 메타데이터, 타입 정의 및 유틸리티)
   │   │   ├── pages/
   │   │   │   ├── home/         # HomeScreen.tsx (홈 화면)
   │   │   │   ├── auction/      # AuctionListScreen.tsx (목록), AuctionDetailScreen.tsx (상세)
@@ -271,6 +271,24 @@
 2. **메뉴 라벨 개행 방어 및 시각적 정렬 보강 ([AppNavigation.tsx](file:///d:/workspace/publicAuction/frontend/src/components/layout/AppNavigation.tsx))**:
    - 아이콘 하단의 메뉴 라벨에 `whitespace-nowrap break-keep text-center` 클래스를 적용하여 '공매목록', '관심공매', '마이페이지' 등 4~5글자의 한글 메뉴명이 줄바꿈(개행)되지 않고 한 줄로 균형 있게 표시되도록 개선했습니다.
    - 모바일 하단 탭 바(< 768px)의 메뉴 라벨에도 `whitespace-nowrap break-keep`를 적용하여 폴더블 접힘 모드 등 좁은 폭 기기에서도 줄바꿈이 발생하지 않도록 방어했습니다.
+
+### ✅ [18단계] OpenAPI 조회 실패 시 Mockup-Data Fallback 제거 및 오류 안내 UI 적용 완료
+1. **OpenAPI 서비스 계층 Mock Fallback 제거 ([onbidService.ts](file:///d:/workspace/publicAuction/frontend/src/services/onbidService.ts))**:
+   - `MOCK_GONG_ITEMS` 의존성 및 `fallbackItems` 대체 로직을 전면 제거했습니다.
+   - HTTP 오류, OpenAPI `resultCode !== '00'` 응답, 인증키 미설정, 네트워크 예외 발생 시 Mock 데이터를 반환하지 않고 구체적인 사유를 담은 `Error`를 throw 하도록 변경했습니다.
+   - `fetchOnbidAllAssetsList`, `fetchOnbidItemsByManagementNo`, `fetchOnbidItemDetail` 역시 통신/응답 실패 시 예외를 전파하여 정상 0건 응답과 조회 오류를 명확히 구분합니다.
+2. **전역 스토어 Mock 초기값 제거 및 오류 상태 추가 ([useAuctionStore.ts](file:///d:/workspace/publicAuction/frontend/src/store/useAuctionStore.ts))**:
+   - `homeItems` 초기값을 `MOCK_GONG_ITEMS`에서 빈 배열 `[]`로 전환하고, `homeError: string | null` 및 `hasHomeFetched: boolean` 상태를 추가했습니다.
+   - `fetchHomeData` 실패 시 기존 목록을 비우고 `homeError`에 오류 메시지를 기록하여 무한 재호출 없이 오류 화면이 표시되도록 처리했습니다.
+3. **홈·목록·상세 화면 오류 메시지 및 재시도 UI 구현 ([HomeScreen.tsx](file:///d:/workspace/publicAuction/frontend/src/pages/home/HomeScreen.tsx), [AuctionListScreen.tsx](file:///d:/workspace/publicAuction/frontend/src/pages/auction/AuctionListScreen.tsx), [AuctionDetailScreen.tsx](file:///d:/workspace/publicAuction/frontend/src/pages/auction/AuctionDetailScreen.tsx))**:
+   - 각 화면에서 OpenAPI 조회 실패 시 빈 상태("물건이 없습니다") 대신 **"데이터를 조회하는 데 오류가 발생했습니다."** 안내 카드(상세 오류 사유 포함)와 **[다시 시도]** 버튼을 표출하도록 구현했습니다.
+
+### ✅ [19단계] 불필요한 Mockup-Data 삭제 및 데이터 파일명 리팩터링(`AuctionData.ts`) 완료
+1. **더미 데이터(`MOCK_GONG_ITEMS`) 완전 삭제 ([AuctionData.ts](file:///d:/workspace/publicAuction/frontend/src/data/AuctionData.ts))**:
+   - 더 이상 사용되지 않는 더미 공매 물건 배열(`MOCK_GONG_ITEMS`)을 완전히 삭제하고, 공매 타입 인터페이스·지역/카테고리 메타데이터 및 포맷 유틸리티만 남도록 정리했습니다.
+2. **파일명 변경 및 전체 참조 경로 일괄 업데이트**:
+   - `frontend/src/data/mockAuctionData.ts` 파일명을 **`frontend/src/data/AuctionData.ts`**로 변경했습니다.
+   - `App.tsx`, `AuctionCard.tsx`, `HomeScreen.tsx`, `AuctionListScreen.tsx`, `AuctionDetailScreen.tsx`, `WatchlistScreen.tsx`, `onbidService.ts`, `storageService.ts`, `useAuctionStore.ts` 등 9개 파일의 import 경로를 모두 `AuctionData`로 일괄 수정했습니다.
 
 ---
 

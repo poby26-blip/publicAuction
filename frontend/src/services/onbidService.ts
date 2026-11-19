@@ -13,7 +13,6 @@
  */
 
 import {
-  MOCK_GONG_ITEMS,
   type AssetGroup,
   type DetailAssetGroup,
   type GongAreaDetail,
@@ -24,7 +23,7 @@ import {
   getRegionApiQueries,
   getCategoryFallbackImage,
   resolveAssetGroup,
-} from '../data/mockAuctionData'
+} from '../data/AuctionData'
 
 /** 온비드 상세 사진 URL 아이템 */
 interface RawOnbidPhotoItem {
@@ -534,12 +533,12 @@ interface InternalOnbidFetchConfig {
   pvctTrgtYn?: 'Y' | 'N'
   prptDivCd: string
   keyword?: string
-  fallbackItems: GongItem[]
   forceCategory?: { id: string; icon: string }
 }
 
 /**
  * 단일/복수 지역 쿼리 병렬 페칭 및 ID 중복 제거를 공통으로 수행하는 내부 API 실행기입니다.
+ * - 통신/응답 오류 시 Mock 데이터로 대체하지 않고 Error를 전파합니다.
  */
 async function executeOnbidListQuery(config: InternalOnbidFetchConfig): Promise<GongItem[]> {
   const {
@@ -550,17 +549,14 @@ async function executeOnbidListQuery(config: InternalOnbidFetchConfig): Promise<
     pvctTrgtYn = 'N',
     prptDivCd,
     keyword,
-    fallbackItems,
     forceCategory,
   } = config
 
+  if (!API_KEY) {
+    throw new Error('공공데이터포털 OpenAPI 인증키가 설정되지 않았습니다.')
+  }
+
   const searchToken = extractOnbidSearchToken(keyword)
-  const effectiveFallback = searchToken
-    ? fallbackItems.filter((item) => {
-        const text = `${item.title} ${item.address} ${item.auctionType} ${item.area} ${item.cltrMngNo || ''}`.toLowerCase()
-        return text.includes(searchToken.toLowerCase())
-      })
-    : fallbackItems
 
   const baseParams = new URLSearchParams({
     serviceKey: API_KEY,
@@ -598,7 +594,7 @@ async function executeOnbidListQuery(config: InternalOnbidFetchConfig): Promise<
       return gongItem
     })
 
-  const fetchSingleRegion = async (lctnSdnm?: string): Promise<GongItem[] | null> => {
+  const fetchSingleRegion = async (lctnSdnm?: string): Promise<GongItem[]> => {
     const p = new URLSearchParams(baseParams)
     if (lctnSdnm) {
       p.append('lctnSdnm', lctnSdnm)
@@ -611,14 +607,16 @@ async function executeOnbidListQuery(config: InternalOnbidFetchConfig): Promise<
 
     if (!res.ok) {
       console.warn(`[Onbid API] HTTP 오류 (${res.status}) - ${endpointPath}`)
-      return null
+      throw new Error(`온비드 API 서버 응답 오류 (HTTP ${res.status})`)
     }
 
     const data = await res.json()
     const header = data.header || data.response?.header
     if (header?.resultCode !== '00') {
       console.warn(`[Onbid API] 응답 오류 (${header?.resultCode}: ${header?.resultMsg})`)
-      return null
+      throw new Error(
+        `온비드 OpenAPI 오류 (${header?.resultCode || 'ERROR'}: ${header?.resultMsg || '데이터 조회 실패'})`
+      )
     }
 
     const body = data.body || data.response?.body
@@ -636,16 +634,25 @@ async function executeOnbidListQuery(config: InternalOnbidFetchConfig): Promise<
   try {
     // 1. 전국 또는 단일 지역 조회
     if (regionQueries.length <= 1) {
-      const result = await fetchSingleRegion(regionQueries[0])
-      return result === null ? effectiveFallback : result
+      return await fetchSingleRegion(regionQueries[0])
     }
 
     // 2. 복수 행정구역 쿼리(예: '전남광주' -> '전남광주통합특별시', '광주광역시', '전라남도') 병렬 호출 및 병합
-    const results = await Promise.all(
+    const settled = await Promise.allSettled(
       regionQueries.slice(0, 3).map((queryName) => fetchSingleRegion(queryName))
     )
-    const combined = results.flatMap((r) => r || [])
+    const fulfilled = settled.filter(
+      (r): r is PromiseFulfilledResult<GongItem[]> => r.status === 'fulfilled'
+    )
 
+    if (fulfilled.length === 0) {
+      const firstRejected = settled.find((r): r is PromiseRejectedResult => r.status === 'rejected')
+      throw firstRejected?.reason instanceof Error
+        ? firstRejected.reason
+        : new Error('온비드 데이터를 조회하는 데 오류가 발생했습니다.')
+    }
+
+    const combined = fulfilled.flatMap((r) => r.value)
     const seen = new Set<string>()
     return combined.filter((item) => {
       if (seen.has(item.id)) return false
@@ -654,7 +661,9 @@ async function executeOnbidListQuery(config: InternalOnbidFetchConfig): Promise<
     })
   } catch (error) {
     console.error(`[Onbid API] 통신 예외 발생 (${endpointPath}):`, error)
-    return effectiveFallback
+    throw error instanceof Error
+      ? error
+      : new Error('온비드 데이터를 조회하는 데 오류가 발생했습니다.')
   }
 }
 
@@ -678,7 +687,6 @@ export async function fetchOnbidRealEstateList(options: OnbidQueryOptions = {}):
     pvctTrgtYn,
     prptDivCd: '0007,0002',
     keyword,
-    fallbackItems: MOCK_GONG_ITEMS.filter((i) => i.category !== 'car'),
   })
 }
 
@@ -701,7 +709,6 @@ export async function fetchOnbidMovableList(
     region,
     prptDivCd: '0007,0002',
     keyword,
-    fallbackItems: [],
     forceCategory: { id: 'goods', icon: 'inventory_2' },
   })
 
@@ -717,7 +724,6 @@ export async function fetchOnbidMovableList(
     region,
     prptDivCd: '0004,0010',
     keyword,
-    fallbackItems: [],
     forceCategory: { id: 'goods', icon: 'inventory_2' },
   })
 }
@@ -740,7 +746,6 @@ export async function fetchOnbidCarList(
     region,
     prptDivCd: '0007,0002',
     keyword,
-    fallbackItems: [],
     forceCategory: { id: 'car', icon: 'directions_car' },
   })
 }
@@ -748,6 +753,7 @@ export async function fetchOnbidCarList(
 /**
  * 4. 3대 상품군(부동산 + 동산 + 자동차) 공매 물건을 병렬 호출하여 통합 목록으로 제공합니다.
  * - '전체 보기' 탭 등에서 모든 자산 유형을 고르게 탐색할 때 사용합니다.
+ * - 3개 상품군 API 호출이 모두 실패한 경우 Error를 전파합니다.
  */
 export async function fetchOnbidAllAssetsList(
   pageNo = 1,
@@ -759,13 +765,24 @@ export async function fetchOnbidAllAssetsList(
   const movableCount = Math.max(4, Math.floor(numOfRows * 0.25))
   const carCount = Math.max(4, Math.floor(numOfRows * 0.25))
 
-  const [realEstateItems, movableItems, carItems] = await Promise.all([
+  const settled = await Promise.allSettled([
     fetchOnbidRealEstateList({ pageNo, numOfRows: realEstateCount, region, keyword }),
     fetchOnbidMovableList(pageNo, movableCount, region, keyword),
     fetchOnbidCarList(pageNo, carCount, region, keyword),
   ])
 
-  const combined = [...realEstateItems, ...movableItems, ...carItems]
+  const fulfilled = settled.filter(
+    (r): r is PromiseFulfilledResult<GongItem[]> => r.status === 'fulfilled'
+  )
+
+  if (fulfilled.length === 0) {
+    const firstRejected = settled.find((r): r is PromiseRejectedResult => r.status === 'rejected')
+    throw firstRejected?.reason instanceof Error
+      ? firstRejected.reason
+      : new Error('온비드 전체 공매 데이터를 조회하는 데 오류가 발생했습니다.')
+  }
+
+  const combined = fulfilled.flatMap((r) => r.value)
   const seen = new Set<string>()
   return combined.filter((item) => {
     if (seen.has(item.id)) return false
@@ -836,23 +853,23 @@ function adaptRawToDetailInfo(
   const vehicleSpec =
     assetGroup === 'car' || raw.carMdlNm || raw.vhrnoCont || raw.yrmdl
       ? {
-          maker: cleanText(raw.cltrMkrNm),
-          vehicleType: cleanText(raw.carVhknNm),
-          model: cleanText(raw.carMdlNm),
-          year: cleanText(raw.yrmdl),
-          plateNumber: cleanText(raw.vhrnoCont),
-          mileageKm:
-            typeof raw.drvDstc === 'number' && raw.drvDstc >= 0
-              ? raw.drvDstc
-              : undefined,
-          displacement:
-            raw.dsvlm !== null && raw.dsvlm !== undefined && String(raw.dsvlm).trim() !== ''
-              ? String(raw.dsvlm).trim()
-              : undefined,
-          transmission: cleanText(raw.pnsNm),
-          fuel: cleanText(raw.fuelCont),
-          color: cleanText(raw.carColrNm),
-        }
+        maker: cleanText(raw.cltrMkrNm),
+        vehicleType: cleanText(raw.carVhknNm),
+        model: cleanText(raw.carMdlNm),
+        year: cleanText(raw.yrmdl),
+        plateNumber: cleanText(raw.vhrnoCont),
+        mileageKm:
+          typeof raw.drvDstc === 'number' && raw.drvDstc >= 0
+            ? raw.drvDstc
+            : undefined,
+        displacement:
+          raw.dsvlm !== null && raw.dsvlm !== undefined && String(raw.dsvlm).trim() !== ''
+            ? String(raw.dsvlm).trim()
+            : undefined,
+        transmission: cleanText(raw.pnsNm),
+        fuel: cleanText(raw.fuelCont),
+        color: cleanText(raw.carColrNm),
+      }
       : undefined
 
   const hasVehicleData = Boolean(
@@ -862,14 +879,14 @@ function adaptRawToDetailInfo(
   const movableSpec =
     assetGroup === 'movable'
       ? {
-          maker: cleanText(raw.cltrMkrNm),
-          model: cleanText(raw.mdlNm),
-          year: cleanText(raw.mnftYr),
-          quantity: cleanText(raw.qntyCont),
-          size: cleanText(raw.mvastSizeCont),
-          weight: cleanText(raw.cltrWt),
-          storagePlace: cleanText(raw.cltrCstdPlcNm) || cleanText(raw.cstdPlcNm),
-        }
+        maker: cleanText(raw.cltrMkrNm),
+        model: cleanText(raw.mdlNm),
+        year: cleanText(raw.mnftYr),
+        quantity: cleanText(raw.qntyCont),
+        size: cleanText(raw.mvastSizeCont),
+        weight: cleanText(raw.cltrWt),
+        storagePlace: cleanText(raw.cltrCstdPlcNm) || cleanText(raw.cstdPlcNm),
+      }
       : undefined
 
   const hasMovableData = Boolean(
@@ -914,8 +931,11 @@ function adaptRawToDetailInfo(
 export async function fetchOnbidItemDetail(
   item: GongItem
 ): Promise<GongDetailInfo | null> {
-  if (!API_KEY || item.id.startsWith('gong-')) {
+  if (item.id.startsWith('gong-')) {
     return null
+  }
+  if (!API_KEY) {
+    throw new Error('공공데이터포털 OpenAPI 인증키가 설정되지 않았습니다.')
   }
 
   // 기존에 보관함에 저장된 물건(확장 키 미보유)도 id 형태를 판별해 조회 키를 보완합니다.
@@ -961,7 +981,7 @@ export async function fetchOnbidItemDetail(
 
     if (!res.ok) {
       console.warn(`[Onbid Detail API] HTTP 오류 (${res.status}) - ${endpointPath}`)
-      return null
+      throw new Error(`상세 API 서버 응답 오류 (HTTP ${res.status})`)
     }
 
     const data = await res.json()
@@ -970,7 +990,9 @@ export async function fetchOnbidItemDetail(
       console.warn(
         `[Onbid Detail API] 응답 오류 (${header?.resultCode}: ${header?.resultMsg})`
       )
-      return null
+      throw new Error(
+        `상세 OpenAPI 오류 (${header?.resultCode || 'ERROR'}: ${header?.resultMsg || '데이터 조회 실패'})`
+      )
     }
 
     const body = data.body || data.response?.body
@@ -988,7 +1010,9 @@ export async function fetchOnbidItemDetail(
     return adapted
   } catch (error) {
     console.warn(`[Onbid Detail API] 조회 예외 발생 (${endpointPath}):`, error)
-    return null
+    throw error instanceof Error
+      ? error
+      : new Error('물건 상세 정보를 조회하는 데 오류가 발생했습니다.')
   }
 }
 
@@ -1001,12 +1025,15 @@ export async function fetchOnbidItemsByManagementNo(
   targetGroup: AssetGroup = 'all'
 ): Promise<GongItem[]> {
   const trimmed = cltrMngNo.trim()
-  if (!API_KEY || !trimmed) return []
+  if (!trimmed) return []
+  if (!API_KEY) {
+    throw new Error('공공데이터포털 OpenAPI 인증키가 설정되지 않았습니다.')
+  }
 
   const groupsToQuery: DetailAssetGroup[] =
     targetGroup === 'all' ? ['real_estate', 'movable', 'car'] : [targetGroup]
 
-  const results = await Promise.all(
+  const settled = await Promise.allSettled(
     groupsToQuery.map(async (group) => {
       const endpointPath = DETAIL_ENDPOINT_MAP[group]
       const params = new URLSearchParams({
@@ -1015,44 +1042,57 @@ export async function fetchOnbidItemsByManagementNo(
         cltrMngNo: trimmed,
       })
 
-      try {
-        const res = await fetch(`${BASE_URL}${endpointPath}?${params.toString()}`, {
-          method: 'GET',
-          headers: { Accept: 'application/json' },
-        })
-        if (!res.ok) return []
-
-        const data = await res.json()
-        const header = data.header || data.response?.header
-        if (header?.resultCode !== '00') return []
-
-        const rawItems = (data.body || data.response?.body)?.items?.item
-        if (!rawItems) return []
-
-        const itemList: RawOnbidItem[] = Array.isArray(rawItems) ? rawItems : [rawItems]
-        return itemList.map((raw, idx) => {
-          const item = adaptOnbidToGongItem(raw, idx)
-          item.assetGroup = group
-          if (group === 'car') {
-            item.category = 'car'
-            item.categoryIcon = 'directions_car'
-          } else if (group === 'movable') {
-            item.category = 'goods'
-            item.categoryIcon = 'inventory_2'
-          }
-          // 상세 정보도 함께 캐싱해 진입 시 즉시 활용
-          const cacheKey = `${group}:${item.cltrMngNo || item.onbidCltrno}:${item.pbctCdtnNo || ''}`
-          detailCache.set(cacheKey, adaptRawToDetailInfo(raw, group))
-          return item
-        })
-      } catch {
-        return []
+      const res = await fetch(`${BASE_URL}${endpointPath}?${params.toString()}`, {
+        method: 'GET',
+        headers: { Accept: 'application/json' },
+      })
+      if (!res.ok) {
+        throw new Error(`관리번호 조회 서버 오류 (HTTP ${res.status})`)
       }
+
+      const data = await res.json()
+      const header = data.header || data.response?.header
+      if (header?.resultCode !== '00') {
+        throw new Error(
+          `관리번호 OpenAPI 오류 (${header?.resultCode || 'ERROR'}: ${header?.resultMsg || '데이터 조회 실패'})`
+        )
+      }
+
+      const rawItems = (data.body || data.response?.body)?.items?.item
+      if (!rawItems) return []
+
+      const itemList: RawOnbidItem[] = Array.isArray(rawItems) ? rawItems : [rawItems]
+      return itemList.map((raw, idx) => {
+        const item = adaptOnbidToGongItem(raw, idx)
+        item.assetGroup = group
+        if (group === 'car') {
+          item.category = 'car'
+          item.categoryIcon = 'directions_car'
+        } else if (group === 'movable') {
+          item.category = 'goods'
+          item.categoryIcon = 'inventory_2'
+        }
+        // 상세 정보도 함께 캐싱해 진입 시 즉시 활용
+        const cacheKey = `${group}:${item.cltrMngNo || item.onbidCltrno}:${item.pbctCdtnNo || ''}`
+        detailCache.set(cacheKey, adaptRawToDetailInfo(raw, group))
+        return item
+      })
     })
   )
 
+  const fulfilled = settled.filter(
+    (r): r is PromiseFulfilledResult<GongItem[]> => r.status === 'fulfilled'
+  )
+
+  if (fulfilled.length === 0) {
+    const firstRejected = settled.find((r): r is PromiseRejectedResult => r.status === 'rejected')
+    throw firstRejected?.reason instanceof Error
+      ? firstRejected.reason
+      : new Error('물건관리번호 데이터를 조회하는 데 오류가 발생했습니다.')
+  }
+
   const seen = new Set<string>()
-  return results.flat().filter((item) => {
+  return fulfilled.flatMap((r) => r.value).filter((item) => {
     if (seen.has(item.id)) return false
     seen.add(item.id)
     return true

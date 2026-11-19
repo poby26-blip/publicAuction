@@ -20,7 +20,7 @@ import {
   formatWon,
   getCategoryFallbackImage,
   isRegionMatch,
-} from '../../data/mockAuctionData'
+} from '../../data/AuctionData'
 import { ListSkeleton } from '../../components/common/Skeleton'
 import {
   fetchOnbidAllAssetsList,
@@ -116,6 +116,12 @@ export function AuctionListScreen({
   /** 목록 화면 자체의 비동기 OpenAPI 초기/필터 로딩 상태 */
   const [isLoading, setIsLoading] = useState<boolean>(false)
 
+  /** 목록 조회 실패 시 오류 메시지 (정상 시 null) */
+  const [listError, setListError] = useState<string | null>(null)
+
+  /** 조회 실패 후 재시도 트리거용 카운터 */
+  const [retryNonce, setRetryNonce] = useState<number>(0)
+
   /** 온비드 API 현재 페이지 번호 (기본값: 1) */
   const [pageNo, setPageNo] = useState<number>(1)
 
@@ -124,6 +130,9 @@ export function AuctionListScreen({
 
   /** '더보기' 버튼을 통한 다음 페이지 비동기 추가 로딩 상태 */
   const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false)
+
+  /** 추가 페이지('더보기') 조회 실패 시 오류 메시지 */
+  const [loadMoreError, setLoadMoreError] = useState<string | null>(null)
 
   // -------------------------------------------------------------------------
   // [3대 상품군 OpenAPI 실데이터 동적 페칭 및 페이징 파이프라인]
@@ -186,6 +195,8 @@ export function AuctionListScreen({
 
     async function loadAuctionData() {
       setIsLoading(true)
+      setListError(null)
+      setLoadMoreError(null)
       setPageNo(1)
       setHasMore(true)
 
@@ -209,6 +220,11 @@ export function AuctionListScreen({
         if (isMounted) {
           setListItems([])
           setHasMore(false)
+          setListError(
+            err instanceof Error && err.message
+              ? err.message
+              : '데이터를 조회하는 데 오류가 발생했습니다.'
+          )
         }
       } finally {
         if (isMounted) {
@@ -222,7 +238,7 @@ export function AuctionListScreen({
     return () => {
       isMounted = false
     }
-  }, [, selectedRegion, committedQuery, searchNonce])
+  }, [assetGroup, selectedRegion, committedQuery, searchNonce, retryNonce])
 
   /**
    * 하단 '공매 물건 더보기' 클릭 시 다음 페이지(pageNo + 1) 데이터를 누적 결합합니다.
@@ -232,6 +248,7 @@ export function AuctionListScreen({
 
     const nextPage = pageNo + 1
     setIsLoadingMore(true)
+    setLoadMoreError(null)
 
     try {
       const nextData = await fetchByAssetGroup(
@@ -257,7 +274,11 @@ export function AuctionListScreen({
       }
     } catch (err) {
       console.error('[AuctionListScreen] 추가 데이터 로드 실패:', err)
-      setHasMore(false)
+      setLoadMoreError(
+        err instanceof Error && err.message
+          ? err.message
+          : '추가 데이터를 조회하는 데 오류가 발생했습니다.'
+      )
     } finally {
       setIsLoadingMore(false)
     }
@@ -621,6 +642,24 @@ export function AuctionListScreen({
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <ListSkeleton count={6} />
         </div>
+      ) : listError ? (
+        <div className="py-16 px-4 text-center bg-white rounded-2xl border border-[#ffd6d6] flex flex-col items-center gap-2">
+          <span className="material-symbols-outlined text-[42px] text-[#ba1a1a]">
+            cloud_off
+          </span>
+          <p className="text-sm font-bold text-[#0b1c30]">
+            데이터를 조회하는 데 오류가 발생했습니다.
+          </p>
+          <p className="text-xs text-[#74777f] max-w-sm">{listError}</p>
+          <button
+            type="button"
+            onClick={() => setRetryNonce((n) => n + 1)}
+            className="mt-2 px-4 py-2 rounded-xl bg-[#eff4ff] text-[#0051d5] text-xs font-bold hover:bg-[#dce9ff] transition-colors cursor-pointer flex items-center gap-1.5"
+          >
+            <span className="material-symbols-outlined text-[16px]">refresh</span>
+            <span>다시 시도</span>
+          </button>
+        </div>
       ) : sorted.length > 0 ? (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -737,7 +776,12 @@ export function AuctionListScreen({
 
           {/* 6. 하단 더보기 버튼 및 로딩 / 전체 로드 완료 피드백 (그리드 전체 폭) */}
           {hasMore ? (
-            <div className="pt-2 pb-2">
+            <div className="pt-2 pb-2 flex flex-col gap-2">
+              {loadMoreError && (
+                <p className="text-xs text-[#ba1a1a] font-medium text-center">
+                  추가 데이터를 조회하는 데 오류가 발생했습니다. ({loadMoreError})
+                </p>
+              )}
               <button
                 type="button"
                 onClick={handleLoadMore}

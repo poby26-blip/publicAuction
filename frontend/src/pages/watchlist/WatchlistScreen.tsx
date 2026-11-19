@@ -15,7 +15,7 @@ import {
   type GongItem,
   formatWon,
   getCategoryFallbackImage,
-} from '../../data/mockAuctionData'
+} from '../../data/AuctionData'
 
 /**
  * WatchlistScreen 컴포넌트의 Props 인터페이스

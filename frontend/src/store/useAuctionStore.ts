@@ -17,9 +17,8 @@ import type { AppTab } from '../components/layout/AppNavigation'
 import {
   type AssetGroup,
   type GongItem,
-  MOCK_GONG_ITEMS,
   resolveAssetGroup,
-} from '../data/mockAuctionData'
+} from '../data/AuctionData'
 import {
   fetchOnbidAllAssetsList,
   fetchOnbidCarList,
@@ -43,6 +42,10 @@ export interface HomeState {
   homeItems: GongItem[]
   /** 홈 화면 온비드 API 비동기 통신 로딩 상태 */
   isHomeLoading: boolean
+  /** 홈 화면 온비드 API 조회 오류 메시지 (정상 시 null) */
+  homeError: string | null
+  /** 홈 화면 최초 OpenAPI 조회 시도 완료 여부 */
+  hasHomeFetched: boolean
   /** 홈 화면에서 선택된 시/도 지역 (기본값: '전체') */
   homeRegion: string
   /** 홈 화면에서 선택된 1차 상품군 (기본값: 'all') */
@@ -151,8 +154,10 @@ export const useAuctionStore = create<AuctionStore>((set, get) => ({
   // [초기 상태 정의 (Initial State)]
   // ---------------------------------------------------------------------------
   // [1] 홈 화면 전용 독립 상태
-  homeItems: MOCK_GONG_ITEMS,
+  homeItems: [],
   isHomeLoading: false,
+  homeError: null,
+  hasHomeFetched: false,
   homeRegion: '전체',
   homeAssetGroup: 'all',
   homeSearchKeyword: '',
@@ -194,6 +199,7 @@ export const useAuctionStore = create<AuctionStore>((set, get) => ({
       homeRegion: region,
       homeAssetGroup: assetGroup,
       isHomeLoading: true,
+      homeError: null,
     })
 
     const targetRegion = region === '전체' ? undefined : region
@@ -215,15 +221,34 @@ export const useAuctionStore = create<AuctionStore>((set, get) => ({
       }
 
       if (onbidData && onbidData.length > 0) {
-        set({ homeItems: onbidData, isHomeLoading: false })
+        set({
+          homeItems: onbidData,
+          isHomeLoading: false,
+          homeError: null,
+          hasHomeFetched: true,
+        })
         return onbidData.length
       } else {
-        set({ homeItems: [], isHomeLoading: false })
+        set({
+          homeItems: [],
+          isHomeLoading: false,
+          homeError: null,
+          hasHomeFetched: true,
+        })
         return 0
       }
     } catch (err) {
       console.error('[useAuctionStore] 홈 온비드 실데이터 로드 실패:', err)
-      set({ isHomeLoading: false })
+      const message =
+        err instanceof Error && err.message
+          ? err.message
+          : '데이터를 조회하는 데 오류가 발생했습니다.'
+      set({
+        homeItems: [],
+        isHomeLoading: false,
+        homeError: message,
+        hasHomeFetched: true,
+      })
       return 0
     }
   },
