@@ -235,7 +235,7 @@ export function MyScreen({
                     <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
                       <span className="text-sm font-semibold text-[#002046]">{item.title}</span>
                       {item.badge && (
-                        <span className="bg-[#ffdad6] text-[#93000a] text-[10px] font-bold px-1.5 py-0.5 rounded">
+                        <span className="bg-[#ffdad6] text-[#93000a] text-[12px] font-bold px-1.5 py-0.5 rounded">
                           {item.badge}
                         </span>
                       )}
@@ -344,7 +344,7 @@ export function MyScreen({
                 </p>
               </div>
             </div>
-            <span className="px-2 py-1 rounded-md bg-[#eff4ff] text-[#44474e] text-[10px] font-bold shrink-0">
+            <span className="px-2 py-1 rounded-md bg-[#eff4ff] text-[#44474e] text-[12px] font-bold shrink-0">
               최신 버전
             </span>
           </div>
@@ -418,7 +418,7 @@ export function MyScreen({
           </button>
         </div>
 
-        <p className="text-center text-[11px] text-[#74777f] mt-2">
+        <p className="text-center text-[13px] text-[#74777f] mt-2">
           © KAMCO 공공데이터 연계 서비스 · 공매이지
         </p>
       </section>

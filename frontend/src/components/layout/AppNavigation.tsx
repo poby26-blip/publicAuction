@@ -35,20 +35,18 @@ export function AppNavigation({ activeTab, onTabChange, watchlistCount = 0 }: Ap
                 key={tab.id}
                 type="button"
                 onClick={() => onTabChange(tab.id)}
-                className={`flex-1 flex flex-col items-center justify-center h-14 gap-1 transition-all active:scale-95 cursor-pointer ${
-                  isActive ? 'text-[#0051d5]' : 'text-[#60646c] hover:text-[#0b1c30]'
-                }`}
+                className={`flex-1 flex flex-col items-center justify-center h-14 gap-1 transition-all active:scale-95 cursor-pointer ${isActive ? 'text-[#0051d5]' : 'text-[#60646c] hover:text-[#0b1c30]'
+                  }`}
               >
                 <div className="relative">
                   <span
-                    className={`material-symbols-outlined text-[26px] ${
-                      isActive ? 'fill-1 text-[#0051d5]' : ''
-                    }`}
+                    className={`material-symbols-outlined text-[26px] ${isActive ? 'fill-1 text-[#0051d5]' : ''
+                      }`}
                   >
                     {tab.icon}
                   </span>
                   {hasBadge && (
-                    <span className="absolute -top-1 -right-2.5 bg-[#ba1a1a] text-white text-[11px] font-bold px-1.5 py-0.2 rounded-full ring-2 ring-white">
+                    <span className="absolute -top-1 -right-2.5 bg-[#ba1a1a] text-white text-[13px] font-bold px-1.5 py-0.2 rounded-full ring-2 ring-white">
                       {tab.badge}
                     </span>
                   )}
@@ -82,11 +80,8 @@ export function AppNavigation({ activeTab, onTabChange, watchlistCount = 0 }: Ap
                 <span className="text-xl font-headline font-extrabold text-[#002046] tracking-tight">
                   공매이지
                 </span>
-                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-[#e5eeff] text-[#0051d5]">
-                  온비드
-                </span>
               </div>
-              <p className="text-xs text-[#74777f] truncate mt-0.5">실시간 공공 공매</p>
+              <p className="text-xs text-[#74777f] truncate mt-0.5">실시간 공매 검색</p>
             </div>
           </div>
 
@@ -101,23 +96,21 @@ export function AppNavigation({ activeTab, onTabChange, watchlistCount = 0 }: Ap
                   type="button"
                   onClick={() => onTabChange(tab.id)}
                   title={tab.label}
-                  className={`w-full flex flex-col lg:flex-row items-center justify-center lg:justify-between gap-1 lg:gap-2.5 px-2 lg:px-3.5 py-3 rounded-xl transition-all active:scale-[0.98] cursor-pointer ${
-                    isActive
-                      ? 'bg-[#eff4ff] text-[#0051d5] font-extrabold shadow-2xs'
-                      : 'text-[#44474e] hover:bg-[#f8f9ff] hover:text-[#002046] font-semibold'
-                  }`}
+                  className={`w-full flex flex-col lg:flex-row items-center justify-center lg:justify-between gap-1 lg:gap-2.5 px-2 lg:px-3.5 py-3 rounded-xl transition-all active:scale-[0.98] cursor-pointer ${isActive
+                    ? 'bg-[#eff4ff] text-[#0051d5] font-extrabold shadow-2xs'
+                    : 'text-[#44474e] hover:bg-[#f8f9ff] hover:text-[#002046] font-semibold'
+                    }`}
                 >
                   <div className="flex flex-col lg:flex-row items-center gap-1 lg:gap-2.5">
                     <div className="relative">
                       <span
-                        className={`material-symbols-outlined text-[24px] ${
-                          isActive ? 'fill-1 text-[#0051d5]' : ''
-                        }`}
+                        className={`material-symbols-outlined text-[24px] ${isActive ? 'fill-1 text-[#0051d5]' : ''
+                          }`}
                       >
                         {tab.icon}
                       </span>
                       {hasBadge && (
-                        <span className="lg:hidden absolute -top-1 -right-2 bg-[#ba1a1a] text-white text-[10px] font-bold px-1.5 rounded-full ring-2 ring-white">
+                        <span className="lg:hidden absolute -top-1 -right-2 bg-[#ba1a1a] text-white text-[12px] font-bold px-1.5 rounded-full ring-2 ring-white">
                           {tab.badge}
                         </span>
                       )}
@@ -136,7 +129,7 @@ export function AppNavigation({ activeTab, onTabChange, watchlistCount = 0 }: Ap
         </div>
 
         {/* 하단 공공데이터 연동 배지 (lg 이상 표출) */}
-        <div className="hidden lg:flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#f8f9ff] border border-[#e5eeff] text-[11px] text-[#44474e]">
+        <div className="hidden lg:flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#f8f9ff] border border-[#e5eeff] text-[13px] text-[#44474e]">
           <span className="material-symbols-outlined text-[16px] text-[#059669] shrink-0">
             verified
           </span>

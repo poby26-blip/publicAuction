@@ -471,7 +471,7 @@ export function AuctionListScreen({
                 key={group.id}
                 type="button"
                 onClick={() => handleSelectAssetGroup(group.id)}
-                className={`py-2.5 px-1 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${isActive
+                className={`py-2.5 px-1 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1 sm:gap-1.5 whitespace-nowrap cursor-pointer ${isActive
                     ? 'bg-[#002046] text-white shadow-xs font-extrabold'
                     : 'text-[#44474e] hover:text-[#002046] hover:bg-white/60 font-semibold'
                   }`}
@@ -579,37 +579,37 @@ export function AuctionListScreen({
 
         <div className="flex items-center gap-1.5 flex-wrap">
           {assetGroup === 'movable' && (
-            <span className="text-purple-700 font-semibold bg-purple-50 px-1.5 py-0.5 rounded text-[10px]">
+            <span className="text-purple-700 font-semibold bg-purple-50 px-1.5 py-0.5 rounded text-[12px]">
               동산 실시간 연동
             </span>
           )}
           {assetGroup === 'car' && (
-            <span className="text-[#ba1a1a] font-semibold bg-rose-50 px-1.5 py-0.5 rounded text-[10px]">
+            <span className="text-[#ba1a1a] font-semibold bg-rose-50 px-1.5 py-0.5 rounded text-[12px]">
               자동차 실시간 연동
             </span>
           )}
           {assetGroup === 'real_estate' && (
-            <span className="text-[#0051d5] font-semibold bg-[#eff4ff] px-1.5 py-0.5 rounded text-[10px]">
+            <span className="text-[#0051d5] font-semibold bg-[#eff4ff] px-1.5 py-0.5 rounded text-[12px]">
               부동산 실시간 연동
             </span>
           )}
           {assetGroup === 'all' && (
-            <span className="text-[#002046] font-semibold bg-slate-100 px-1.5 py-0.5 rounded text-[10px]">
+            <span className="text-[#002046] font-semibold bg-slate-100 px-1.5 py-0.5 rounded text-[12px]">
               3대 상품 통합 연동
             </span>
           )}
           {selectedRegion !== '전체' && (
-            <span className="text-[#0051d5] font-semibold bg-[#eff4ff] px-1.5 py-0.5 rounded text-[10px]">
+            <span className="text-[#0051d5] font-semibold bg-[#eff4ff] px-1.5 py-0.5 rounded text-[12px]">
               {selectedRegion}
             </span>
           )}
           {selectedType !== 'all' && (
-            <span className="text-[#059669] font-semibold bg-emerald-50 px-1.5 py-0.5 rounded text-[10px]">
+            <span className="text-[#059669] font-semibold bg-emerald-50 px-1.5 py-0.5 rounded text-[12px]">
               {selectedType}
             </span>
           )}
           {committedQuery && (
-            <span className="text-[#0051d5] font-semibold bg-[#eff4ff] px-1.5 py-0.5 rounded text-[10px] flex items-center gap-0.5">
+            <span className="text-[#0051d5] font-semibold bg-[#eff4ff] px-1.5 py-0.5 rounded text-[12px] flex items-center gap-0.5">
               &apos;{committedQuery}&apos; OpenAPI 검색
               <button
                 type="button"
@@ -622,7 +622,7 @@ export function AuctionListScreen({
             </span>
           )}
           {keyword.trim() && keyword.trim() !== committedQuery && (
-            <span className="text-[#44474e] font-medium bg-[#f1f3f9] px-1.5 py-0.5 rounded text-[10px] flex items-center gap-0.5">
+            <span className="text-[#44474e] font-medium bg-[#f1f3f9] px-1.5 py-0.5 rounded text-[12px] flex items-center gap-0.5">
               목록 내 &apos;{keyword.trim()}&apos;
               <button
                 type="button"
@@ -698,7 +698,7 @@ export function AuctionListScreen({
                       >
                         {dDayLabel}
                       </span>
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-black/60 text-white backdrop-blur-xs">
+                      <span className="px-2 py-0.5 rounded-full text-[12px] font-semibold bg-black/60 text-white backdrop-blur-xs">
                         {item.auctionType}
                       </span>
                     </div>
@@ -721,7 +721,7 @@ export function AuctionListScreen({
                     </button>
                     {/* 면적/제원 정보 태그 */}
                     <div className="absolute bottom-2 left-2.5">
-                      <span className="text-[10px] font-semibold bg-white/90 text-[#0b1c30] px-2 py-0.5 rounded-md backdrop-blur-xs">
+                      <span className="text-[12px] font-semibold bg-white/90 text-[#0b1c30] px-2 py-0.5 rounded-md backdrop-blur-xs">
                         {item.area}
                       </span>
                     </div>
@@ -749,18 +749,18 @@ export function AuctionListScreen({
                           </span>
                         </div>
                         {item.appraisalPrice > item.minimumPrice ? (
-                          <span className="text-[11px] text-[#74777f] line-through">
+                          <span className="text-[13px] text-[#74777f] line-through">
                             감정가 {formatWon(item.appraisalPrice)}
                           </span>
                         ) : (
-                          <span className="text-[11px] text-[#74777f]">
+                          <span className="text-[13px] text-[#74777f]">
                             최저입찰가 (감정가 동일/미산정)
                           </span>
                         )}
                       </div>
 
                       <div className="text-right">
-                        <span className="text-[10px] text-[#74777f] block">
+                        <span className="text-[12px] text-[#74777f] block">
                           {item.failCount > 0 ? `${item.failCount}회 유찰` : '신규공매'}
                         </span>
                         <span className="text-xs font-semibold text-[#0051d5]">
@@ -798,7 +798,7 @@ export function AuctionListScreen({
                 ) : (
                   <>
                     <span>공매 물건 더보기</span>
-                    <span className="text-[11px] font-normal text-[#74777f]">
+                    <span className="text-[13px] font-normal text-[#74777f]">
                       (현재 {listItems.length}건 로드됨)
                     </span>
                     <span className="material-symbols-outlined text-[18px]">

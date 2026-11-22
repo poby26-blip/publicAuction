@@ -74,7 +74,7 @@ export function Toast({
               onAction()
               onDismiss?.()
             }}
-            className="ml-1 px-2.5 py-1 rounded-lg bg-[#0051d5] hover:bg-[#316bf3] text-white text-[11px] font-bold shrink-0 transition-colors cursor-pointer"
+            className="ml-1 px-2.5 py-1 rounded-lg bg-[#0051d5] hover:bg-[#316bf3] text-white text-[13px] font-bold shrink-0 transition-colors cursor-pointer"
           >
             {actionLabel}
           </button>

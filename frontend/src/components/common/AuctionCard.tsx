@@ -55,7 +55,7 @@ export function AuctionCard({ item, isBookmarked, onToggleBookmark, onClick }: A
 
         {/* Category Label */}
         <div className="absolute bottom-2.5 left-3">
-          <span className="text-[11px] font-medium bg-white/90 text-slate-800 px-2 py-0.5 rounded-md backdrop-blur-xs">
+          <span className="text-[13px] font-medium bg-white/90 text-slate-800 px-2 py-0.5 rounded-md backdrop-blur-xs">
             {item.categoryLabel} · {item.area}
           </span>
         </div>
@@ -96,7 +96,7 @@ export function AuctionCard({ item, isBookmarked, onToggleBookmark, onClick }: A
             </span>
           </div>
 
-          <div className="flex items-center justify-between text-[11px] text-slate-400 mt-2">
+          <div className="flex items-center justify-between text-[13px] text-slate-400 mt-2">
             <span className="flex items-center">
               <Calendar className="w-3 h-3 mr-1" />
               매각기일 {item.auctionDate}

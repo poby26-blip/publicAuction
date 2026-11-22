@@ -222,7 +222,7 @@ export function WatchlistScreen({
               <button
                 type="button"
                 onClick={handleExitSelectionMode}
-                className="text-[11px] font-bold text-[#43474e] hover:text-[#0b1c30] px-2.5 py-1 rounded-lg bg-white border border-[#d6e2ff] transition-colors cursor-pointer"
+                className="text-[13px] font-bold text-[#43474e] hover:text-[#0b1c30] px-2.5 py-1 rounded-lg bg-white border border-[#d6e2ff] transition-colors cursor-pointer"
               >
                 취소
               </button>
@@ -257,7 +257,7 @@ export function WatchlistScreen({
                   <button
                     type="button"
                     onClick={handleEnterSelectionMode}
-                    className="text-[11px] font-semibold text-[#0051d5] hover:bg-[#eff4ff] flex items-center gap-0.5 px-2 py-1 rounded-lg transition-colors cursor-pointer"
+                    className="text-[13px] font-semibold text-[#0051d5] hover:bg-[#eff4ff] flex items-center gap-0.5 px-2 py-1 rounded-lg transition-colors cursor-pointer"
                   >
                     <span className="material-symbols-outlined text-[15px]">checklist</span>
                     <span>선택 삭제</span>
@@ -268,7 +268,7 @@ export function WatchlistScreen({
                   <button
                     type="button"
                     onClick={handleClearAll}
-                    className="text-[11px] font-semibold text-[#74777f] hover:text-[#ba1a1a] flex items-center gap-0.5 px-2 py-1 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer"
+                    className="text-[13px] font-semibold text-[#74777f] hover:text-[#ba1a1a] flex items-center gap-0.5 px-2 py-1 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer"
                   >
                     <span className="material-symbols-outlined text-[15px]">delete_sweep</span>
                     <span>전체 비우기</span>
@@ -333,7 +333,7 @@ export function WatchlistScreen({
                       }}
                     />
                     <span
-                      className={`absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-md text-white text-[9px] font-bold shadow-2xs ${isUrgent ? 'bg-[#ba1a1a]' : 'bg-[#002046]/85'
+                      className={`absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-md text-white text-[12px] font-bold shadow-2xs ${isUrgent ? 'bg-[#ba1a1a]' : 'bg-[#002046]/85'
                         }`}
                     >
                       {dDayLabel}
@@ -345,19 +345,19 @@ export function WatchlistScreen({
                     <div>
                       <div className="flex items-center justify-between gap-1">
                         <div className="flex items-center gap-1 overflow-hidden">
-                          <span className="text-[10px] font-bold text-[#0051d5] bg-[#eff4ff] px-1.5 py-0.5 rounded shrink-0">
+                          <span className="text-[12px] font-bold text-[#0051d5] bg-[#eff4ff] px-1.5 py-0.5 rounded shrink-0">
                             {item.auctionType}
                           </span>
                           {hasBidAlert && (
-                            <span className="text-[10px] font-bold text-[#0051d5] bg-[#dce9ff] px-1.5 py-0.5 rounded inline-flex items-center gap-0.5 shrink-0">
-                              <span className="material-symbols-outlined text-[11px] fill-1">
+                            <span className="text-[12px] font-bold text-[#0051d5] bg-[#dce9ff] px-1.5 py-0.5 rounded inline-flex items-center gap-0.5 shrink-0">
+                              <span className="material-symbols-outlined text-[13px] fill-1">
                                 notifications_active
                               </span>
                               <span>알림중</span>
                             </span>
                           )}
                           {item.failCount > 0 && (
-                            <span className="text-[10px] font-medium text-[#74777f] shrink-0">
+                            <span className="text-[12px] font-medium text-[#74777f] shrink-0">
                               {item.failCount}회 유찰
                             </span>
                           )}
@@ -381,7 +381,7 @@ export function WatchlistScreen({
                       <h4 className="text-sm font-bold text-[#0b1c30] line-clamp-1 mt-0.5 group-hover:text-[#0051d5] transition-colors">
                         {item.title}
                       </h4>
-                      <p className="text-[11px] text-[#74777f] line-clamp-1">{item.address}</p>
+                      <p className="text-[13px] text-[#74777f] line-clamp-1">{item.address}</p>
                     </div>
 
                     <div className="pt-2 border-t border-[#f8f9ff] flex items-baseline justify-between gap-1">
@@ -395,7 +395,7 @@ export function WatchlistScreen({
                           {formatWon(item.minimumPrice)}
                         </span>
                       </div>
-                      <span className="text-[10px] text-[#74777f] shrink-0">
+                      <span className="text-[12px] text-[#74777f] shrink-0">
                         기일 {item.auctionDate ? item.auctionDate.split(' ')[0] : '확인중'}
                       </span>
                     </div>

@@ -1,7 +1,7 @@
 # 📋 [공매이지] 프로젝트 인수인계 및 에이전트 작업 지침서 (PROJECT_HANDOVER.md)
 
-> **문서 버전**: v1.4.5  
-> **최종 갱신일**: 2026년 11월 18일  
+> **문서 버전**: v1.4.6  
+> **최종 갱신일**: 2026년 11월 19일  
 > **프로젝트 경로**: `c:\dev\workspace\publicAuction`  
 > **프론트엔드 경로**: `c:\dev\workspace\publicAuction\frontend`  
 > **문서 목적**: 사무실, 자택 등 서로 다른 개발 환경의 **Antigravity 에이전트**가 프로젝트 컨텍스트를 즉시 100% 복원하여 끊김 없이 작업을 이어가도록 안내하며, **사용자**가 프로젝트 진행 상황과 아키텍처를 한눈에 확인할 수 있도록 지원합니다.
@@ -289,6 +289,14 @@
 2. **파일명 변경 및 전체 참조 경로 일괄 업데이트**:
    - `frontend/src/data/mockAuctionData.ts` 파일명을 **`frontend/src/data/AuctionData.ts`**로 변경했습니다.
    - `App.tsx`, `AuctionCard.tsx`, `HomeScreen.tsx`, `AuctionListScreen.tsx`, `AuctionDetailScreen.tsx`, `WatchlistScreen.tsx`, `onbidService.ts`, `storageService.ts`, `useAuctionStore.ts` 등 9개 파일의 import 경로를 모두 `AuctionData`로 일괄 수정했습니다.
+
+### ✅ [20단계] 레이아웃 보존형 전역 모바일 폰트 스케일 상향 및 극소 폰트 제거 완료
+1. **Tailwind CSS v4 `@theme` 전역 타이포그래피 스케일 상향 ([index.css](file:///d:/workspace/publicAuction/frontend/src/index.css))**:
+   - `html` 루트 폰트 크기(16px)를 변경하지 않아 기존의 모든 `rem` 기반 레이아웃·여백·카드 크기를 100% 보존하면서, `@theme` 타이포그래피 변수(`--text-xs` 14px, `--text-sm` 16px, `--text-base` 18px, `--text-lg` 20px, `--text-xl` 22px, `--text-2xl` 26px)와 각 `line-height`를 일괄 +2px 상향했습니다.
+2. **하드코딩된 9px ~ 11px 초소형 폰트 전면 제거 (9개 컴포넌트 파일, 총 69곳)**:
+   - [HomeScreen.tsx](file:///d:/workspace/publicAuction/frontend/src/pages/home/HomeScreen.tsx), [AuctionListScreen.tsx](file:///d:/workspace/publicAuction/frontend/src/pages/auction/AuctionListScreen.tsx), [AuctionDetailScreen.tsx](file:///d:/workspace/publicAuction/frontend/src/pages/auction/AuctionDetailScreen.tsx), [WatchlistScreen.tsx](file:///d:/workspace/publicAuction/frontend/src/pages/watchlist/WatchlistScreen.tsx), [MyScreen.tsx](file:///d:/workspace/publicAuction/frontend/src/pages/my/MyScreen.tsx), [AppNavigation.tsx](file:///d:/workspace/publicAuction/frontend/src/components/layout/AppNavigation.tsx), [AuctionCard.tsx](file:///d:/workspace/publicAuction/frontend/src/components/common/AuctionCard.tsx), [PhotoGalleryModal.tsx](file:///d:/workspace/publicAuction/frontend/src/components/common/PhotoGalleryModal.tsx), [Toast.tsx](file:///d:/workspace/publicAuction/frontend/src/components/common/Toast.tsx)의 `text-[9px]`, `text-[10px]`를 `text-[12px]`로, `text-[11px]`를 `text-[13px]`로 상향하여 앱 전체 최소 폰트 크기를 12px 이상으로 보장했습니다.
+3. **좁은 화면 줄바꿈 방어 보강 ([HomeScreen.tsx](file:///d:/workspace/publicAuction/frontend/src/pages/home/HomeScreen.tsx), [AuctionListScreen.tsx](file:///d:/workspace/publicAuction/frontend/src/pages/auction/AuctionListScreen.tsx))**:
+   - 1차 상품군 4열 세그먼트 탭 버튼에 `whitespace-nowrap`과 반응형 폰트(`text-xs sm:text-sm`)를 적용해 360px 모바일 화면에서도 줄바꿈 없이 깔끔하게 표시되도록 조정했습니다.
 
 ---
 

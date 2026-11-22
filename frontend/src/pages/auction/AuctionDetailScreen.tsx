@@ -103,7 +103,7 @@ function DetailRowList({
               <button
                 type="button"
                 onClick={() => onCopy(row.value, row.label)}
-                className="px-1.5 py-0.5 rounded-md bg-[#eff4ff] hover:bg-[#dce9ff] text-[#0051d5] text-[10px] font-bold shrink-0 inline-flex items-center gap-0.5 transition-colors cursor-pointer"
+                className="px-1.5 py-0.5 rounded-md bg-[#eff4ff] hover:bg-[#dce9ff] text-[#0051d5] text-[12px] font-bold shrink-0 inline-flex items-center gap-0.5 transition-colors cursor-pointer"
                 aria-label={`${row.label} 복사`}
               >
                 <span className="material-symbols-outlined text-[12px]">content_copy</span>
@@ -532,14 +532,14 @@ export function AuctionDetailScreen({
             {/* 우측 하단 순번 배지 & 사진 전체보기 버튼 */}
             <div className="absolute bottom-3 right-3 flex items-center gap-1.5">
               {galleryImages.length > 1 && (
-                <span className="bg-black/60 text-white text-[11px] font-medium px-2.5 py-1 rounded-full backdrop-blur-xs pointer-events-none">
+                <span className="bg-black/60 text-white text-[13px] font-medium px-2.5 py-1 rounded-full backdrop-blur-xs pointer-events-none">
                   {safeSelectedImg + 1} / {galleryImages.length}
                 </span>
               )}
               <button
                 type="button"
                 onClick={() => setIsGalleryOpen(true)}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/90 hover:bg-white text-[#002046] text-[11px] font-bold shadow-xs backdrop-blur-xs active:scale-95 transition-all cursor-pointer"
+                className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/90 hover:bg-white text-[#002046] text-[13px] font-bold shadow-xs backdrop-blur-xs active:scale-95 transition-all cursor-pointer"
                 aria-label="사진 전체보기 열기"
               >
                 <span className="material-symbols-outlined text-[14px] text-[#0051d5]">
@@ -593,7 +593,7 @@ export function AuctionDetailScreen({
               <span>{displayAddress}</span>
             </p>
             {subJibunAddress && (
-              <p className="text-[11px] text-[#74777f] pl-5 mt-0.5">
+              <p className="text-[13px] text-[#74777f] pl-5 mt-0.5">
                 지번: {subJibunAddress}
               </p>
             )}
@@ -603,7 +603,7 @@ export function AuctionDetailScreen({
               <button
                 type="button"
                 onClick={() => handleCopy(displayAddress, '주소')}
-                className="px-2.5 py-1 rounded-lg bg-white border border-[#dce9ff] hover:bg-[#eff4ff] text-[#002046] text-[11px] font-semibold inline-flex items-center gap-1 transition-colors cursor-pointer"
+                className="px-2.5 py-1 rounded-lg bg-white border border-[#dce9ff] hover:bg-[#eff4ff] text-[#002046] text-[13px] font-semibold inline-flex items-center gap-1 transition-colors cursor-pointer"
               >
                 <span className="material-symbols-outlined text-[14px] text-[#0051d5]">
                   content_copy
@@ -613,7 +613,7 @@ export function AuctionDetailScreen({
               <button
                 type="button"
                 onClick={() => handleOpenMap('naver', displayAddress)}
-                className="px-2.5 py-1 rounded-lg bg-white border border-[#dce9ff] hover:bg-[#eff4ff] text-[#002046] text-[11px] font-semibold inline-flex items-center gap-1 transition-colors cursor-pointer"
+                className="px-2.5 py-1 rounded-lg bg-white border border-[#dce9ff] hover:bg-[#eff4ff] text-[#002046] text-[13px] font-semibold inline-flex items-center gap-1 transition-colors cursor-pointer"
               >
                 <span className="material-symbols-outlined text-[14px] text-[#059669]">map</span>
                 <span>네이버 지도</span>
@@ -621,7 +621,7 @@ export function AuctionDetailScreen({
               <button
                 type="button"
                 onClick={() => handleOpenMap('kakao', displayAddress)}
-                className="px-2.5 py-1 rounded-lg bg-white border border-[#dce9ff] hover:bg-[#eff4ff] text-[#002046] text-[11px] font-semibold inline-flex items-center gap-1 transition-colors cursor-pointer"
+                className="px-2.5 py-1 rounded-lg bg-white border border-[#dce9ff] hover:bg-[#eff4ff] text-[#002046] text-[13px] font-semibold inline-flex items-center gap-1 transition-colors cursor-pointer"
               >
                 <span className="material-symbols-outlined text-[14px] text-[#0051d5]">
                   explore
@@ -667,13 +667,13 @@ export function AuctionDetailScreen({
 
           <div className="grid grid-cols-2 gap-2 text-xs">
             <div className="p-3 bg-[#eff4ff] rounded-xl">
-              <span className="text-[#44474e] block text-[11px]">입찰보증금 (10%)</span>
+              <span className="text-[#44474e] block text-[13px]">입찰보증금 (10%)</span>
               <strong className="text-sm font-bold text-[#002046] mt-0.5 block">
                 {formatWon(deposit)}
               </strong>
             </div>
             <div className="p-3 bg-[#eff4ff] rounded-xl">
-              <span className="text-[#44474e] block text-[11px]">유찰 이력</span>
+              <span className="text-[#44474e] block text-[13px]">유찰 이력</span>
               <strong className="text-sm font-bold text-[#ba1a1a] mt-0.5 block">
                 {item.failCount > 0 ? `${item.failCount}회 유찰` : '신규공매'}
               </strong>
@@ -689,7 +689,7 @@ export function AuctionDetailScreen({
               온비드 입찰일정 및 공고 정보
             </h3>
             {isDetailLoading && (
-              <span className="text-[10px] font-semibold text-[#0051d5] animate-pulse">
+              <span className="text-[12px] font-semibold text-[#0051d5] animate-pulse">
                 상세조회중...
               </span>
             )}
@@ -718,14 +718,14 @@ export function AuctionDetailScreen({
           {/* 부동산 세부 면적·지분 내역 */}
           {detail?.areaDetails && detail.areaDetails.length > 0 && (
             <div className="pt-2 border-t border-[#eff4ff] space-y-1.5">
-              <span className="text-[11px] font-bold text-[#002046] block">
+              <span className="text-[13px] font-bold text-[#002046] block">
                 세부 면적 및 지분 내역
               </span>
               <div className="space-y-1">
                 {detail.areaDetails.map((areaItem, idx) => (
                   <div
                     key={idx}
-                    className="text-[11px] bg-[#f8f9ff] rounded-lg px-2.5 py-1.5 text-[#44474e] flex flex-wrap items-center justify-between gap-1"
+                    className="text-[13px] bg-[#f8f9ff] rounded-lg px-2.5 py-1.5 text-[#44474e] flex flex-wrap items-center justify-between gap-1"
                   >
                     <span className="font-semibold text-[#0b1c30]">
                       {[areaItem.kind, areaItem.area].filter(Boolean).join(' · ') || '면적 정보'}
@@ -819,7 +819,7 @@ export function AuctionDetailScreen({
                     <p className="font-bold text-[#0b1c30] truncate">
                       {appr.orgName || '감정평가기관'}
                     </p>
-                    <p className="text-[11px] text-[#74777f] mt-0.5">
+                    <p className="text-[13px] text-[#74777f] mt-0.5">
                       {[
                         appr.date ? `평가일 ${appr.date}` : undefined,
                         appr.amount ? formatDetailAmount(appr.amount) : undefined,
@@ -833,7 +833,7 @@ export function AuctionDetailScreen({
                       href={appr.reportUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-2.5 py-1.5 rounded-lg bg-[#eff4ff] hover:bg-[#dce9ff] text-[#0051d5] text-[11px] font-bold shrink-0 flex items-center gap-1 transition-colors"
+                      className="px-2.5 py-1.5 rounded-lg bg-[#eff4ff] hover:bg-[#dce9ff] text-[#0051d5] text-[13px] font-bold shrink-0 flex items-center gap-1 transition-colors"
                     >
                       <span>평가서</span>
                       <span className="material-symbols-outlined text-[14px]">open_in_new</span>
@@ -857,7 +857,7 @@ export function AuctionDetailScreen({
                   공매이지 권리분석 체크
                 </h4>
                 {detail && (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white text-[#0051d5]">
+                  <span className="text-[12px] font-bold px-2 py-0.5 rounded-full bg-white text-[#0051d5]">
                     등기권리 {detail.rights.length}건 · 임대차 {detail.leaseCount}건
                   </span>
                 )}
@@ -871,7 +871,7 @@ export function AuctionDetailScreen({
           </div>
 
           {isDetailLoading && !detail && (
-            <div className="bg-white/75 rounded-xl p-3 text-[11px] text-[#44474e] animate-pulse">
+            <div className="bg-white/75 rounded-xl p-3 text-[13px] text-[#44474e] animate-pulse">
               온비드 물건상세(현장사진·등기 권리·감정평가) 실데이터를 불러오는 중입니다...
             </div>
           )}
@@ -885,7 +885,7 @@ export function AuctionDetailScreen({
                 >
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <span className="px-1.5 py-0.5 rounded bg-[#eff4ff] text-[#0051d5] text-[10px] font-bold shrink-0">
+                      <span className="px-1.5 py-0.5 rounded bg-[#eff4ff] text-[#0051d5] text-[12px] font-bold shrink-0">
                         {right.rightType}
                       </span>
                       {right.holderName && (
@@ -895,7 +895,7 @@ export function AuctionDetailScreen({
                       )}
                     </div>
                     {right.regDate && (
-                      <span className="text-[10px] text-[#74777f] mt-0.5 block">
+                      <span className="text-[12px] text-[#74777f] mt-0.5 block">
                         등기일 {right.regDate}
                       </span>
                     )}
@@ -917,7 +917,7 @@ export function AuctionDetailScreen({
       <div className="fixed bottom-0 left-0 right-0 md:max-w-5xl xl:max-w-6xl mx-auto bg-white/95 backdrop-blur-xl border-t border-[#e2e8f0] p-3 md:px-6 flex items-center gap-3 z-40 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-lg">
         {/* 태블릿 이상 하단 요약 */}
         <div className="hidden md:flex flex-col mr-auto">
-          <span className="text-[11px] text-[#74777f]">
+          <span className="text-[13px] text-[#74777f]">
             최저입찰가 · 보증금(10%) {formatWon(deposit)}
           </span>
           <strong className="text-base font-extrabold text-[#002046]">
@@ -942,7 +942,7 @@ export function AuctionDetailScreen({
           >
             notifications
           </span>
-          <span className="text-[10px] mt-0.5">기일알림</span>
+          <span className="text-[12px] mt-0.5">기일알림</span>
         </button>
 
         <button

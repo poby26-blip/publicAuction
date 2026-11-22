@@ -1,5 +1,21 @@
 @import "tailwindcss";
 
+@theme {
+  /* 모바일 가독성 강화를 위한 전역 타이포그래피 스케일 (+2px 상향, rem 레이아웃 여백은 그대로 유지) */
+  --text-xs: 0.875rem;
+  --text-xs--line-height: 1.25rem;
+  --text-sm: 1rem;
+  --text-sm--line-height: 1.45rem;
+  --text-base: 1.125rem;
+  --text-base--line-height: 1.625rem;
+  --text-lg: 1.25rem;
+  --text-lg--line-height: 1.75rem;
+  --text-xl: 1.375rem;
+  --text-xl--line-height: 1.875rem;
+  --text-2xl: 1.625rem;
+  --text-2xl--line-height: 2.125rem;
+}
+
 @layer base {
   html, body {
     margin: 0;

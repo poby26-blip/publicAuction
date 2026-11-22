@@ -312,7 +312,7 @@ export function HomeScreen({
                 key={group.id}
                 type="button"
                 onClick={() => handleAssetGroupClick(group.id)}
-                className={`py-2.5 px-1 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${isActive
+                className={`py-2.5 px-1 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1 sm:gap-1.5 whitespace-nowrap cursor-pointer ${isActive
                     ? 'bg-[#002046] text-white shadow-xs font-extrabold'
                     : 'text-[#44474e] hover:text-[#002046] hover:bg-white/60 font-semibold'
                   }`}
@@ -481,7 +481,7 @@ export function HomeScreen({
       <section className="px-4 md:px-6">
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#002046] via-[#1b365d] to-[#0051d5] text-white p-5 shadow-sm">
           <div className="relative z-10">
-            <span className="inline-block text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-white/20 text-white backdrop-blur-xs mb-2">
+            <span className="inline-block text-[12px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-white/20 text-white backdrop-blur-xs mb-2">
               온비드 공매 초보 가이드
             </span>
             <h3 className="text-lg font-headline font-bold leading-tight">
@@ -579,7 +579,7 @@ export function HomeScreen({
                     />
                     {/* D-Day 및 마감 시각 뱃지 */}
                     <div className="absolute top-2.5 left-2.5 flex items-center gap-1">
-                      <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-[#ba1a1a] text-white shadow-xs">
+                      <span className="px-2 py-0.5 rounded-full text-[13px] font-bold bg-[#ba1a1a] text-white shadow-xs">
                         {item.dDay <= 0
                           ? '오늘 마감'
                           : item.dDay > 365
@@ -587,7 +587,7 @@ export function HomeScreen({
                             : `D-${item.dDay}`}
                       </span>
                       {item.deadlineTime && (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-black/60 text-white backdrop-blur-xs">
+                        <span className="px-2 py-0.5 rounded-full text-[12px] font-semibold bg-black/60 text-white backdrop-blur-xs">
                           {item.deadlineTime}
                         </span>
                       )}
@@ -615,10 +615,10 @@ export function HomeScreen({
                   <div className="p-3.5 flex flex-col justify-between flex-1">
                     <div>
                       <div className="flex items-center gap-1.5 mb-1">
-                        <span className="text-[10px] font-bold text-[#0051d5] bg-[#eff4ff] px-1.5 py-0.5 rounded">
+                        <span className="text-[12px] font-bold text-[#0051d5] bg-[#eff4ff] px-1.5 py-0.5 rounded">
                           {item.auctionType}
                         </span>
-                        <span className="text-[10px] font-medium text-[#74777f] truncate">
+                        <span className="text-[12px] font-medium text-[#74777f] truncate">
                           {item.area}
                         </span>
                       </div>
@@ -642,11 +642,11 @@ export function HomeScreen({
                         </div>
                       </div>
                       {item.appraisalPrice > item.minimumPrice ? (
-                        <p className="text-[11px] text-[#74777f] line-through mt-0.5">
+                        <p className="text-[13px] text-[#74777f] line-through mt-0.5">
                           감정가 {formatWon(item.appraisalPrice)}
                         </p>
                       ) : (
-                        <p className="text-[11px] text-[#74777f] mt-0.5">
+                        <p className="text-[13px] text-[#74777f] mt-0.5">
                           최저입찰가 (감정가 동일/미산정)
                         </p>
                       )}
@@ -727,11 +727,11 @@ export function HomeScreen({
                       }}
                     />
                     {item.failCount > 0 ? (
-                      <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-md bg-black/60 text-white text-[9px] font-bold backdrop-blur-xs">
+                      <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-md bg-black/60 text-white text-[12px] font-bold backdrop-blur-xs">
                         {item.failCount}회 유찰
                       </span>
                     ) : item.discountRate >= 40 ? (
-                      <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-md bg-[#0051d5]/90 text-white text-[9px] font-bold backdrop-blur-xs">
+                      <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-md bg-[#0051d5]/90 text-white text-[12px] font-bold backdrop-blur-xs">
                         특가추천
                       </span>
                     ) : null}
@@ -742,10 +742,10 @@ export function HomeScreen({
                     <div>
                       <div className="flex items-center justify-between gap-1">
                         <div className="flex items-center gap-1.5 min-w-0">
-                          <span className="text-[10px] font-bold text-[#0051d5] bg-[#eff4ff] px-1.5 py-0.5 rounded-md shrink-0">
+                          <span className="text-[12px] font-bold text-[#0051d5] bg-[#eff4ff] px-1.5 py-0.5 rounded-md shrink-0">
                             {item.auctionType}
                           </span>
-                          <span className="text-[10px] font-medium text-[#74777f] truncate">
+                          <span className="text-[12px] font-medium text-[#74777f] truncate">
                             {item.area}
                           </span>
                         </div>
@@ -769,7 +769,7 @@ export function HomeScreen({
                       <h4 className="text-sm font-bold text-[#0b1c30] truncate mt-1 group-hover:text-[#0051d5] transition-colors" title={item.title}>
                         {item.title}
                       </h4>
-                      <p className="text-[11px] text-[#74777f] truncate mt-0.5">{item.address}</p>
+                      <p className="text-[13px] text-[#74777f] truncate mt-0.5">{item.address}</p>
                     </div>
 
                     {/* 가격 및 기일 (flex-wrap 및 gap으로 텍스트 오버플로우 방어) */}
@@ -784,7 +784,7 @@ export function HomeScreen({
                           {formatWon(item.minimumPrice)}
                         </span>
                       </div>
-                      <span className="text-[10px] text-[#74777f] shrink-0">
+                      <span className="text-[12px] text-[#74777f] shrink-0">
                         {item.auctionDate ? `기일 ${item.auctionDate.split(' ')[0]}` : '일정 확인중'}
                       </span>
                     </div>
@@ -809,12 +809,12 @@ export function HomeScreen({
               <h4 className="text-xs font-bold text-[#002046]">
                 대한민국 공공데이터 포털 공식 연계
               </h4>
-              <p className="text-[11px] text-[#44474e]">
+              <p className="text-[13px] text-[#44474e]">
                 한국자산관리공사(KAMCO) 온비드 OpenAPI 실시간 동기화
               </p>
             </div>
           </div>
-          <div className="flex items-center justify-between pt-2 mt-1 border-t border-[#c4c6cf]/30 text-[#74777f] text-[11px]">
+          <div className="flex items-center justify-between pt-2 mt-1 border-t border-[#c4c6cf]/30 text-[#74777f] text-[13px]">
             <span className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-[#0051d5]"></span>
               오늘 실시간 정합성 검증 완료

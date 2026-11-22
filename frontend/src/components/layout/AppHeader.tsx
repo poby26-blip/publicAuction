@@ -50,9 +50,6 @@ export function AppHeader({
             <h1 className="text-xl font-headline font-extrabold text-[#002046] tracking-tight leading-none">
               공매이지
             </h1>
-            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-[#e5eeff] text-[#0051d5]">
-              온비드
-            </span>
           </div>
           <p className="text-xs text-[#74777f] mt-0.5">공공데이터 기반 실시간 공매</p>
         </div>
