@@ -227,8 +227,8 @@ export function HomeScreen({
           </button>
         </div>
 
-        {/* 시/도 지역 칩 가로 스크롤 (태블릿 이상 줄바꿈 지원) */}
-        <div className="flex gap-2 overflow-x-auto no-scrollbar pt-3 pb-1 -mx-4 px-4 md:mx-0 md:px-0 md:flex-wrap">
+        {/* 시/도 지역 칩 가로 스크롤 (전 해상도 한 줄 스크롤 유지) */}
+        <div className="flex gap-2 overflow-x-auto no-scrollbar pt-3 pb-1 -mx-4 px-4 md:-mx-6 md:px-6">
           {GONG_REGIONS.map((region) => {
             const isSelected = homeRegion === region
             return (
@@ -237,8 +237,8 @@ export function HomeScreen({
                 type="button"
                 onClick={() => handleRegionClick(region)}
                 className={`flex-shrink-0 px-3.5 py-2 rounded-full text-[13px] font-semibold transition-all active:scale-95 cursor-pointer ${isSelected
-                    ? 'bg-[#0051d5] text-white shadow-xs font-bold'
-                    : 'bg-white border border-[#c4c6cf]/50 text-[#44474e] hover:bg-[#e5eeff]'
+                  ? 'bg-[#0051d5] text-white shadow-xs font-bold'
+                  : 'bg-white border border-[#c4c6cf]/50 text-[#44474e] hover:bg-[#e5eeff]'
                   }`}
               >
                 {region}
@@ -313,8 +313,8 @@ export function HomeScreen({
                 type="button"
                 onClick={() => handleAssetGroupClick(group.id)}
                 className={`py-2.5 px-1 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1 sm:gap-1.5 whitespace-nowrap cursor-pointer ${isActive
-                    ? 'bg-[#002046] text-white shadow-xs font-extrabold'
-                    : 'text-[#44474e] hover:text-[#002046] hover:bg-white/60 font-semibold'
+                  ? 'bg-[#002046] text-white shadow-xs font-extrabold'
+                  : 'text-[#44474e] hover:text-[#002046] hover:bg-white/60 font-semibold'
                   }`}
               >
                 <span className="material-symbols-outlined text-[18px]">{group.icon}</span>
@@ -326,7 +326,7 @@ export function HomeScreen({
 
         {/* 2차 선택 상품군별 세부 카테고리 퀵 내비게이션 */}
         {homeAssetGroup === 'all' && (
-          <div className="grid grid-cols-4 md:grid-cols-8 gap-2.5">
+          <div className="grid grid-cols-4 gap-1.5 sm:gap-2.5">
             {GONG_CATEGORIES.map((cat) => (
               <button
                 key={cat.id}
@@ -338,12 +338,12 @@ export function HomeScreen({
                     region: homeRegion === '전체' ? undefined : homeRegion,
                   })
                 }
-                className="bg-white rounded-2xl p-3 flex flex-col items-center justify-center border border-[#e5eeff] shadow-2xs hover:border-[#0051d5] active:scale-95 transition-all group cursor-pointer"
+                className="bg-white rounded-2xl px-1.5 py-2.5 sm:p-3 flex flex-col items-center justify-center border border-[#e5eeff] shadow-2xs hover:border-[#0051d5] active:scale-95 transition-all group cursor-pointer"
               >
-                <div className="w-11 h-11 rounded-xl bg-[#eff4ff] flex items-center justify-center text-[#002046] group-hover:bg-[#0051d5] group-hover:text-white transition-colors mb-1.5">
-                  <span className="material-symbols-outlined text-[24px]">{cat.icon}</span>
+                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#eff4ff] flex items-center justify-center text-[#002046] group-hover:bg-[#0051d5] group-hover:text-white transition-colors mb-1 sm:mb-1.5">
+                  <span className="material-symbols-outlined text-[22px] sm:text-[24px]">{cat.icon}</span>
                 </div>
-                <span className="text-xs font-bold text-[#0b1c30] tracking-tight text-center line-clamp-1">
+                <span className="text-[12px] sm:text-xs font-bold text-[#0b1c30] tracking-tighter sm:tracking-tight leading-tight text-center break-keep">
                   {cat.label}
                 </span>
               </button>
@@ -353,7 +353,7 @@ export function HomeScreen({
 
         {homeAssetGroup === 'real_estate' && (
           <div className="flex flex-col gap-2">
-            <div className="grid grid-cols-4 gap-2.5">
+            <div className="grid grid-cols-4 gap-1.5 sm:gap-2.5">
               {realEstateSubCategories.map((cat) => (
                 <button
                   key={cat.id}
@@ -365,12 +365,12 @@ export function HomeScreen({
                       region: homeRegion === '전체' ? undefined : homeRegion,
                     })
                   }
-                  className="bg-white rounded-2xl p-3 flex flex-col items-center justify-center border border-[#e5eeff] shadow-2xs hover:border-[#0051d5] active:scale-95 transition-all group cursor-pointer"
+                  className="bg-white rounded-2xl px-1.5 py-2.5 sm:p-3 flex flex-col items-center justify-center border border-[#e5eeff] shadow-2xs hover:border-[#0051d5] active:scale-95 transition-all group cursor-pointer"
                 >
-                  <div className="w-11 h-11 rounded-xl bg-[#eff4ff] flex items-center justify-center text-[#002046] group-hover:bg-[#0051d5] group-hover:text-white transition-colors mb-1.5">
-                    <span className="material-symbols-outlined text-[24px]">{cat.icon}</span>
+                  <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#eff4ff] flex items-center justify-center text-[#002046] group-hover:bg-[#0051d5] group-hover:text-white transition-colors mb-1 sm:mb-1.5">
+                    <span className="material-symbols-outlined text-[22px] sm:text-[24px]">{cat.icon}</span>
                   </div>
-                  <span className="text-xs font-bold text-[#0b1c30] tracking-tight text-center line-clamp-1">
+                  <span className="text-[12px] sm:text-xs font-bold text-[#0b1c30] tracking-tighter sm:tracking-tight leading-tight text-center break-keep">
                     {cat.label}
                   </span>
                 </button>
@@ -476,13 +476,13 @@ export function HomeScreen({
       </section>
 
       {/* =================================================================== */}
-      {/* 3. 온비드 공매 초보 가이드 인사이트 배너                           */}
+      {/* 3. 공매 초보 가이드 인사이트 배너                           */}
       {/* =================================================================== */}
       <section className="px-4 md:px-6">
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#002046] via-[#1b365d] to-[#0051d5] text-white p-5 shadow-sm">
           <div className="relative z-10">
             <span className="inline-block text-[12px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-white/20 text-white backdrop-blur-xs mb-2">
-              온비드 공매 초보 가이드
+              공매 초보 가이드
             </span>
             <h3 className="text-lg font-headline font-bold leading-tight">
               감정가보다 <span className="text-[#85f8c4]">40% 저렴하게</span><br />

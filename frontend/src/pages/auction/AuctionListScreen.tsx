@@ -414,9 +414,9 @@ export function AuctionListScreen({
 
   return (
     <div className="flex flex-col gap-3.5 pb-24 md:pb-8 px-4 md:px-6 pt-2">
-      {/* 1 & 2-1. 상단 키워드 검색창 + 1차 상품군 세그먼트 탭 (태블릿 이상 2단 병렬 배치) */}
-      <div className="flex flex-col gap-3 md:grid md:grid-cols-12 md:items-start">
-        <div className="md:col-span-6 flex flex-col gap-1">
+      {/* 1 & 2-1. 상단 키워드 검색창 + 1차 상품군 세그먼트 탭 (전 해상도 2줄 배치 통일) */}
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-1">
           <div className="relative flex items-center">
             <span className="material-symbols-outlined text-[20px] text-[#74777f] absolute left-3.5 pointer-events-none">
               search
@@ -463,7 +463,7 @@ export function AuctionListScreen({
         </div>
 
         {/* 1차 상품군 대분류 세그먼트 탭 (전체 | 부동산 | 동산 | 자동차) */}
-        <div className="grid grid-cols-4 gap-1.5 p-1.5 bg-[#eff4ff] rounded-2xl border border-[#dce9ff] md:col-span-6">
+        <div className="grid grid-cols-4 gap-1.5 p-1.5 bg-[#eff4ff] rounded-2xl border border-[#dce9ff]">
           {GONG_ASSET_GROUPS.map((group) => {
             const isActive = assetGroup === group.id
             return (
@@ -484,8 +484,8 @@ export function AuctionListScreen({
         </div>
       </div>
 
-      {/* 2-2. 2차 세부 카테고리 알약(Pill) 가로 스크롤 (태블릿 이상 줄바꿈 지원) */}
-      <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 md:mx-0 md:px-0 md:flex-wrap pb-0.5">
+      {/* 2-2. 2차 세부 카테고리 알약(Pill) 가로 스크롤 (전 해상도 1줄 스크롤 유지) */}
+      <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 md:-mx-6 md:px-6 pb-0.5">
         <button
           type="button"
           onClick={() => setSubCategory('all')}
