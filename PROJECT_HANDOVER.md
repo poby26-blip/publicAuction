@@ -1,7 +1,7 @@
 # 📋 [공매이지] 프로젝트 인수인계 및 에이전트 작업 지침서 (PROJECT_HANDOVER.md)
 
-> **문서 버전**: v1.4.6  
-> **최종 갱신일**: 2026년 11월 19일  
+> **문서 버전**: v1.4.7  
+> **최종 갱신일**: 2026년 11월 24일  
 > **프로젝트 경로**: `c:\dev\workspace\publicAuction`  
 > **프론트엔드 경로**: `c:\dev\workspace\publicAuction\frontend`  
 > **문서 목적**: 사무실, 자택 등 서로 다른 개발 환경의 **Antigravity 에이전트**가 프로젝트 컨텍스트를 즉시 100% 복원하여 끊김 없이 작업을 이어가도록 안내하며, **사용자**가 프로젝트 진행 상황과 아키텍처를 한눈에 확인할 수 있도록 지원합니다.
@@ -29,6 +29,7 @@
   │   │   ├── pages/
   │   │   │   ├── home/         # HomeScreen.tsx (홈 화면)
   │   │   │   ├── auction/      # AuctionListScreen.tsx (목록), AuctionDetailScreen.tsx (상세)
+  │   │   │   ├── guide/        # AuctionGuideScreen.tsx (공매 초보 가이드)
   │   │   │   ├── watchlist/    # WatchlistScreen.tsx (관심물건 찜 목록)
   │   │   │   └── my/           # MyScreen.tsx (마이페이지)
   │   │   ├── services/         # onbidService.ts (온비드 API), storageService.ts (RN 호환 로컬 스토리지 추상화)
@@ -297,6 +298,31 @@
    - [HomeScreen.tsx](file:///d:/workspace/publicAuction/frontend/src/pages/home/HomeScreen.tsx), [AuctionListScreen.tsx](file:///d:/workspace/publicAuction/frontend/src/pages/auction/AuctionListScreen.tsx), [AuctionDetailScreen.tsx](file:///d:/workspace/publicAuction/frontend/src/pages/auction/AuctionDetailScreen.tsx), [WatchlistScreen.tsx](file:///d:/workspace/publicAuction/frontend/src/pages/watchlist/WatchlistScreen.tsx), [MyScreen.tsx](file:///d:/workspace/publicAuction/frontend/src/pages/my/MyScreen.tsx), [AppNavigation.tsx](file:///d:/workspace/publicAuction/frontend/src/components/layout/AppNavigation.tsx), [AuctionCard.tsx](file:///d:/workspace/publicAuction/frontend/src/components/common/AuctionCard.tsx), [PhotoGalleryModal.tsx](file:///d:/workspace/publicAuction/frontend/src/components/common/PhotoGalleryModal.tsx), [Toast.tsx](file:///d:/workspace/publicAuction/frontend/src/components/common/Toast.tsx)의 `text-[9px]`, `text-[10px]`를 `text-[12px]`로, `text-[11px]`를 `text-[13px]`로 상향하여 앱 전체 최소 폰트 크기를 12px 이상으로 보장했습니다.
 3. **좁은 화면 줄바꿈 방어 보강 ([HomeScreen.tsx](file:///d:/workspace/publicAuction/frontend/src/pages/home/HomeScreen.tsx), [AuctionListScreen.tsx](file:///d:/workspace/publicAuction/frontend/src/pages/auction/AuctionListScreen.tsx))**:
    - 1차 상품군 4열 세그먼트 탭 버튼에 `whitespace-nowrap`과 반응형 폰트(`text-xs sm:text-sm`)를 적용해 360px 모바일 화면에서도 줄바꿈 없이 깔끔하게 표시되도록 조정했습니다.
+
+### ✅ [21단계] 홈·공매목록 반응형 카테고리/지역 레이아웃 통일 및 말줄임 개선 완료
+1. **홈 화면 세부 카테고리 태블릿 2줄 배치 및 모바일 말줄임 제거 ([HomeScreen.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/pages/home/HomeScreen.tsx))**:
+   - `전체` 탭 세부 카테고리 그리드의 `md:grid-cols-8`을 제거하고 `grid-cols-4`로 통일하여, 태블릿에서도 폴더블 모드와 동일하게 4열 2행으로 여유 있게 표시되도록 개선했습니다.
+   - `전체` 및 `부동산` 세부 카테고리 라벨의 `line-clamp-1`을 제거하고 모바일 그리드 간격(`gap-1.5 sm:gap-2.5`), 버튼 패딩(`px-1.5 py-2.5 sm:p-3`), 라벨(`text-[12px] sm:text-xs tracking-tighter sm:tracking-tight leading-tight break-keep`)을 최적화해 좁은 모바일 화면에서도 말줄임(`...`) 없이 카테고리 명칭이 온전히 보이도록 수정했습니다.
+2. **홈 화면 시/도 지역 칩 태블릿 한 줄 가로 스크롤 통일 ([HomeScreen.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/pages/home/HomeScreen.tsx))**:
+   - 지역 칩 컨테이너에서 `md:flex-wrap`을 제거하고 `-mx-4 px-4 md:-mx-6 md:px-6`을 적용해 태블릿 이상 해상도에서도 줄바꿈 없이 한 줄 가로 스크롤로 동작하도록 통일했습니다.
+3. **공매목록 화면 2줄 헤더 통일 및 2차 카테고리 가로 스크롤 전환 ([AuctionListScreen.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/pages/auction/AuctionListScreen.tsx))**:
+   - 상단 `검색 입력창 + 1차 상품군 세그먼트 탭`에서 태블릿 2단 병렬 배치(`md:grid md:grid-cols-12`, `md:col-span-6`)를 제거하고 `flex flex-col gap-3`을 적용해 홈 화면과 동일한 2줄 구조로 통일했습니다.
+   - 2차 세부 카테고리 알약 목록에서 `md:flex-wrap`을 제거하고 `-mx-4 px-4 md:-mx-6 md:px-6`을 적용해 태블릿 모드에서도 한 줄 가로 스크롤되도록 변경했습니다.
+
+### ✅ [22단계] 공매 초보 가이드 페이지 신규 제작 및 모바일 가독성 최적화 완료
+1. **공매 초보 가이드 페이지 신규 제작 ([AuctionGuideScreen.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/pages/guide/AuctionGuideScreen.tsx))**:
+   - 홈 화면 `'공매 초보 가이드'` 배너와 연계되는 입문자용 가이드 오버레이 화면을 구현했습니다.
+   - **핵심 비결 & 유형 비교**: 감정가 대비 40% 저렴하게 낙찰받는 3가지 비결 카드 및 압류재산·신탁공매 비교 안내.
+   - **인터랙티브 권리분석 체크리스트 5계명**: 항목별 클릭 체크·해제, 완료 진행률(`N/5 점검 완료`) 배지, 초기화 및 앱 상세 화면 연계 팁 제공.
+   - **온비드 입찰 5단계 실전 로드맵 & 필수 용어 사전**: 단계별 입찰 절차 타임라인과 아코디언 토글 방식의 필수 용어 사전 5선 제공.
+   - **하단 고정 액션 바**: `홈으로` 닫기 및 `반값공매 물건 바로 보러가기` 버튼으로 즉시 공매목록(`half` 필터) 이동 지원.
+2. **전역 상태 및 배너 인터랙션 연결 ([useAuctionStore.ts](file:///c:/dev/workspace/publicAuction/frontend/src/store/useAuctionStore.ts), [App.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/App.tsx), [HomeScreen.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/pages/home/HomeScreen.tsx))**:
+   - `useAuctionStore.ts`에 `isGuideOpen`, `setGuideOpen` 상태를 추가하고 탭/필터 이동 시 자동 닫힘을 적용했습니다.
+   - `App.tsx`에서 상세 화면과 동일한 독립 고정 오버레이(`fixed inset-0 w-full z-50`)로 렌더링하며 진입 시 `scrollTop = 0` 초기화 및 배경 스크롤 잠금(`body.style.overflow = 'hidden'`)을 적용했습니다.
+   - `HomeScreen.tsx`의 `'공매 초보 가이드'` 배너를 클릭 가능한 버튼으로 전환하고 `가이드 보기 >` 안내 뱃지를 추가했습니다.
+3. **모바일 가독성을 위한 전체 폰트 확대 및 레이아웃 재조정 ([AuctionGuideScreen.tsx](file:///c:/dev/workspace/publicAuction/frontend/src/pages/guide/AuctionGuideScreen.tsx))**:
+   - 읽기 중심 화면에 맞춰 히어로 제목(`text-2xl sm:text-3xl`), 섹션 제목(`text-xl sm:text-2xl`), 본문(`text-sm sm:text-base` ~ `text-base`), 하단 버튼(`text-base`) 등 전체 타이포그래피를 대폭 상향하고 `12px` 미만/극소 폰트를 제거했습니다.
+   - 3가지 비결 그리드를 `lg:grid-cols-3`으로 조정해 모바일·폴더블·소형 태블릿에서 1열로 여유 있게 읽히도록 배치하고, 가변 높이 타임라인 선(`flex-1 min-h-6`), 용어 사전 요약 `truncate` 제거, 섹션 간격(`gap-8`) 및 하단 여백(`pb-32`)을 재조정했습니다.
 
 ---
 

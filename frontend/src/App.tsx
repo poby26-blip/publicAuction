@@ -12,6 +12,7 @@ import { AppHeader } from './components/layout/AppHeader'
 import { type GongItem } from './data/AuctionData'
 import { AuctionDetailScreen } from './pages/auction/AuctionDetailScreen'
 import { AuctionListScreen } from './pages/auction/AuctionListScreen'
+import { AuctionGuideScreen } from './pages/guide/AuctionGuideScreen'
 import { HomeScreen } from './pages/home/HomeScreen'
 import { MyScreen } from './pages/my/MyScreen'
 import { WatchlistScreen } from './pages/watchlist/WatchlistScreen'
@@ -26,6 +27,8 @@ export default function App() {
     setActiveTab,
     selectedItem,
     setSelectedItem,
+    isGuideOpen,
+    setGuideOpen,
     watchlistItems,
     alertItems,
     homeItems,
@@ -63,18 +66,23 @@ export default function App() {
 
   /** 상세 화면 고정 오버레이 스크롤 컨테이너 Ref */
   const detailOverlayRef = useRef<HTMLDivElement | null>(null)
+  /** 초보 가이드 고정 오버레이 스크롤 컨테이너 Ref */
+  const guideOverlayRef = useRef<HTMLDivElement | null>(null)
 
   /**
-   * 상세 화면 오버레이 진입 시:
+   * 상세 화면 또는 초보 가이드 오버레이 진입 시:
    * 1) 오버레이 자체 스크롤을 항상 최상단(scrollTop = 0)으로 초기화합니다.
    * 2) 뒤쪽 목록/홈 화면의 window 스크롤이 움직이지 않도록 body 스크롤을 잠그고,
-   *    상세를 닫을 때 기존 overflow 스타일을 복원해 원래 목록 스크롤 위치를 그대로 보존합니다.
+   *    오버레이를 닫을 때 기존 overflow 스타일을 복원해 원래 스크롤 위치를 그대로 보존합니다.
    */
   useEffect(() => {
-    if (!selectedItem) return
+    if (!selectedItem && !isGuideOpen) return
 
-    if (detailOverlayRef.current) {
+    if (selectedItem && detailOverlayRef.current) {
       detailOverlayRef.current.scrollTop = 0
+    }
+    if (isGuideOpen && guideOverlayRef.current) {
+      guideOverlayRef.current.scrollTop = 0
     }
 
     const prevOverflow = document.body.style.overflow
@@ -83,7 +91,7 @@ export default function App() {
     return () => {
       document.body.style.overflow = prevOverflow
     }
-  }, [selectedItem])
+  }, [selectedItem, isGuideOpen])
 
   /** 앱 전역 플로팅 토스트 팝업 상태 */
   const [toast, setToast] = useState<{
@@ -345,6 +353,24 @@ export default function App() {
               onToggleAlert={toggleBidAlert}
               onShowToast={showToast}
               onBack={() => setSelectedItem(null)}
+            />
+          </div>
+        )}
+
+        {/* [공매 초보 가이드 오버레이 레이어] */}
+        {isGuideOpen && (
+          <div
+            ref={guideOverlayRef}
+            className="fixed inset-0 w-full z-50 bg-[#f8f9ff] overflow-y-auto overscroll-contain"
+          >
+            <AuctionGuideScreen
+              onBack={() => setGuideOpen(false)}
+              onExploreHalfPrice={() =>
+                storeNavigateToListWithFilters({
+                  assetGroup: 'all',
+                  subCategory: 'half',
+                })
+              }
             />
           </div>
         )}

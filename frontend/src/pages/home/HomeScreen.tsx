@@ -66,6 +66,7 @@ export function HomeScreen({
   // [2] 네비게이션 및 관심물건
   const navigateToListWithFilters = useAuctionStore((state) => state.navigateToListWithFilters)
   const storeSelectedItem = useAuctionStore((state) => state.setSelectedItem)
+  const setGuideOpen = useAuctionStore((state) => state.setGuideOpen)
   const storeToggleWatchlist = useAuctionStore((state) => state.toggleWatchlist)
   const storeWatchlistItems = useAuctionStore((state) => state.watchlistItems)
 
@@ -476,24 +477,34 @@ export function HomeScreen({
       </section>
 
       {/* =================================================================== */}
-      {/* 3. 공매 초보 가이드 인사이트 배너                           */}
+      {/* 3. 공매 초보 가이드 인사이트 배너 (클릭 시 가이드 페이지 열림)      */}
       {/* =================================================================== */}
       <section className="px-4 md:px-6">
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#002046] via-[#1b365d] to-[#0051d5] text-white p-5 shadow-sm">
-          <div className="relative z-10">
-            <span className="inline-block text-[12px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-white/20 text-white backdrop-blur-xs mb-2">
-              공매 초보 가이드
+        <button
+          type="button"
+          onClick={() => setGuideOpen(true)}
+          className="w-full text-left relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#002046] via-[#1b365d] to-[#0051d5] text-white p-5 shadow-sm hover:shadow-md active:scale-[0.99] transition-all cursor-pointer group"
+        >
+          <div className="relative z-10 flex items-end justify-between gap-3">
+            <div>
+              <span className="inline-block text-[12px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-white/20 text-white backdrop-blur-xs mb-2">
+                공매 초보 가이드
+              </span>
+              <h3 className="text-lg font-headline font-bold leading-tight">
+                감정가보다 <span className="text-[#85f8c4]">40% 저렴하게</span><br />
+                낙찰받는 3가지 비결
+              </h3>
+              <p className="text-xs text-white/80 mt-1.5 leading-relaxed">
+                압류재산 및 신탁공매 권리분석 핵심 체크리스트
+              </p>
+            </div>
+            <span className="inline-flex items-center gap-0.5 px-3 py-1.5 rounded-full bg-white/15 group-hover:bg-white/25 text-white text-xs font-bold backdrop-blur-xs transition-colors shrink-0">
+              <span>가이드 보기</span>
+              <span className="material-symbols-outlined text-[16px]">chevron_right</span>
             </span>
-            <h3 className="text-lg font-headline font-bold leading-tight">
-              감정가보다 <span className="text-[#85f8c4]">40% 저렴하게</span><br />
-              낙찰받는 3가지 비결
-            </h3>
-            <p className="text-xs text-white/80 mt-1.5 leading-relaxed">
-              압류재산 및 신탁공매 권리분석 핵심 체크리스트
-            </p>
           </div>
-          <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-[#316bf3]/30 rounded-full blur-xl"></div>
-        </div>
+          <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-[#316bf3]/30 rounded-full blur-xl pointer-events-none"></div>
+        </button>
       </section>
 
       {/* =================================================================== */}

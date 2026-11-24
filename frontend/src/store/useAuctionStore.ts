@@ -84,6 +84,8 @@ export interface NavigationState {
   activeTab: AppTab
   /** 현재 상세 화면에 열려 있는 물건 (null이면 메인 탭 표시) */
   selectedItem: GongItem | null
+  /** 공매 초보 가이드 오버레이 열림 여부 */
+  isGuideOpen: boolean
 }
 
 /**
@@ -129,6 +131,7 @@ export interface AuctionStore
   // --- [화면 이동 및 네비게이션 액션] ---
   setActiveTab: (tab: AppTab) => void
   setSelectedItem: (item: GongItem | null) => void
+  setGuideOpen: (open: boolean) => void
 
   /**
    * 홈 화면 등에서 1차 상품군과 2차 세부카테고리를 온전히 유지한 채 공매 목록 탭으로 전환합니다.
@@ -175,6 +178,7 @@ export const useAuctionStore = create<AuctionStore>((set, get) => ({
   // [3] 네비게이션 및 상세 오버레이 상태
   activeTab: 'home',
   selectedItem: null,
+  isGuideOpen: false,
 
   // [4] 관심물건 및 기일알림 상태
   watchlistItems: [],
@@ -315,9 +319,12 @@ export const useAuctionStore = create<AuctionStore>((set, get) => ({
     set({
       activeTab,
       selectedItem: null, // 탭 전환 시 상세 화면 오버레이 닫기
+      isGuideOpen: false, // 탭 전환 시 초보 가이드 오버레이 닫기
     }),
 
   setSelectedItem: (selectedItem) => set({ selectedItem }),
+
+  setGuideOpen: (isGuideOpen) => set({ isGuideOpen }),
 
   navigateToListWithFilters: (params) => {
     const current = get()
@@ -342,6 +349,7 @@ export const useAuctionStore = create<AuctionStore>((set, get) => ({
       committedQuery: (params?.keyword || '').trim(),
       searchNonce: current.searchNonce + 1,
       selectedItem: null, // 상세 오버레이 닫기
+      isGuideOpen: false, // 초보 가이드 오버레이 닫기
       activeTab: 'list', // 목록 탭 활성화
     })
   },
